@@ -1,135 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
+import '../services/transaction_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  double balance = 0.0;
+  final authService = AuthService();
+  final transactionService = TransactionService();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBalance();
+  }
+
+  Future<void> fetchBalance() async {
+    try {
+      final userId = authService.getCurrentUserId();
+      double currentBalance = await transactionService.getUserBalance(userId);
+      setState(() {
+        balance = currentBalance;
+      });
+    } catch (e) {
+      Get.snackbar('Erro', 'Não foi possível obter o saldo');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final AuthService authService = AuthService();
-
-    final double balance = 84000.0;
-    final String accountNumber = '11111111';
-    final String userName = 'Bem-vindo de volta, Urubu!';
-    final List<Map<String, dynamic>> transactions = [
-      {'name': 'João da Silva', 'id': '12345678', 'date': '21-03-2025', 'amount': 2500.0},
-      {'name': 'Maria Oliveira', 'id': '87654321', 'date': '20-03-2025', 'amount': 1800.0},
-      {'name': 'Pix do Samuca', 'id': '14785236', 'date': '19-03-2025', 'amount': 4000.0},
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('Urubu do Pix'),
+        backgroundColor: const Color(0xFF388E3C),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
+            icon: const Icon(Icons.logout),
             onPressed: () async {
               await authService.signOut();
-              Get.offAllNamed('/login');
+              Get.offAllNamed('/');
             },
-          ),
+          )
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+      backgroundColor: const Color(0xFFF0F2F5),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(userName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(height: 20),
-
-            const Text('Visão Geral', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(height: 12),
+            const Text('Saldo Atual', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(20),
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF388E3C),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.green[600],
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Saldo Total', style: TextStyle(color: Colors.white70)),
-                      const SizedBox(height: 4),
-                      Text('R\$ $balance', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  Text('Conta: $accountNumber', style: const TextStyle(color: Colors.white)),
-                ],
+              child: Text(
+                'R\$ ${balance.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 28, color: Colors.white),
               ),
             ),
-
-            const SizedBox(height: 24),
-            const Text('Meus Cartões', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 4)),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.asset('assets/images/logo_text.png', height: 40),
-                  const SizedBox(height: 20),
-                  const Text('1234  5678  9012  3456', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  const Text('Urubu do Pix', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            const SizedBox(height: 30),
+            const Text('Ações', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                actionButton(Icons.add, 'Depositar', '/deposit'),
+                actionButton(Icons.send, 'Transferir', '/transfer'),
+                actionButton(Icons.history, 'Histórico', '/transactions'),
+              ],
             ),
-
-            const SizedBox(height: 24),
-            const Text('Transações Recentes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)),
-            const SizedBox(height: 12),
-
-            ...transactions.map((tx) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const CircleAvatar(
-                          backgroundColor: Color(0xFF388E3C),
-                          child: Icon(Icons.sync_alt, color: Colors.white),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(tx['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-                            Text('${tx['id']}  ${tx['date']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Text('R\$ ${tx['amount']}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF388E3C))),
-                  ],
-                ),
-              );
-            }).toList(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget actionButton(IconData icon, String label, String route) {
+    return ElevatedButton.icon(
+      onPressed: () async {
+        final result = await Get.toNamed(route);
+        if (result == true) fetchBalance(); // Atualiza saldo após transação
+      },
+      icon: Icon(icon, size: 24),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        textStyle: const TextStyle(fontSize: 16),
+        backgroundColor: Colors.green[400],
       ),
     );
   }

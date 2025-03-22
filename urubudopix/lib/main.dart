@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:urubudopix/pages/transactions_page.dart';
 import 'package:urubudopix/pages/transfer_page.dart';
 import 'firebase_options.dart';
+import 'pages/deposit_page.dart';
+import 'pages/profile_page.dart';
 import 'utils/theme.dart';
 import 'utils/theme_manager.dart';
 import 'pages/login_page.dart';
@@ -63,6 +65,9 @@ class _UrubuDoPixAppState extends State<UrubuDoPixApp> {
         GetPage(name: '/home', page: () => const HomePage()),
         GetPage(name: '/transfer', page: () => const TransferPage()),
         GetPage(name: '/transactions', page: () => const TransactionsPage()),
+        GetPage(name: '/deposit', page: () => const DepositPage()),
+        GetPage(name: '/profile', page: () => const ProfilePage()),
+
       ],
     );
   }

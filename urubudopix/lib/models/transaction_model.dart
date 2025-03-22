@@ -20,7 +20,7 @@ class TransactionModel {
       id: documentId,
       senderId: map['senderId'],
       receiverId: map['receiverId'],
-      amount: map['amount']?.toDouble() ?? 0.0,
+      amount: (map['amount'] as num).toDouble(),
       timestamp: (map['timestamp'] as Timestamp).toDate(),
     );
   }
@@ -31,6 +31,24 @@ class TransactionModel {
       'receiverId': receiverId,
       'amount': amount,
       'timestamp': Timestamp.fromDate(timestamp),
+      'participants': [senderId, receiverId], // 🔥 Firestore index para buscas
     };
+  }
+
+  /// 🔁 Atualiza campos específicos
+  TransactionModel copyWith({
+    String? id,
+    String? senderId,
+    String? receiverId,
+    double? amount,
+    DateTime? timestamp,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      receiverId: receiverId ?? this.receiverId,
+      amount: amount ?? this.amount,
+      timestamp: timestamp ?? this.timestamp,
+    );
   }
 }
