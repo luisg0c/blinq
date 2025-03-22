@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../services/auth_service.dart';
 import '../services/transaction_service.dart';
 import '../models/transaction_model.dart';
+import 'package:intl/intl.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
@@ -14,7 +15,10 @@ class TransactionsPage extends StatelessWidget {
     final userId = authService.getCurrentUserId();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico de Transações')),
+      appBar: AppBar(
+        title: const Text('Histórico de Transações'),
+        backgroundColor: const Color(0xFF388E3C),
+      ),
       body: FutureBuilder<List<TransactionModel>>(
         future: transactionService.getUserTransactions(userId),
         builder: (context, snapshot) {
@@ -37,18 +41,35 @@ class TransactionsPage extends StatelessWidget {
             itemBuilder: (context, index) {
               final txn = transactions[index];
               final isSent = txn.senderId == userId;
+              final isDeposit = txn.senderId == txn.receiverId;
+
+              String title;
+              IconData icon;
+              Color color;
+
+              if (isDeposit) {
+                title = 'Depósito';
+                icon = Icons.add;
+                color = Colors.blue;
+              } else if (isSent) {
+                title = 'Enviado';
+                icon = Icons.arrow_upward;
+                color = Colors.red;
+              } else {
+                title = 'Recebido';
+                icon = Icons.arrow_downward;
+                color = Colors.green;
+              }
 
               return ListTile(
-                leading: Icon(
-                  isSent ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: isSent ? Colors.red : Colors.green,
-                ),
-                title: Text(
-                  isSent ? 'Enviado para ${txn.receiverId}' : 'Recebido de ${txn.senderId}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                leading: Icon(icon, color: color),
+                title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
                 subtitle: Text(
-                  'Valor: R\$ ${txn.amount.toStringAsFixed(2)}\nData: ${txn.timestamp}',
+                  DateFormat('dd/MM/yyyy HH:mm').format(txn.timestamp),
+                ),
+                trailing: Text(
+                  'R\$ ${txn.amount.toStringAsFixed(2)}',
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
                 ),
               );
             },

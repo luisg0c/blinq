@@ -24,11 +24,11 @@ class WelcomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 60),
                 const Text(
-                  'A Life Full of',
+                  'Urubu Do',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const Text(
-                  'Simplicity.',
+                  'PIX Bank & Co',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
               ],
