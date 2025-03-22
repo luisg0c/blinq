@@ -1,33 +1,24 @@
-# Gradle files
-.gradle/
+# Flutter build
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
 
-# Local configuration file (sdk path, etc)
-local.properties
+# VSCode
+.vscode/
 
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-output.json
-
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
-
-# Keystore files
-*.jks
-*.keystore
-
-# Google Services (e.g. APIs or Firebase)
+# Firebase config (proteção)
+lib/firebase_options.dart
+firebase_options.dart
 google-services.json
+.env
 
-# Android Profiling
-*.hprof
+# Web build
+web/.dart_tool/
+web/build/
+
+# Dart
+*.lock
+*.log
