@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:urubudopix/pages/transactions_page.dart';
-import 'package:urubudopix/pages/transfer_page.dart';
+import 'package:yeezybank/pages/transactions_page.dart';
+import 'package:yeezybank/pages/transfer_page.dart';
 import 'firebase_options.dart';
 import 'pages/deposit_page.dart';
 import 'pages/profile_page.dart';
@@ -15,9 +15,7 @@ import 'package:get/get.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const UrubuDoPixApp());
 }
 
@@ -59,7 +57,7 @@ class _UrubuDoPixAppState extends State<UrubuDoPixApp> {
       themeMode: _themeManager.themeMode,
       initialRoute: '/',
       getPages: [
-        GetPage(name: '/', page: () => const WelcomePage()), 
+        GetPage(name: '/', page: () => const WelcomePage()),
         GetPage(name: '/login', page: () => const LoginPage()),
         GetPage(name: '/signup', page: () => const SignupPage()),
         GetPage(name: '/home', page: () => const HomePage()),
@@ -67,7 +65,6 @@ class _UrubuDoPixAppState extends State<UrubuDoPixApp> {
         GetPage(name: '/transactions', page: () => const TransactionsPage()),
         GetPage(name: '/deposit', page: () => const DepositPage()),
         GetPage(name: '/profile', page: () => const ProfilePage()),
-
       ],
     );
   }

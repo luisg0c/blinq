@@ -6,6 +6,7 @@ class TransactionModel {
   final String receiverId;
   final double amount;
   final DateTime timestamp;
+  final List<String> participants; // 🔥 Adicionado
 
   TransactionModel({
     required this.id,
@@ -13,15 +14,22 @@ class TransactionModel {
     required this.receiverId,
     required this.amount,
     required this.timestamp,
+    required this.participants, // 🔥 Adicionado
   });
 
-  factory TransactionModel.fromMap(Map<String, dynamic> map, String documentId) {
+  factory TransactionModel.fromMap(
+    Map<String, dynamic> map,
+    String documentId,
+  ) {
     return TransactionModel(
       id: documentId,
       senderId: map['senderId'],
       receiverId: map['receiverId'],
       amount: (map['amount'] as num).toDouble(),
       timestamp: (map['timestamp'] as Timestamp).toDate(),
+      participants: List<String>.from(
+        map['participants'] ?? [],
+      ), // 🔥 Adicionado
     );
   }
 
@@ -31,17 +39,17 @@ class TransactionModel {
       'receiverId': receiverId,
       'amount': amount,
       'timestamp': Timestamp.fromDate(timestamp),
-      'participants': [senderId, receiverId], // 🔥 Firestore index para buscas
+      'participants': participants, // 🔥 Mantido
     };
   }
 
-  /// 🔁 Atualiza campos específicos
   TransactionModel copyWith({
     String? id,
     String? senderId,
     String? receiverId,
     double? amount,
     DateTime? timestamp,
+    List<String>? participants, // 🔥 Adicionado
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -49,6 +57,7 @@ class TransactionModel {
       receiverId: receiverId ?? this.receiverId,
       amount: amount ?? this.amount,
       timestamp: timestamp ?? this.timestamp,
+      participants: participants ?? this.participants, // 🔥 Adicionado
     );
   }
 }

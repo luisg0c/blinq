@@ -25,7 +25,10 @@ class TransferPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Transferência P2P', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              'Transferência P2P',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
             TextField(
               controller: recipientController,
@@ -38,7 +41,9 @@ class TransferPage extends StatelessWidget {
             const SizedBox(height: 20),
             TextField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 prefixIcon: Icon(LineIcons.dollarSign),
                 labelText: 'Valor (R\$)',
@@ -53,28 +58,40 @@ class TransferPage extends StatelessWidget {
                 label: const Text('Enviar Pix'),
                 onPressed: () async {
                   String email = recipientController.text.trim();
-                  double? amount = double.tryParse(amountController.text.trim());
+                  double? amount = double.tryParse(
+                    amountController.text.trim(),
+                  );
 
                   if (email.isEmpty || amount == null || amount <= 0) {
-                    Get.snackbar('Erro', 'Preencha todos os campos corretamente');
+                    Get.snackbar(
+                      'Erro',
+                      'Preencha todos os campos corretamente',
+                    );
                     return;
                   }
 
                   try {
                     String senderId = authService.getCurrentUserId();
-                    bool allowed = await passwordHandler.ensureValidPassword(context, senderId);
+                    bool allowed = await passwordHandler.ensureValidPassword(
+                      context,
+                      senderId,
+                    );
                     if (!allowed) return;
 
                     TransactionModel txn = TransactionModel(
                       id: '',
                       senderId: senderId,
-                      receiverId: '',
+                      receiverId: '', // Será setado no service
                       amount: amount,
                       timestamp: DateTime.now(),
+                      participants: [senderId], // Provisório, atualizado depois
                     );
 
                     await transactionService.sendTransaction(txn, email);
-                    Get.snackbar('Pix Enviado', 'R\$ ${amount.toStringAsFixed(2)} para $email');
+                    Get.snackbar(
+                      'Pix Enviado',
+                      'R\$ ${amount.toStringAsFixed(2)} para $email',
+                    );
                     Get.back(result: true); // Refresh saldo
                   } catch (e) {
                     Get.snackbar('Erro ao enviar', e.toString());

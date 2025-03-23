@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
-import '../services/transaction_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,33 +11,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  double balance = 0.0;
   final authService = AuthService();
-  final transactionService = TransactionService();
-
-  @override
-  void initState() {
-    super.initState();
-    fetchBalance();
-  }
-
-  Future<void> fetchBalance() async {
-    try {
-      final userId = authService.getCurrentUserId();
-      double currentBalance = await transactionService.getUserBalance(userId);
-      setState(() {
-        balance = currentBalance;
-      });
-    } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível obter o saldo');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Urubu do Pix'),
+        title: const Text('YeezyBank'),
         backgroundColor: const Color(0xFF388E3C),
         actions: [
           IconButton(
@@ -46,7 +26,7 @@ class _HomePageState extends State<HomePage> {
               await authService.signOut();
               Get.offAllNamed('/');
             },
-          )
+          ),
         ],
       ),
       backgroundColor: const Color(0xFFF0F2F5),
@@ -55,22 +35,44 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Saldo Atual', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+            const Text(
+              'Saldo Atual',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.green[600],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'R\$ ${balance.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 28, color: Colors.white),
-              ),
+            StreamBuilder<DocumentSnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('accounts') // ✔️ Correção do nome
+                      .doc(authService.getCurrentUserId())
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const CircularProgressIndicator();
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                double realTimeBalance = (data['balance'] as num).toDouble();
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.green[600],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'R\$ ${realTimeBalance.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 28, color: Colors.white),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30),
-            const Text('Ações', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+            const Text(
+              'Ações',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 16,
@@ -89,10 +91,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget actionButton(IconData icon, String label, String route) {
     return ElevatedButton.icon(
-      onPressed: () async {
-        final result = await Get.toNamed(route);
-        if (result == true) fetchBalance(); // Atualiza saldo após transação
-      },
+      onPressed: () => Get.toNamed(route),
       icon: Icon(icon, size: 24),
       label: Text(label),
       style: ElevatedButton.styleFrom(
