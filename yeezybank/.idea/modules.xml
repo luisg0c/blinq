@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/urubudopix.iml" filepath="$PROJECT_DIR$/urubudopix.iml" />
-      <module fileurl="file://$PROJECT_DIR$/android/urubudopix_android.iml" filepath="$PROJECT_DIR$/android/urubudopix_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/yeezybank.iml" filepath="$PROJECT_DIR$/yeezybank.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/yeezybank_android.iml" filepath="$PROJECT_DIR$/android/yeezybank_android.iml" />
     </modules>
   </component>
 </project>
