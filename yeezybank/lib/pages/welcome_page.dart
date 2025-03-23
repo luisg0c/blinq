@@ -7,11 +7,14 @@ class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFD600), // Amarelo EZ-Bank
+      backgroundColor: const Color.fromARGB(255, 251, 247, 226),
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 60.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -24,11 +27,11 @@ class WelcomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 60),
                 const Text(
-                  'Urubu Do',
+                  'Yeezy',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const Text(
-                  'PIX Bank & Co',
+                  'Bank & Co',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
               ],

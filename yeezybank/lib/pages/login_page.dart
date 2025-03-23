@@ -24,7 +24,7 @@ class LoginPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Entre para continuar usando o Urubu do Pix.',
+              'Entre para continuar usando o YeezyBank.',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 40),
@@ -53,7 +53,9 @@ class LoginPage extends StatelessWidget {
                 backgroundColor: Colors.green.shade600,
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 textStyle: const TextStyle(fontSize: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 minimumSize: const Size(double.infinity, 50),
               ),
               child: const Text('Entrar'),
