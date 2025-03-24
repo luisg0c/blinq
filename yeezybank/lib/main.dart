@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:yeezybank/pages/transactions_page.dart';
-import 'package:yeezybank/pages/transfer_page.dart';
+import 'package:yeezybank/presentation/pages/transactions_page.dart';
+import 'package:yeezybank/presentation/pages/transfer_page.dart';
 import 'firebase_options.dart';
-import 'pages/deposit_page.dart';
-import 'pages/profile_page.dart';
-import 'pages/login_page.dart';
-import 'pages/signup_page.dart';
-import 'pages/home_page.dart';
-import 'pages/welcome_page.dart';
+import 'presentation/pages/deposit_page.dart';
+import 'presentation/pages/profile_page.dart';
+import 'presentation/pages/login_page.dart';
+import 'presentation/pages/signup_page.dart';
+import 'presentation/pages/home_page.dart';
+import 'presentation/pages/welcome_page.dart';
 import 'package:get/get.dart';
 
 void main() async {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import '../services/auth_service.dart';
-import '../services/transaction_service.dart';
-import '../models/transaction_model.dart';
+import '../../domain/services/auth_service.dart';
+import '../../domain/services/transaction_service.dart';
+import '../../domain/models/transaction_model.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});

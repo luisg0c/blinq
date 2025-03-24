@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/transaction_service.dart';
+import '../../domain/services/transaction_service.dart';
 import '../widgets/password_prompt.dart';
 
 class TransactionPasswordHandler {

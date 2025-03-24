@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:line_icons/line_icons.dart';
-import '../services/auth_service.dart';
-import '../services/transaction_service.dart';
-import '../models/transaction_model.dart';
+import '../../domain/services/auth_service.dart';
+import '../../domain/services/transaction_service.dart';
+import '../../domain/models/transaction_model.dart';
 import '../widgets/password_prompt.dart';
-import '../utils/transaction_password_handler.dart';
+import '../controllers/transaction_password_handler.dart';
 
 class TransferPage extends StatelessWidget {
   const TransferPage({super.key});

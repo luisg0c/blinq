@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/auth_service.dart';
+import '../../domain/services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
