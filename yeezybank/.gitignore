@@ -6,32 +6,29 @@ build/
 .idea/
 .vscode/
 *.iml
+*.log
 
-# Firebase secrets
+# Firebase config (nunca subir)
 lib/firebase_options.dart
-
-# Android
-android/.gradle/
-android/captures/
-android/gradlew
-android/gradlew.bat
-android/local.properties
-android/key.properties
-android/.cxx/
-android/**/*.keystore
-android/**/*.jks
-# Firebase keys
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
-lib/firebase_options.dart
 
-# iOS/Mac
+# Android specific
+android/.gradle/
+android/.cxx/
+android/captures/
+android/local.properties
+android/key.properties
+android/gradlew
+android/gradlew.bat
+android/**/*.keystore
+android/**/*.jks
+
+# iOS/macOS specific
 ios/Pods/
 ios/.symlinks/
 ios/Flutter/Generated.xcconfig
 ios/Runner.xcworkspace/
 macos/Flutter/GeneratedPluginRegistrant.swift
-
-# VSCode specific
-*.log
+macos/Flutter/ephemeral/
