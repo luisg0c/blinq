@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "56393244719",
+    "project_id": "yeezybank",
+    "storage_bucket": "yeezybank.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:56393244719:android:ccfdce049630d0f71ae6da",
+        "android_client_info": {
+          "package_name": "com.yeezybank.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhmUPq-gv9woh5Vn4vUHrspubX47OS3RM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,24 +1,32 @@
-# Flutter build
-build/
-.flutter-plugins
-.flutter-plugins-dependencies
+# Flutter/Dart
+.dart_tool/
 .packages
 .pub-cache/
-.pub/
-
-# VSCode
+build/
+.idea/
 .vscode/
+*.iml
 
-# Firebase config (proteção)
+# Firebase secrets
 lib/firebase_options.dart
-firebase_options.dart
-google-services.json
-.env
 
-# Web build
-web/.dart_tool/
-web/build/
+# Android
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/key.properties
+android/.cxx/
+android/**/*.keystore
+android/**/*.jks
 
-# Dart
-*.lock
+# iOS/Mac
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Runner.xcworkspace/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# VSCode specific
 *.log
