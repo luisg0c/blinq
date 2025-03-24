@@ -5,25 +5,19 @@ class AuthService {
 
   Future<User?> signIn(String email, String password) async {
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final result = await _auth.signInWithEmailAndPassword(email: email, password: password);
       return result.user;
-    } catch (e) {
-      throw Exception('Erro ao entrar: $e');
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
     }
   }
 
   Future<User?> signUp(String email, String password) async {
     try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       return result.user;
-    } catch (e) {
-      throw Exception('Erro ao cadastrar: $e');
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
     }
   }
 
@@ -31,16 +25,30 @@ class AuthService {
     await _auth.signOut();
   }
 
+  User? getCurrentUser() => _auth.currentUser;
+
   String getCurrentUserId() {
     final user = _auth.currentUser;
-    if (user != null) {
-      return user.uid;
-    } else {
-      throw Exception('Usuário não logado');
-    }
+    if (user == null) throw 'Usuário não logado';
+    return user.uid;
   }
 
-  User? getCurrentUser() {
-    return _auth.currentUser;
+  String _mapFirebaseError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Email inválido.';
+      case 'user-disabled':
+        return 'Conta desativada.';
+      case 'user-not-found':
+        return 'Usuário não encontrado.';
+      case 'wrong-password':
+        return 'Senha incorreta.';
+      case 'email-already-in-use':
+        return 'Email já cadastrado.';
+      case 'weak-password':
+        return 'Senha muito fraca.';
+      default:
+        return 'Erro: ${e.message}';
+    }
   }
 }

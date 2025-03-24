@@ -3,43 +3,75 @@ import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
 
 class AuthController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final isLoading = false.obs;
 
-  void login() async {
+  // Login
+  Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      Get.snackbar('Erro', 'Preencha todos os campos');
+      _showError('Preencha todos os campos');
       return;
     }
 
+    isLoading.value = true;
     try {
       await _authService.signIn(email, password);
-      Get.snackbar('Sucesso', 'Login realizado!');
+      clearFields();
       Get.offAllNamed('/home');
     } catch (e) {
-      Get.snackbar('Erro de login', e.toString());
+      _showError(e.toString());
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  void signup() async {
+  // Cadastro
+  Future<void> signup() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      Get.snackbar('Erro', 'Preencha todos os campos');
+      _showError('Preencha todos os campos');
       return;
     }
 
+    isLoading.value = true;
     try {
       await _authService.signUp(email, password);
-      Get.snackbar('Sucesso', 'Conta criada com sucesso!');
+      clearFields();
       Get.offAllNamed('/home');
     } catch (e) {
-      Get.snackbar('Erro ao cadastrar', e.toString());
+      _showError(e.toString());
+    } finally {
+      isLoading.value = false;
     }
+  }
+
+  // Logout
+  Future<void> logout() async {
+    await _authService.signOut();
+    Get.offAllNamed('/welcome');
+  }
+
+  void clearFields() {
+    emailController.clear();
+    passwordController.clear();
+  }
+
+  void _showError(String message) {
+    Get.snackbar('Erro', message, snackPosition: SnackPosition.BOTTOM);
+  }
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
   }
 }

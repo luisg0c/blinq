@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:yeezybank/presentation/pages/transactions_page.dart';
-import 'package:yeezybank/presentation/pages/transfer_page.dart';
 import 'firebase_options.dart';
-import 'presentation/pages/deposit_page.dart';
-import 'presentation/pages/profile_page.dart';
+import 'package:get/get.dart';
+
+import 'presentation/pages/welcome_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/signup_page.dart';
 import 'presentation/pages/home_page.dart';
-import 'presentation/pages/welcome_page.dart';
-import 'package:get/get.dart';
+import 'presentation/pages/deposit_page.dart';
+import 'presentation/pages/transfer_page.dart';
+import 'presentation/pages/transactions_page.dart';
+import 'presentation/pages/profile_page.dart';
+
+import 'domain/services/auth_service.dart';
+import 'domain/services/transaction_service.dart';
+import 'presentation/controllers/transaction_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  Get.put(AuthService());
+  Get.put(TransactionService());
+  Get.put(TransactionController());
+
   runApp(const YeezyBankApp());
 }
 
