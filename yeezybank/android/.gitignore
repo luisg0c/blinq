@@ -1,44 +1,14 @@
-# Flutter build outputs
-build/
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
+gradle-wrapper.jar
+/.gradle
+/captures/
+/gradlew
+/gradlew.bat
+/local.properties
+GeneratedPluginRegistrant.java
+.cxx/
 
-# IntelliJ / VSCode
-.idea/
-.vscode/
-*.iml
-
-# Android
-android/.gradle/
-android/captures/
-android/.cxx/
-android/local.properties
-android/key.properties
-android/gradlew
-android/gradlew.bat
-android/gradle-wrapper.jar
-
-# iOS (caso use)
-ios/Pods/
-ios/.symlinks/
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-
-# macOS
-macos/Flutter/ephemeral/
-
-# Windows
-windows/Flutter/ephemeral/
-
-# Keystore files (nunca subir)
-*.keystore
-*.jks
-
-# Firebase config (não subir ao repositório público)
-lib/firebase_options.dart
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
+# Remember to never publicly share your keystore.
+# See https://flutter.dev/to/reference-keystore
+key.properties
+**/*.keystore
+**/*.jks
