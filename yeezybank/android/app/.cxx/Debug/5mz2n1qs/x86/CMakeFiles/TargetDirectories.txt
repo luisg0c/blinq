@@ -1,0 +1,2 @@
+/Users/luisgustavoolimpiocamposdasilva/Documents/GitHub/yeezybank/yeezybank/android/app/.cxx/Debug/5mz2n1qs/x86/CMakeFiles/edit_cache.dir
+/Users/luisgustavoolimpiocamposdasilva/Documents/GitHub/yeezybank/yeezybank/android/app/.cxx/Debug/5mz2n1qs/x86/CMakeFiles/rebuild_cache.dir
