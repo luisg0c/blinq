@@ -1,0 +1,1 @@
+ /Users/luisgustavoolimpiocamposdasilva/Documents/GitHub/yeezybank/yeezybank/.dart_tool/flutter_build/1c5e6d6748ca0b69142d9f384c3e6244/native_assets.json: 

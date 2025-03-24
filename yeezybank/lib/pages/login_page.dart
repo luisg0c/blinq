@@ -10,7 +10,7 @@ class LoginPage extends StatelessWidget {
     final authController = Get.put(AuthController());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: const Color.fromARGB(255, 251, 247, 226),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
         child: Column(
@@ -25,7 +25,7 @@ class LoginPage extends StatelessWidget {
             const SizedBox(height: 10),
             const Text(
               'Entre para continuar usando o YeezyBank.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: Colors.black),
             ),
             const SizedBox(height: 40),
             TextField(

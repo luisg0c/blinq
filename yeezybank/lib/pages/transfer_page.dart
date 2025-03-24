@@ -19,14 +19,14 @@ class TransferPage extends StatelessWidget {
     final passwordHandler = TransactionPasswordHandler();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Enviar Pix')),
+      appBar: AppBar(title: const Text('Enviar')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Transferência P2P',
+              'Realizar Transferência',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
