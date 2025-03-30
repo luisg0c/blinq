@@ -1,20 +1,33 @@
-# Flutter/Dart
+# -----------------------------------
+# Flutter / Dart
+# -----------------------------------
 .dart_tool/
 .packages
 .pub-cache/
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugins-dependencies
+package_config.json
+package_config_subset
+
+# IDEs
 .idea/
 .vscode/
 *.iml
 *.log
 
+# -----------------------------------
 # Firebase config (nunca subir)
+# -----------------------------------
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
 
+# -----------------------------------
 # Android specific
+# -----------------------------------
 android/.gradle/
 android/.cxx/
 android/captures/
@@ -25,10 +38,13 @@ android/gradlew.bat
 android/**/*.keystore
 android/**/*.jks
 
-# iOS/macOS specific
+# -----------------------------------
+# iOS / macOS specific
+# -----------------------------------
 ios/Pods/
 ios/.symlinks/
 ios/Flutter/Generated.xcconfig
 ios/Runner.xcworkspace/
 macos/Flutter/GeneratedPluginRegistrant.swift
 macos/Flutter/ephemeral/
+macos/Flutter/Generated.xcconfig
