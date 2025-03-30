@@ -11,6 +11,7 @@ import 'presentation/pages/deposit_page.dart';
 import 'presentation/pages/transfer_page.dart';
 import 'presentation/pages/transactions_page.dart';
 import 'presentation/pages/profile_page.dart';
+import 'presentation/pages/forgot_password_page.dart';
 
 import 'domain/services/auth_service.dart';
 import 'domain/services/transaction_service.dart';
@@ -38,6 +39,7 @@ void main() async {
       getPages: [
         GetPage(name: '/', page: () => const WelcomePage()),
         GetPage(name: '/login', page: () => const LoginPage()),
+        GetPage(name: '/forgot-password', page: () => ForgotPasswordPage()),
         GetPage(name: '/signup', page: () => const SignupPage()),
         GetPage(name: '/home', page: () => const HomePage()),
         GetPage(name: '/transfer', page: () => const TransferPage()),

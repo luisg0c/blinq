@@ -16,8 +16,13 @@ class TransactionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadBalance();
-    _listenTransactions();
+    try {
+      final _ = _authService.getCurrentUserId(); // dispara erro se não logado
+      _loadBalance();
+      _listenTransactions();
+    } catch (e) {
+      showError('Usuário não autenticado.');
+    }
   }
 
   Future<void> _loadBalance() async {
@@ -26,7 +31,7 @@ class TransactionController extends GetxController {
       final currentBalance = await _transactionService.getUserBalance(userId);
       balance.value = currentBalance;
     } catch (e) {
-      Get.snackbar('Erro', 'Falha ao carregar saldo.');
+      showError('Falha ao carregar saldo.');
     }
   }
 
@@ -58,7 +63,7 @@ class TransactionController extends GetxController {
       await _loadBalance();
       Get.snackbar('Sucesso', 'Depósito realizado.');
     } catch (e) {
-      Get.snackbar('Erro', e.toString());
+      showError(e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -92,9 +97,13 @@ class TransactionController extends GetxController {
       await _loadBalance();
       Get.snackbar('Sucesso', 'Transferência realizada.');
     } catch (e) {
-      Get.snackbar('Erro', e.toString());
+      showError(e.toString());
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void showError(String msg) {
+    Get.snackbar('Erro', msg);
   }
 }

@@ -23,7 +23,12 @@ class TransactionsPage extends StatelessWidget {
         final transactions = transactionController.transactions;
 
         if (transactions.isEmpty) {
-          return const Center(child: Text('Nenhuma transação encontrada.'));
+          return const Center(
+            child: Text(
+              'Nenhuma transação encontrada.',
+              style: TextStyle(color: Colors.black54),
+            ),
+          );
         }
 
         return ListView.separated(
