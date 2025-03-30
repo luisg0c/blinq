@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import '../../domain/services/transaction_service.dart';
 import '../widgets/password_prompt.dart';
 
 class TransactionPasswordHandler {
-  final TransactionService transactionService = TransactionService();
+  final TransactionService transactionService = Get.find<TransactionService>();
 
   /// Verifica/cadastra senha de transação. Retorna true se a senha for válida.
   Future<bool> ensureValidPassword(BuildContext context, String userId) async {
@@ -21,7 +21,10 @@ class TransactionPasswordHandler {
       password = await promptPassword(context);
       if (password == null || password.isEmpty) return false;
 
-      final valid = await transactionService.validateTransactionPassword(userId, password);
+      final valid = await transactionService.validateTransactionPassword(
+        userId,
+        password,
+      );
       if (!valid) {
         Get.snackbar('Erro', 'Senha incorreta');
         return false;

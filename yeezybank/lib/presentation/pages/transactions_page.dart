@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../domain/services/auth_service.dart';
-import '../../domain/services/transaction_service.dart';
+import '../controllers/transaction_controller.dart';
 import '../../domain/models/transaction_model.dart';
 
 class TransactionsPage extends StatelessWidget {
@@ -10,9 +10,8 @@ class TransactionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-    final transactionService = TransactionService();
-    final userId = authService.getCurrentUserId();
+    final transactionController = Get.find<TransactionController>();
+    final userId = transactionController.currentUserId;
 
     return Scaffold(
       appBar: AppBar(
@@ -20,85 +19,72 @@ class TransactionsPage extends StatelessWidget {
         backgroundColor: const Color(0xFF388E3C),
       ),
       backgroundColor: const Color(0xFFF0F2F5),
-      body: StreamBuilder<List<TransactionModel>>(
-        stream: transactionService.getUserTransactionsStream(userId),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Erro ao carregar transações: ${snapshot.error}'),
-            );
-          }
+      body: Obx(() {
+        final transactions = transactionController.transactions;
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        if (transactions.isEmpty) {
+          return const Center(child: Text('Nenhuma transação encontrada.'));
+        }
 
-          final transactions = snapshot.data ?? [];
+        return ListView.separated(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: transactions.length,
+          separatorBuilder: (_, __) => const Divider(height: 16),
+          itemBuilder: (context, index) {
+            final txn = transactions[index];
 
-          if (transactions.isEmpty) {
-            return const Center(child: Text('Nenhuma transação encontrada.'));
-          }
+            String title;
+            IconData icon;
+            Color color;
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: transactions.length,
-            separatorBuilder: (_, __) => const Divider(height: 16),
-            itemBuilder: (context, index) {
-              final txn = transactions[index];
-
-              String title;
-              IconData icon;
-              Color color;
-
-              if (txn.type == 'deposit') {
-                title = 'Depósito';
-                icon = Icons.add_circle_outline;
-                color = Colors.blue;
-              } else if (txn.type == 'transfer') {
-                if (txn.senderId == userId) {
-                  title = 'Pix Enviado';
-                  icon = Icons.arrow_upward;
-                  color = Colors.red;
-                } else {
-                  title = 'Pix Recebido';
-                  icon = Icons.arrow_downward;
-                  color = Colors.green;
-                }
+            if (txn.type == 'deposit') {
+              title = 'Depósito';
+              icon = Icons.add_circle_outline;
+              color = Colors.blue;
+            } else if (txn.type == 'transfer') {
+              if (txn.senderId == userId) {
+                title = 'Pix Enviado';
+                icon = Icons.arrow_upward;
+                color = Colors.red;
               } else {
-                title = 'Transação';
-                icon = Icons.swap_horiz;
-                color = Colors.grey;
+                title = 'Pix Recebido';
+                icon = Icons.arrow_downward;
+                color = Colors.green;
               }
+            } else {
+              title = 'Transação';
+              icon = Icons.swap_horiz;
+              color = Colors.grey;
+            }
 
-              return ListTile(
-                tileColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            return ListTile(
+              tileColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              leading: CircleAvatar(
+                backgroundColor: color.withOpacity(0.1),
+                child: Icon(icon, color: color),
+              ),
+              title: Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, color: color),
+              ),
+              subtitle: Text(
+                DateFormat('dd/MM/yyyy HH:mm').format(txn.timestamp),
+              ),
+              trailing: Text(
+                'R\$ ${txn.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                leading: CircleAvatar(
-                  backgroundColor: color.withOpacity(0.1),
-                  child: Icon(icon, color: color),
-                ),
-                title: Text(
-                  title,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: color),
-                ),
-                subtitle: Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(txn.timestamp),
-                ),
-                trailing: Text(
-                  'R\$ ${txn.amount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

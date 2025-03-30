@@ -15,24 +15,15 @@ import 'presentation/pages/profile_page.dart';
 import 'domain/services/auth_service.dart';
 import 'domain/services/transaction_service.dart';
 import 'presentation/controllers/transaction_controller.dart';
+import 'package:yeezybank/bindings/initial_binding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  Get.put(AuthService());
-  Get.put(TransactionService());
-  Get.put(TransactionController());
-
-  runApp(const YeezyBankApp());
-}
-
-class YeezyBankApp extends StatelessWidget {
-  const YeezyBankApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
+  runApp(
+    GetMaterialApp(
+      initialBinding: InitialBinding(),
       debugShowCheckedModeBanner: false,
       title: 'YeezyBank',
       theme: ThemeData(
@@ -54,6 +45,6 @@ class YeezyBankApp extends StatelessWidget {
         GetPage(name: '/deposit', page: () => const DepositPage()),
         GetPage(name: '/profile', page: () => const ProfilePage()),
       ],
-    );
-  }
+    ),
+  );
 }

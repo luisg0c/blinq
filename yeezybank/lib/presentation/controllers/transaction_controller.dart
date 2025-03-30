@@ -11,6 +11,8 @@ class TransactionController extends GetxController {
   var transactions = <TransactionModel>[].obs;
   var isLoading = false.obs;
 
+  String get currentUserId => _authService.getCurrentUserId();
+
   @override
   void onInit() {
     super.onInit();
@@ -39,11 +41,16 @@ class TransactionController extends GetxController {
     isLoading.value = true;
     final userId = _authService.getCurrentUserId();
     try {
-      final hasPassword = await _transactionService.hasTransactionPassword(userId);
+      final hasPassword = await _transactionService.hasTransactionPassword(
+        userId,
+      );
       if (!hasPassword) {
         await _transactionService.setTransactionPassword(userId, password);
       } else {
-        final valid = await _transactionService.validateTransactionPassword(userId, password);
+        final valid = await _transactionService.validateTransactionPassword(
+          userId,
+          password,
+        );
         if (!valid) throw Exception('Senha incorreta');
       }
 
@@ -57,11 +64,18 @@ class TransactionController extends GetxController {
     }
   }
 
-  Future<void> transfer(double amount, String receiverEmail, String password) async {
+  Future<void> transfer(
+    double amount,
+    String receiverEmail,
+    String password,
+  ) async {
     isLoading.value = true;
     final userId = _authService.getCurrentUserId();
     try {
-      final valid = await _transactionService.validateTransactionPassword(userId, password);
+      final valid = await _transactionService.validateTransactionPassword(
+        userId,
+        password,
+      );
       if (!valid) throw Exception('Senha incorreta');
 
       final txn = TransactionModel(
