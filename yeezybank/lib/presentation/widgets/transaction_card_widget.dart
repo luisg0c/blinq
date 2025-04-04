@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/transaction_model.dart';
+import '../pages/transaction_details_page.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionModel transaction;
@@ -17,42 +19,49 @@ class TransactionCard extends StatelessWidget {
     // Determinar tipo, ícone e cor com base no tipo e direção da transação
     TransactionDisplay display = _getTransactionDisplay();
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        // Navegar para a página de detalhes ao clicar
+        Get.to(() => TransactionDetailsPage(transaction: transaction));
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: display.color.withOpacity(0.2),
+            child: Icon(display.icon, color: display.color),
           ),
-        ],
-      ),
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: display.color.withOpacity(0.2),
-          child: Icon(display.icon, color: display.color),
-        ),
-        title: Text(
-          display.title,
-          style: TextStyle(fontWeight: FontWeight.bold, color: display.color),
-        ),
-        subtitle: Text(
-          DateFormat('dd/MM/yyyy HH:mm').format(transaction.timestamp),
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
-        ),
-        trailing: Text(
-          'R\$ ${transaction.amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            color: display.color,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+          title: Text(
+            display.title,
+            style: TextStyle(fontWeight: FontWeight.bold, color: display.color),
           ),
+          subtitle: Text(
+            DateFormat('dd/MM/yyyy HH:mm').format(transaction.timestamp),
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+          trailing: Text(
+            'R\$ ${transaction.amount.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: display.color,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }

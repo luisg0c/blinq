@@ -1,6 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
+
+// Definição do enum para status de transação
+enum TransactionStatus {
+  pending,     // Aguardando confirmação
+  confirmed,   // Confirmada pelo usuário
+  completed,   // Processada completamente
+  failed       // Falhou
+}
 
 class TransactionModel {
   final String id;
@@ -11,9 +20,16 @@ class TransactionModel {
   final List<String> participants;
   final String type;
   
-  // Novos campos para robustez
+  // Campos para segurança e integridade
   final String? transactionHash;      // Hash para verificação de integridade
   final String? referenceId;          // Identificação única da transação
+  
+  // Campos para segurança estilo Nubank
+  final String? transactionToken;     // Token único da transação
+  final TransactionStatus? status;    // Status atual da transação
+  final String? deviceId;             // ID do dispositivo que iniciou
+  final String? confirmationCode;     // Código de 6 dígitos para confirmar
+  final DateTime? confirmedAt;        // Quando foi confirmada
 
   TransactionModel({
     required this.id,
@@ -25,6 +41,11 @@ class TransactionModel {
     required this.type,
     this.transactionHash,
     this.referenceId,
+    this.transactionToken,
+    this.status,
+    this.deviceId,
+    this.confirmationCode,
+    this.confirmedAt,
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map, String documentId) {
@@ -38,11 +59,16 @@ class TransactionModel {
       type: map['type'] ?? 'unknown',
       transactionHash: map['transactionHash'],
       referenceId: map['referenceId'],
+      transactionToken: map['transactionToken'],
+      status: _statusFromString(map['status']),
+      deviceId: map['deviceId'],
+      confirmationCode: map['confirmationCode'],
+      confirmedAt: map['confirmedAt'] != null ? (map['confirmedAt'] as Timestamp).toDate() : null,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
+    final Map<String, dynamic> data = {
       'senderId': senderId,
       'receiverId': receiverId,
       'amount': amount,
@@ -51,7 +77,22 @@ class TransactionModel {
       'type': type,
       'transactionHash': transactionHash,
       'referenceId': referenceId,
+      'transactionToken': transactionToken,
+      'deviceId': deviceId,
+      'confirmationCode': confirmationCode,
     };
+    
+    // Adicionar status apenas se não for nulo
+    if (status != null) {
+      data['status'] = status.toString().split('.').last;
+    }
+    
+    // Adicionar confirmedAt apenas se não for nulo
+    if (confirmedAt != null) {
+      data['confirmedAt'] = Timestamp.fromDate(confirmedAt!);
+    }
+    
+    return data;
   }
 
   TransactionModel copyWith({
@@ -64,6 +105,11 @@ class TransactionModel {
     String? type,
     String? transactionHash,
     String? referenceId,
+    String? transactionToken,
+    TransactionStatus? status,
+    String? deviceId,
+    String? confirmationCode,
+    DateTime? confirmedAt,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -75,6 +121,11 @@ class TransactionModel {
       type: type ?? this.type,
       transactionHash: transactionHash ?? this.transactionHash,
       referenceId: referenceId ?? this.referenceId,
+      transactionToken: transactionToken ?? this.transactionToken,
+      status: status ?? this.status,
+      deviceId: deviceId ?? this.deviceId,
+      confirmationCode: confirmationCode ?? this.confirmationCode,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
     );
   }
   
@@ -112,5 +163,49 @@ class TransactionModel {
     
     final calculatedHash = generateHash();
     return calculatedHash == transactionHash;
+  }
+  
+  /// Gera um token único para a transação (estilo Nubank)
+  String generateToken() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final uniqueKey = '$senderId-$receiverId-$amount-$timestamp-${_randomString(8)}';
+    final bytes = utf8.encode(uniqueKey);
+    return sha256.convert(bytes).toString();
+  }
+  
+  /// Gera um código de confirmação de 6 dígitos (estilo Nubank)
+  String generateConfirmationCode() {
+    final random = Random();
+    return (100000 + random.nextInt(900000)).toString(); // 6 dígitos
+  }
+  
+  /// Verifica validade do código de confirmação
+  bool validateConfirmationCode(String code) {
+    return confirmationCode == code;
+  }
+  
+  /// Gera string aleatória para reforçar a unicidade
+  static String _randomString(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+        length, 
+        (_) => chars.codeUnitAt(random.nextInt(chars.length))
+      )
+    );
+  }
+  
+  // Método auxiliar para converter string para enum
+  static TransactionStatus? _statusFromString(String? status) {
+    if (status == null) return null;
+    
+    switch (status) {
+      case 'pending': return TransactionStatus.pending;
+      case 'confirmed': return TransactionStatus.confirmed;
+      case 'completed': return TransactionStatus.completed;
+      case 'failed': return TransactionStatus.failed;
+      default: return null;
+    }
   }
 }
