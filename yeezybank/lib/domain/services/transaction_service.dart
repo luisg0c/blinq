@@ -1,58 +1,56 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
 import '../models/transaction_model.dart';
+import '../models/account_model.dart';
+import '../../data/firebase_service.dart';
 
-class TransactionService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class TransactionService extends GetxService {
+  final FirebaseService _firebaseService = Get.find<FirebaseService>();
 
   static const String errorSaldoInsuficiente = 'Saldo insuficiente';
-  static const String errorDestinatarioNaoEncontrado =
-      'Destinatário não encontrado';
+  static const String errorDestinatarioNaoEncontrado = 'Destinatário não encontrado';
   static const String errorValorInvalido = 'Valor inválido';
+  static const String errorUsuarioNaoLogado = 'Usuário não logado';
+  static const String errorMesmoUsuario = 'Não é possível transferir para você mesmo';
+  static const double LIMITE_ALERTA = 5000.0; // Novo limite para alertas de segurança
 
+  // Obter saldo do usuário
   Future<double> getUserBalance(String userId) async {
-    final doc = await _firestore.collection('accounts').doc(userId).get();
-    if (doc.exists && doc.data()!.containsKey('balance')) {
-      return (doc['balance'] as num).toDouble();
+    final account = await _firebaseService.getAccount(userId);
+    if (account != null) {
+      return account.balance;
     } else {
-      await _firestore.collection('accounts').doc(userId).set({'balance': 0.0});
+      // Criar conta se não existir
+      await _firebaseService.createAccount(userId, _firebaseService.currentUser!.email!);
       return 0.0;
     }
   }
 
+  // Stream de transações do usuário
   Stream<List<TransactionModel>> getUserTransactionsStream(String userId) {
-    return _firestore
-        .collection('transactions')
-        .where('participants', arrayContains: userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return TransactionModel.fromMap(data, doc.id);
-          }).toList();
-        });
+    return _firebaseService.getUserTransactionsStream(userId);
   }
 
+  // Stream da conta do usuário (para saldo em tempo real)
+  Stream<AccountModel> getUserAccountStream(String userId) {
+    return _firebaseService.getAccountStream(userId);
+  }
+
+  // Realizar depósito
   Future<void> deposit(String userId, double amount) async {
     if (amount <= 0) {
       throw Exception(errorValorInvalido);
     }
-
-    final ref = _firestore.collection('accounts').doc(userId);
-    final doc = await ref.get();
-
-    if (!doc.exists) {
-      await ref.set({'balance': amount});
-      print('Conta criada para $userId com saldo: $amount');
-    } else {
-      final currentBalance = (doc['balance'] as num).toDouble();
-      await ref.update({'balance': currentBalance + amount});
-      print(
-        'Depósito de $amount realizado. Novo saldo: ${currentBalance + amount}',
-      );
+    
+    // Validação adicional para valores altos
+    if (amount > LIMITE_ALERTA) {
+      // Apenas registro para log, poderia adicionar validação adicional
+      print('ALERTA: Depósito acima do limite de alerta: $amount');
     }
 
+    // Atualizar saldo
+    await _firebaseService.updateBalance(userId, amount);
+
+    // Registrar transação
     final txn = TransactionModel(
       id: '',
       senderId: userId,
@@ -60,86 +58,87 @@ class TransactionService {
       amount: amount,
       timestamp: DateTime.now(),
       participants: [userId],
-      type: 'deposit', // Adicionado
+      type: 'deposit',
     );
 
-    await _firestore.collection('transactions').add(txn.toMap());
-    print('Transação de depósito registrada: $txn');
+    await _firebaseService.addTransaction(txn);
+    print('Depósito de $amount realizado com sucesso');
   }
 
-  Future<void> sendTransaction(
-    TransactionModel txn,
-    String receiverEmail,
-  ) async {
+  // Realizar transferência
+  Future<void> sendTransaction(TransactionModel txn, String receiverEmail) async {
     if (txn.amount <= 0) {
       throw Exception(errorValorInvalido);
     }
 
-    final receiverSnapshot =
-        await _firestore
-            .collection('accounts')
-            .where('email', isEqualTo: receiverEmail)
-            .limit(1)
-            .get();
+    // Validação adicional para valores altos
+    if (txn.amount > LIMITE_ALERTA) {
+      print('ALERTA: Transferência acima do limite de alerta: ${txn.amount}');
+    }
 
-    if (receiverSnapshot.docs.isEmpty) {
+    // Obter conta do destinatário
+    final receiver = await _firebaseService.getAccountByEmail(receiverEmail);
+    if (receiver == null) {
       throw Exception(errorDestinatarioNaoEncontrado);
     }
 
-    final receiverDoc = receiverSnapshot.docs.first;
-    final receiverId = receiverDoc.id;
-    final receiverBalance = (receiverDoc['balance'] as num).toDouble();
-
-    if (receiverId == txn.senderId) {
-      throw Exception('Não é possível transferir para você mesmo');
+    // Verificar se não é o mesmo usuário
+    if (receiver.id == txn.senderId) {
+      throw Exception(errorMesmoUsuario);
     }
 
-    final senderRef = _firestore.collection('accounts').doc(txn.senderId);
-    final senderDoc = await senderRef.get();
-    final senderBalance = (senderDoc['balance'] as num).toDouble();
+    // Obter conta do remetente
+    final sender = await _firebaseService.getAccount(txn.senderId);
+    if (sender == null) {
+      throw Exception(errorUsuarioNaoLogado);
+    }
 
-    if (senderBalance < txn.amount) {
+    // Verificar saldo suficiente
+    if (sender.balance < txn.amount) {
       throw Exception(errorSaldoInsuficiente);
     }
 
-    await senderRef.update({'balance': senderBalance - txn.amount});
-    await _firestore.collection('accounts').doc(receiverId).update({
-      'balance': receiverBalance + txn.amount,
-    });
+    // Atualizar saldos (débito no remetente)
+    await _firebaseService.updateBalance(txn.senderId, -txn.amount);
+    
+    // Crédito no destinatário
+    await _firebaseService.updateBalance(receiver.id, txn.amount);
 
+    // Criar transação com dados completos
     final newTxn = txn.copyWith(
-      receiverId: receiverId,
+      receiverId: receiver.id,
       timestamp: DateTime.now(),
-      participants: [txn.senderId, receiverId],
-      type: 'transfer', // Adicionado
+      participants: [txn.senderId, receiver.id],
+      type: 'transfer',
     );
 
-    await _firestore.collection('transactions').add(newTxn.toMap());
-    print(
-      'Transferência de ${txn.amount} de ${txn.senderId} para $receiverId concluída.',
-    );
+    // Registrar transação
+    await _firebaseService.addTransaction(newTxn);
+    print('Transferência de ${txn.amount} realizada com sucesso');
   }
 
-  // Senha de transação...
-  Future<bool> hasTransactionPassword(String userId) async {
-    final doc = await _firestore.collection('accounts').doc(userId).get();
-    return doc.exists && doc.data()!.containsKey('txnPassword');
+  // Gerenciamento de senha de transação
+  Future<bool> hasTransactionPassword(String userId) {
+    return _firebaseService.hasTransactionPassword(userId);
   }
 
-  Future<void> setTransactionPassword(String userId, String password) async {
-    await _firestore.collection('accounts').doc(userId).set({
-      'txnPassword': password,
-    }, SetOptions(merge: true));
+  Future<void> setTransactionPassword(String userId, String password) {
+    return _firebaseService.setTransactionPassword(userId, password);
   }
 
-  Future<bool> validateTransactionPassword(
-    String userId,
-    String password,
-  ) async {
-    final doc = await _firestore.collection('accounts').doc(userId).get();
-    if (doc.exists && doc.data()!.containsKey('txnPassword')) {
-      return doc['txnPassword'] == password;
+  Future<bool> validateTransactionPassword(String userId, String password) {
+    return _firebaseService.validateTransactionPassword(userId, password);
+  }
+  
+  // NOVA FUNÇÃO: Alterar senha de transação
+  Future<void> changeTransactionPassword(String userId, String oldPassword, String newPassword) async {
+    // Validar senha atual
+    final isValid = await validateTransactionPassword(userId, oldPassword);
+    if (!isValid) {
+      throw Exception('Senha atual incorreta');
     }
-    return false;
+    
+    // Definir nova senha
+    await setTransactionPassword(userId, newPassword);
   }
 }

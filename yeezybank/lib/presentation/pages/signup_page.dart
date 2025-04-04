@@ -24,7 +24,7 @@ class SignupPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Preencha os dados para começar a usar o Urubu do Pix.',
+              'Preencha os dados para começar a usar o YeezyBank.', // Corrigido nome
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 40),

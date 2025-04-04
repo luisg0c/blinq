@@ -12,6 +12,7 @@ import 'presentation/pages/transfer_page.dart';
 import 'presentation/pages/transactions_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/forgot_password_page.dart';
+import 'presentation/pages/change_transaction_password_page.dart'; // Nova página
 
 import 'domain/services/auth_service.dart';
 import 'domain/services/transaction_service.dart';
@@ -34,6 +35,23 @@ void main() async {
           backgroundColor: Colors.green,
           foregroundColor: Colors.white,
         ),
+        // Melhorando consistência de UI
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[600],
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
       ),
       initialRoute: '/',
       getPages: [
@@ -46,6 +64,11 @@ void main() async {
         GetPage(name: '/transactions', page: () => const TransactionsPage()),
         GetPage(name: '/deposit', page: () => const DepositPage()),
         GetPage(name: '/profile', page: () => const ProfilePage()),
+        // Nova rota para alteração de senha de transação
+        GetPage(
+          name: '/change-transaction-password', 
+          page: () => const ChangeTransactionPasswordPage()
+        ),
       ],
     ),
   );
