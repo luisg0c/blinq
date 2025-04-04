@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/transaction_service.dart';
 import '../widgets/password_prompt.dart';
 import '../controllers/transaction_password_handler.dart';
+import '../widgets/money_input_field.dart';
 
 class DepositPage extends StatelessWidget {
   const DepositPage({super.key});
@@ -11,9 +13,14 @@ class DepositPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amountController = TextEditingController();
-    final authService = AuthService();
-    final transactionService = TransactionService();
-    final passwordHandler = TransactionPasswordHandler();
+    final authService = Get.find<AuthService>();
+    final transactionService = Get.find<TransactionService>();
+    
+    // Duas opções de inicialização:
+    // 1. Usar o Get.find se registrado no InitialBinding
+    final passwordHandler = Get.isRegistered<TransactionPasswordHandler>() 
+        ? Get.find<TransactionPasswordHandler>() 
+        : TransactionPasswordHandler(); // 2. Instanciar diretamente se não registrado
 
     return Scaffold(
       appBar: AppBar(title: const Text('Depositar')),
@@ -24,14 +31,20 @@ class DepositPage extends StatelessWidget {
           children: [
             const Text('Valor do Depósito', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            TextField(
+            MoneyInputField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.attach_money),
-                labelText: 'Valor (R\$)',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.attach_money,
+              label: 'Valor do depósito (R\$)',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor, informe um valor';
+                }
+                final amount = double.tryParse(value);
+                if (amount == null || amount <= 0) {
+                  return 'Valor inválido';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 30),
             SizedBox(

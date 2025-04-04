@@ -75,6 +75,18 @@ class TransactionService extends GetxService {
     if (txn.amount > LIMITE_ALERTA) {
       print('ALERTA: Transferência acima do limite de alerta: ${txn.amount}');
     }
+    
+    // Verificação preliminar de transferência para si mesmo
+    final currentUser = _firebaseService.currentUser;
+    if (currentUser != null && currentUser.email != null) {
+      // Normalizar emails para comparação
+      final normalizedCurrentEmail = currentUser.email!.toLowerCase().trim();
+      final normalizedReceiverEmail = receiverEmail.toLowerCase().trim();
+      
+      if (normalizedCurrentEmail == normalizedReceiverEmail) {
+        throw Exception(errorMesmoUsuario);
+      }
+    }
 
     // Obter conta do destinatário
     final receiver = await _firebaseService.getAccountByEmail(receiverEmail);
@@ -82,7 +94,7 @@ class TransactionService extends GetxService {
       throw Exception(errorDestinatarioNaoEncontrado);
     }
 
-    // Verificar se não é o mesmo usuário
+    // Verificação adicional por ID (caso os emails não tenham sido comparados corretamente)
     if (receiver.id == txn.senderId) {
       throw Exception(errorMesmoUsuario);
     }

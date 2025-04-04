@@ -41,8 +41,12 @@ class FirebaseService extends GetxService {
       updatedAt: DateTime.now(),
     );
     
+    // Importante: garantir que o email seja armazenado no documento
+    final Map<String, dynamic> data = account.toMap();
+    data['email'] = email.toLowerCase().trim(); // Garantir formato consistente
+    
     return _firestore.collection('accounts').doc(userId).set(
-      account.toMap(),
+      data,
       SetOptions(merge: true),
     );
   }
@@ -64,15 +68,46 @@ class FirebaseService extends GetxService {
   }
 
   Future<AccountModel?> getAccountByEmail(String email) async {
+    // Normalizar o email para garantir consistência
+    final normalizedEmail = email.toLowerCase().trim();
+    
+    // Tentativa com email normalizado
     final query = await _firestore
         .collection('accounts')
-        .where('email', isEqualTo: email)
+        .where('email', isEqualTo: normalizedEmail)
         .limit(1)
         .get();
         
     if (query.docs.isNotEmpty) {
       return AccountModel.fromMap(query.docs.first.data(), query.docs.first.id);
     }
+    
+    // Tentativa alternativa (para contas antigas que podem não ter o email normalizado)
+    final fallbackQuery = await _firestore
+        .collection('accounts')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+        
+    if (fallbackQuery.docs.isNotEmpty) {
+      return AccountModel.fromMap(fallbackQuery.docs.first.data(), fallbackQuery.docs.first.id);
+    }
+    
+    // Pesquisa por autenticação para casos onde o email não está no Firestore
+    if (currentUser?.email?.toLowerCase() == normalizedEmail) {
+      // O email corresponde ao usuário atual
+      final userId = currentUser!.uid;
+      final userDoc = await _firestore.collection('accounts').doc(userId).get();
+      
+      if (userDoc.exists) {
+        // Atualizar o email se estiver faltando
+        if (!userDoc.data()!.containsKey('email')) {
+          await _firestore.collection('accounts').doc(userId).update({'email': normalizedEmail});
+        }
+        return AccountModel.fromMap(userDoc.data()!, userId);
+      }
+    }
+    
     return null;
   }
 

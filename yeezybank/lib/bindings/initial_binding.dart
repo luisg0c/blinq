@@ -4,6 +4,7 @@ import 'package:yeezybank/domain/services/auth_service.dart';
 import 'package:yeezybank/domain/services/transaction_service.dart';
 import 'package:yeezybank/presentation/controllers/auth_controller.dart';
 import 'package:yeezybank/presentation/controllers/transaction_controller.dart';
+import 'package:yeezybank/presentation/controllers/transaction_password_handler.dart';
 
 class InitialBinding extends Bindings {
   @override
@@ -19,6 +20,12 @@ class InitialBinding extends Bindings {
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     Get.lazyPut<TransactionController>(
       () => TransactionController(),
+      fenix: true,
+    );
+    
+    // TransactionPasswordHandler
+    Get.lazyPut<TransactionPasswordHandler>(
+      () => TransactionPasswordHandler(),
       fenix: true,
     );
   }

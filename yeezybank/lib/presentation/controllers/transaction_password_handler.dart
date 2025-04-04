@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../domain/services/transaction_service.dart';
 import '../widgets/password_prompt.dart';
 
-class TransactionPasswordHandler {
+// Convertido para GetxController para permitir injeção de dependência
+class TransactionPasswordHandler extends GetxController {
   final TransactionService transactionService = Get.find<TransactionService>();
 
   /// Verifica/cadastra senha de transação. Retorna true se a senha for válida.

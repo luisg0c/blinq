@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:line_icons/line_icons.dart';
 import '../../domain/services/auth_service.dart';
@@ -6,6 +7,7 @@ import '../../domain/services/transaction_service.dart';
 import '../../domain/models/transaction_model.dart';
 import '../widgets/password_prompt.dart';
 import '../controllers/transaction_password_handler.dart';
+import '../widgets/money_input_field.dart';
 
 class TransferPage extends StatelessWidget {
   const TransferPage({super.key});
@@ -14,9 +16,17 @@ class TransferPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final recipientController = TextEditingController();
     final amountController = TextEditingController();
-    final authService = AuthService();
-    final transactionService = TransactionService();
-    final passwordHandler = TransactionPasswordHandler();
+    final authService = Get.find<AuthService>();
+    final transactionService = Get.find<TransactionService>();
+    
+    // Duas opções de inicialização:
+    // 1. Usar o Get.find se registrado no InitialBinding
+    final passwordHandler = Get.isRegistered<TransactionPasswordHandler>() 
+        ? Get.find<TransactionPasswordHandler>()
+        : TransactionPasswordHandler(); // 2. Instanciar diretamente se não registrado
+
+    // Obter email do usuário atual
+    final currentUserEmail = authService.getCurrentUser()?.email;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Enviar Pix')),
@@ -37,16 +47,34 @@ class TransferPage extends StatelessWidget {
                 labelText: 'Email do destinatário',
                 border: OutlineInputBorder(),
               ),
+              onChanged: (value) {
+                // Validar se não é o mesmo email
+                if (currentUserEmail != null && 
+                    value.toLowerCase().trim() == currentUserEmail.toLowerCase().trim()) {
+                  Get.snackbar(
+                    'Atenção', 
+                    'Não é possível transferir para sua própria conta',
+                    snackPosition: SnackPosition.BOTTOM,
+                    duration: const Duration(seconds: 3),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 20),
-            TextField(
+            MoneyInputField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(LineIcons.dollarSign),
-                labelText: 'Valor (R\$)',
-                border: OutlineInputBorder(),
-              ),
+              icon: LineIcons.dollarSign,
+              label: 'Valor da transferência (R\$)',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor, informe um valor';
+                }
+                final amount = double.tryParse(value);
+                if (amount == null || amount <= 0) {
+                  return 'Valor inválido';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 30),
             SizedBox(
@@ -63,6 +91,13 @@ class TransferPage extends StatelessWidget {
                     return;
                   }
 
+                  // Validação do lado do cliente para evitar transferência para si mesmo
+                  if (currentUserEmail != null && 
+                      email.toLowerCase() == currentUserEmail.toLowerCase()) {
+                    Get.snackbar('Erro', 'Não é possível transferir para você mesmo');
+                    return;
+                  }
+
                   try {
                     String senderId = authService.getCurrentUserId();
                     bool allowed = await passwordHandler.ensureValidPassword(context, senderId);
@@ -76,7 +111,7 @@ class TransferPage extends StatelessWidget {
                       amount: amount,
                       timestamp: DateTime.now(),
                       participants: [senderId], // será atualizado
-                      type: 'send', // define tipo inicial
+                      type: 'transfer', // alterado para 'transfer'
                     );
 
                     await transactionService.sendTransaction(txn, email);
