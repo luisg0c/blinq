@@ -40,6 +40,15 @@ dependencies:
   line_icons: ^2.0.3
   cloud_firestore: ^5.6.5
   intl: ^0.20.2
+  
+  # Segurança e identificação de dispositivo
+  crypto: ^3.0.3
+  device_info_plus: ^9.1.0
+  
+  # PDF e compartilhamento
+  pdf: ^3.10.7
+  path_provider: ^2.1.2
+  share_plus: ^7.2.1
 
 dev_dependencies:
   flutter_test:

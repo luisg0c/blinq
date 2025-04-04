@@ -1,17 +1,28 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import '../models/account_model.dart';
 import '../../data/firebase_service.dart';
+import 'package:device_info_plus/device_info_plus.dart' if (dart.library.js) 'package:device_info_plus/device_info_plus_web.dart';
 
 class TransactionService extends GetxService {
   final FirebaseService _firebaseService = Get.find<FirebaseService>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   static const String errorSaldoInsuficiente = 'Saldo insuficiente';
   static const String errorDestinatarioNaoEncontrado = 'Destinatário não encontrado';
   static const String errorValorInvalido = 'Valor inválido';
   static const String errorUsuarioNaoLogado = 'Usuário não logado';
   static const String errorMesmoUsuario = 'Não é possível transferir para você mesmo';
-  static const double LIMITE_ALERTA = 5000.0; // Novo limite para alertas de segurança
+  static const String errorTransacaoDuplicada = 'Possível transação duplicada detectada';
+  static const String errorTransacaoNaoEncontrada = 'Transação não encontrada';
+  static const String errorCodigoInvalido = 'Código de confirmação inválido';
+  static const double LIMITE_ALERTA = 5000.0;
+  
+  // Cache para controle de duplicidade
+  final Map<String, DateTime> _recentTransactions = {};
 
   // Obter saldo do usuário
   Future<double> getUserBalance(String userId) async {
@@ -35,51 +46,26 @@ class TransactionService extends GetxService {
     return _firebaseService.getAccountStream(userId);
   }
 
-  // Realizar depósito
-  Future<void> deposit(String userId, double amount) async {
+  // ETAPA 1: Iniciar uma transferência (pendente de confirmação)
+  Future<TransactionModel> initiateTransaction(String senderId, String receiverEmail, double amount) async {
     if (amount <= 0) {
       throw Exception(errorValorInvalido);
     }
-    
+
     // Validação adicional para valores altos
     if (amount > LIMITE_ALERTA) {
-      // Apenas registro para log, poderia adicionar validação adicional
-      print('ALERTA: Depósito acima do limite de alerta: $amount');
-    }
-
-    // Atualizar saldo
-    await _firebaseService.updateBalance(userId, amount);
-
-    // Registrar transação
-    final txn = TransactionModel(
-      id: '',
-      senderId: userId,
-      receiverId: userId,
-      amount: amount,
-      timestamp: DateTime.now(),
-      participants: [userId],
-      type: 'deposit',
-    );
-
-    await _firebaseService.addTransaction(txn);
-    print('Depósito de $amount realizado com sucesso');
-  }
-
-  // Realizar transferência
-  Future<void> sendTransaction(TransactionModel txn, String receiverEmail) async {
-    if (txn.amount <= 0) {
-      throw Exception(errorValorInvalido);
-    }
-
-    // Validação adicional para valores altos
-    if (txn.amount > LIMITE_ALERTA) {
-      print('ALERTA: Transferência acima do limite de alerta: ${txn.amount}');
+      print('ALERTA: Transferência acima do limite de alerta: $amount');
     }
     
+    // Verificar possível duplicação
+    final duplicateKey = '$senderId-${receiverEmail.toLowerCase()}-$amount';
+    if (_isRecentDuplicate(duplicateKey)) {
+      throw Exception(errorTransacaoDuplicada);
+    }
+
     // Verificação preliminar de transferência para si mesmo
     final currentUser = _firebaseService.currentUser;
     if (currentUser != null && currentUser.email != null) {
-      // Normalizar emails para comparação
       final normalizedCurrentEmail = currentUser.email!.toLowerCase().trim();
       final normalizedReceiverEmail = receiverEmail.toLowerCase().trim();
       
@@ -94,41 +80,246 @@ class TransactionService extends GetxService {
       throw Exception(errorDestinatarioNaoEncontrado);
     }
 
-    // Verificação adicional por ID (caso os emails não tenham sido comparados corretamente)
-    if (receiver.id == txn.senderId) {
+    // Verificação adicional por ID
+    if (receiver.id == senderId) {
       throw Exception(errorMesmoUsuario);
     }
-
+    
     // Obter conta do remetente
-    final sender = await _firebaseService.getAccount(txn.senderId);
+    final sender = await _firebaseService.getAccount(senderId);
     if (sender == null) {
       throw Exception(errorUsuarioNaoLogado);
     }
 
     // Verificar saldo suficiente
-    if (sender.balance < txn.amount) {
+    if (sender.balance < amount) {
       throw Exception(errorSaldoInsuficiente);
     }
-
-    // Atualizar saldos (débito no remetente)
-    await _firebaseService.updateBalance(txn.senderId, -txn.amount);
     
-    // Crédito no destinatário
-    await _firebaseService.updateBalance(receiver.id, txn.amount);
-
-    // Criar transação com dados completos
-    final newTxn = txn.copyWith(
+    // Obter informações do dispositivo
+    final deviceId = await _getDeviceIdentifier();
+    
+    // Criar transação pendente
+    TransactionModel txn = TransactionModel(
+      id: '',
+      senderId: senderId,
       receiverId: receiver.id,
+      amount: amount,
       timestamp: DateTime.now(),
-      participants: [txn.senderId, receiver.id],
+      participants: [senderId, receiver.id],
       type: 'transfer',
+      status: TransactionStatus.pending,
+      deviceId: deviceId,
     );
-
-    // Registrar transação
-    await _firebaseService.addTransaction(newTxn);
-    print('Transferência de ${txn.amount} realizada com sucesso');
+    
+    // Gerar token único e código de confirmação
+    final token = txn.generateToken();
+    final confirmationCode = txn.generateConfirmationCode();
+    
+    // Atualizar transação com token e código
+    txn = txn.copyWith(
+      transactionToken: token,
+      confirmationCode: confirmationCode,
+    );
+    
+    // Salvar transação pendente
+    try {
+      final txnRef = await _firestore.collection('transactions').add(txn.toMap());
+      
+      // Registrar no cache de transações recentes
+      _markTransactionAsProcessed(duplicateKey);
+      
+      // Retornar transação com ID
+      return txn.copyWith(id: txnRef.id);
+    } catch (e) {
+      print('Erro ao iniciar transação: $e');
+      rethrow;
+    }
   }
-
+  
+  // ETAPA 2: Confirmar e executar a transferência
+  Future<void> confirmTransaction(String transactionId, String confirmationCode) async {
+    try {
+      // Buscar transação pendente
+      final txnDoc = await _firestore.collection('transactions').doc(transactionId).get();
+      if (!txnDoc.exists) {
+        throw Exception(errorTransacaoNaoEncontrada);
+      }
+      
+      // Converter para modelo
+      final txn = TransactionModel.fromMap(txnDoc.data()!, txnDoc.id);
+      
+      // Verificar status
+      if (txn.status != TransactionStatus.pending) {
+        throw Exception('Esta transação não está pendente de confirmação');
+      }
+      
+      // Verificar código de confirmação
+      if (!txn.validateConfirmationCode(confirmationCode)) {
+        throw Exception(errorCodigoInvalido);
+      }
+      
+      // Atualizar status para confirmado
+      await _firestore.collection('transactions').doc(transactionId).update({
+        'status': TransactionStatus.confirmed.toString().split('.').last,
+        'confirmedAt': FieldValue.serverTimestamp(),
+      });
+      
+      // Executar a transferência confirmada
+      await _executeTransaction(txn);
+    } catch (e) {
+      // Marcar como falha em caso de erro
+      try {
+        await _firestore.collection('transactions').doc(transactionId).update({
+          'status': TransactionStatus.failed.toString().split('.').last,
+        });
+      } catch (_) {
+        // Ignorar erro ao atualizar status
+      }
+      
+      print('Erro ao confirmar transação: $e');
+      rethrow;
+    }
+  }
+  
+  // Executar a transferência após confirmação
+  Future<void> _executeTransaction(TransactionModel txn) async {
+    try {
+      // Executar transação em modo atômico
+      await _firestore.runTransaction((transaction) async {
+        // Verificar saldo novamente
+        final senderDoc = _firestore.collection('accounts').doc(txn.senderId);
+        final senderSnapshot = await transaction.get(senderDoc);
+        
+        if (!senderSnapshot.exists) {
+          throw Exception(errorUsuarioNaoLogado);
+        }
+        
+        final currentBalance = (senderSnapshot.data()!['balance'] as num).toDouble();
+        if (currentBalance < txn.amount) {
+          throw Exception(errorSaldoInsuficiente);
+        }
+        
+        // Atualizar saldo do remetente (débito)
+        transaction.update(senderDoc, {
+          'balance': currentBalance - txn.amount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        // Atualizar saldo do destinatário (crédito)
+        final receiverDoc = _firestore.collection('accounts').doc(txn.receiverId);
+        final receiverSnapshot = await transaction.get(receiverDoc);
+        
+        if (!receiverSnapshot.exists) {
+          // Criar conta para o destinatário se não existir
+          transaction.set(receiverDoc, {
+            'balance': txn.amount,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Atualizar saldo existente
+          final receiverBalance = (receiverSnapshot.data()!['balance'] as num).toDouble();
+          transaction.update(receiverDoc, {
+            'balance': receiverBalance + txn.amount,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        
+        // Atualizar status da transação para completada
+        transaction.update(_firestore.collection('transactions').doc(txn.id), {
+          'status': TransactionStatus.completed.toString().split('.').last,
+        });
+      });
+      
+      print('Transferência de ${txn.amount} executada com sucesso');
+    } catch (e) {
+      // Marcar transação como falha
+      await _firestore.collection('transactions').doc(txn.id).update({
+        'status': TransactionStatus.failed.toString().split('.').last,
+      });
+      
+      print('Erro ao executar transferência: $e');
+      rethrow;
+    }
+  }
+  
+  // Depósito (simplificado - sem confirmação)
+  Future<void> deposit(String userId, double amount) async {
+    if (amount <= 0) {
+      throw Exception(errorValorInvalido);
+    }
+    
+    // Validação adicional para valores altos
+    if (amount > LIMITE_ALERTA) {
+      print('ALERTA: Depósito acima do limite de alerta: $amount');
+    }
+    
+    // Verificar duplicidade
+    final duplicateKey = '$userId-deposit-$amount';
+    if (_isRecentDuplicate(duplicateKey)) {
+      throw Exception(errorTransacaoDuplicada);
+    }
+    
+    // Obter informações do dispositivo
+    final deviceId = await _getDeviceIdentifier();
+    
+    // Criar transação
+    TransactionModel txn = TransactionModel(
+      id: '',
+      senderId: userId,
+      receiverId: userId,
+      amount: amount,
+      timestamp: DateTime.now(),
+      participants: [userId],
+      type: 'deposit',
+      status: TransactionStatus.completed, // Depósitos são completados imediatamente
+      deviceId: deviceId,
+    );
+    
+    // Gerar token único
+    final token = txn.generateToken();
+    txn = txn.copyWith(transactionToken: token);
+    
+    try {
+      // Executar transação atômica
+      await _firestore.runTransaction((transaction) async {
+        // Verificar conta
+        final userDoc = _firestore.collection('accounts').doc(userId);
+        final userSnapshot = await transaction.get(userDoc);
+        
+        if (!userSnapshot.exists) {
+          // Criar conta se não existir
+          transaction.set(userDoc, {
+            'balance': amount,
+            'email': _firebaseService.currentUser?.email?.toLowerCase(),
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Atualizar saldo
+          final currentBalance = (userSnapshot.data()!['balance'] as num).toDouble();
+          transaction.update(userDoc, {
+            'balance': currentBalance + amount,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        
+        // Registrar transação
+        final txnRef = _firestore.collection('transactions').doc();
+        transaction.set(txnRef, txn.toMap());
+      });
+      
+      // Registrar no cache
+      _markTransactionAsProcessed(duplicateKey);
+      
+      print('Depósito de $amount realizado com sucesso');
+    } catch (e) {
+      print('Erro ao processar depósito: $e');
+      rethrow;
+    }
+  }
+  
   // Gerenciamento de senha de transação
   Future<bool> hasTransactionPassword(String userId) {
     return _firebaseService.hasTransactionPassword(userId);
@@ -142,15 +333,69 @@ class TransactionService extends GetxService {
     return _firebaseService.validateTransactionPassword(userId, password);
   }
   
-  // NOVA FUNÇÃO: Alterar senha de transação
+  // Alterar senha de transação
   Future<void> changeTransactionPassword(String userId, String oldPassword, String newPassword) async {
-    // Validar senha atual
     final isValid = await validateTransactionPassword(userId, oldPassword);
     if (!isValid) {
       throw Exception('Senha atual incorreta');
     }
-    
-    // Definir nova senha
     await setTransactionPassword(userId, newPassword);
+  }
+  
+  // Verificar transação duplicada
+  bool _isRecentDuplicate(String key) {
+    if (_recentTransactions.containsKey(key)) {
+      final lastProcess = _recentTransactions[key]!;
+      return DateTime.now().difference(lastProcess).inSeconds < 30;
+    }
+    return false;
+  }
+  
+  // Registrar transação processada recentemente
+  void _markTransactionAsProcessed(String key) {
+    _recentTransactions[key] = DateTime.now();
+    // Limpar entradas antigas periodicamente
+    _cleanupOldEntries();
+  }
+  
+  // Limpar entradas antigas do cache
+  void _cleanupOldEntries() {
+    final now = DateTime.now();
+    _recentTransactions.removeWhere((key, timestamp) {
+      return now.difference(timestamp).inMinutes > 10;
+    });
+  }
+  
+  // Obter identificador de dispositivo
+  Future<String> _getDeviceIdentifier() async {
+    try {
+      if (GetPlatform.isAndroid) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        return '${androidInfo.brand}_${androidInfo.model}_${androidInfo.id.substring(0, 8)}';
+      } else if (GetPlatform.isIOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        return '${iosInfo.model}_${iosInfo.identifierForVendor?.substring(0, 8) ?? "unknown"}';
+      } else if (GetPlatform.isWeb) {
+        final webInfo = await _deviceInfo.webBrowserInfo;
+        return '${webInfo.browserName}_${webInfo.platform}_${DateTime.now().millisecondsSinceEpoch}';
+      }
+      return 'unknown_${DateTime.now().millisecondsSinceEpoch}';
+    } catch (e) {
+      return 'fallback_${DateTime.now().millisecondsSinceEpoch}';
+    }
+  }
+  
+  // Buscar transações pendentes do usuário
+  Stream<List<TransactionModel>> getPendingTransactionsStream(String userId) {
+    return _firestore
+        .collection('transactions')
+        .where('senderId', isEqualTo: userId)
+        .where('status', isEqualTo: TransactionStatus.pending.toString().split('.').last)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return TransactionModel.fromMap(doc.data(), doc.id);
+          }).toList();
+        });
   }
 }
