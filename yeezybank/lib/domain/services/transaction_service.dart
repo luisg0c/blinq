@@ -1,16 +1,16 @@
+// lib/domain/services/transaction_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import '../models/account_model.dart';
 import '../../data/firebase_service.dart';
-import 'package:device_info_plus/device_info_plus.dart' if (dart.library.js) 'package:device_info_plus/device_info_plus_web.dart';
+import 'dart:math';
 
 class TransactionService extends GetxService {
   final FirebaseService _firebaseService = Get.find<FirebaseService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
-
+  
   static const String errorSaldoInsuficiente = 'Saldo insuficiente';
   static const String errorDestinatarioNaoEncontrado = 'Destinatário não encontrado';
   static const String errorValorInvalido = 'Valor inválido';
@@ -44,6 +44,30 @@ class TransactionService extends GetxService {
   // Stream da conta do usuário (para saldo em tempo real)
   Stream<AccountModel> getUserAccountStream(String userId) {
     return _firebaseService.getAccountStream(userId);
+  }
+
+  // NOVO: Método para obter informações do destinatário
+  Future<AccountModel?> getReceiverInfo(String receiverId) async {
+    return await _firebaseService.getAccount(receiverId);
+  }
+
+  // NOVO: Método para obter informações do remetente
+  Future<AccountModel?> getSenderInfo(String senderId) async {
+    return await _firebaseService.getAccount(senderId);
+  }
+
+  // NOVO: Método para enviar transação (usado na UI)
+  Future<void> sendTransaction(TransactionModel txn, String receiverEmail) async {
+    // Primeiro iniciamos a transação
+    final initiatedTransaction = await initiateTransaction(
+      txn.senderId, 
+      receiverEmail, 
+      txn.amount
+    );
+    
+    // Como não estamos usando o fluxo de confirmação na UI atual,
+    // podemos prosseguir diretamente para executar a transação
+    await _executeTransaction(initiatedTransaction);
   }
 
   // ETAPA 1: Iniciar uma transferência (pendente de confirmação)
@@ -96,8 +120,8 @@ class TransactionService extends GetxService {
       throw Exception(errorSaldoInsuficiente);
     }
     
-    // Obter informações do dispositivo
-    final deviceId = await _getDeviceIdentifier();
+    // Gerar um ID de dispositivo simplificado
+    final deviceId = _generateSimpleDeviceId();
     
     // Criar transação pendente
     TransactionModel txn = TransactionModel(
@@ -207,7 +231,7 @@ class TransactionService extends GetxService {
         });
         
         // Atualizar saldo do destinatário (crédito)
-        final receiverDoc = _firestore.collection('accounts').doc(txn.receiverId);
+        final receiverDoc = _firestore.collection('accounts').doc(txn.receiverId!);
         final receiverSnapshot = await transaction.get(receiverDoc);
         
         if (!receiverSnapshot.exists) {
@@ -261,8 +285,8 @@ class TransactionService extends GetxService {
       throw Exception(errorTransacaoDuplicada);
     }
     
-    // Obter informações do dispositivo
-    final deviceId = await _getDeviceIdentifier();
+    // Gerar um ID de dispositivo simplificado
+    final deviceId = _generateSimpleDeviceId();
     
     // Criar transação
     TransactionModel txn = TransactionModel(
@@ -366,23 +390,17 @@ class TransactionService extends GetxService {
     });
   }
   
-  // Obter identificador de dispositivo
-  Future<String> _getDeviceIdentifier() async {
-    try {
-      if (GetPlatform.isAndroid) {
-        final androidInfo = await _deviceInfo.androidInfo;
-        return '${androidInfo.brand}_${androidInfo.model}_${androidInfo.id.substring(0, 8)}';
-      } else if (GetPlatform.isIOS) {
-        final iosInfo = await _deviceInfo.iosInfo;
-        return '${iosInfo.model}_${iosInfo.identifierForVendor?.substring(0, 8) ?? "unknown"}';
-      } else if (GetPlatform.isWeb) {
-        final webInfo = await _deviceInfo.webBrowserInfo;
-        return '${webInfo.browserName}_${webInfo.platform}_${DateTime.now().millisecondsSinceEpoch}';
-      }
-      return 'unknown_${DateTime.now().millisecondsSinceEpoch}';
-    } catch (e) {
-      return 'fallback_${DateTime.now().millisecondsSinceEpoch}';
+  // Gerar um ID de dispositivo simples sem usar device_info_plus
+  String _generateSimpleDeviceId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    final buffer = StringBuffer();
+    
+    for (var i = 0; i < 12; i++) {
+      buffer.write(chars[random.nextInt(chars.length)]);
     }
+    
+    return 'yeezybank_${buffer.toString()}_${DateTime.now().millisecondsSinceEpoch}';
   }
   
   // Buscar transações pendentes do usuário
