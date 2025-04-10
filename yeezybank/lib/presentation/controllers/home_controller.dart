@@ -14,6 +14,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   
   final RxBool isHistoryVisible = false.obs;
   final RxBool isLoading = false.obs;
+  final RxString currentUserEmail = ''.obs;
+  final RxDouble balance = 0.0.obs;
+  final RxList<TransactionModel> transactions = <TransactionModel>[].obs;
   
   String get userId => _authService.getCurrentUserId();
   
@@ -33,6 +36,18 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         curve: Curves.easeOutBack,
       ));
     animationController.forward();
+    
+    // Carregar dados do usuário
+    final user = _authService.getCurrentUser();
+    if (user != null) {
+      currentUserEmail.value = user.email ?? 'Usuário';
+    }
+    
+    // Carregar saldo
+    _loadBalance();
+    
+    // Escutar transações
+    _listenToTransactions();
   }
   
   @override
@@ -44,6 +59,22 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // Reset state (chamado ao fazer refresh)
   void resetState() {
     isHistoryVisible.value = false;
+  }
+  
+  // Métodos de carregamento
+  Future<void> _loadBalance() async {
+    try {
+      final currentBalance = await _transactionService.getUserBalance(userId);
+      balance.value = currentBalance;
+    } catch (e) {
+      print('Erro ao carregar saldo: $e');
+    }
+  }
+  
+  void _listenToTransactions() {
+    transactionsStream.listen((txns) {
+      transactions.assignAll(txns);
+    });
   }
   
   // Solicitar e validar senha para visualizar histórico

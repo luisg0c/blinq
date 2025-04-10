@@ -9,7 +9,7 @@ class SignupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authController = Get.find<AuthController>();
+    final authController = Get.put(AuthController());
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -82,7 +82,11 @@ class SignupPage extends StatelessWidget {
                 onPressed: () => Get.back(),
                 child: Text(
                   'Já tem conta? Fazer login',
-                  style: AppTextStyles.link,
+                  style: TextStyle(
+                    color: AppColors.primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -103,15 +107,15 @@ class SignupPage extends StatelessWidget {
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: AppTextStyles.subtitle,
+        labelStyle: const TextStyle(color: AppColors.subtitle, fontSize: 14),
         prefixIcon: Icon(icon, color: AppColors.textColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.dividerColor),
+          borderSide: const BorderSide(color: AppColors.dividerColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primaryColor),
+          borderSide: const BorderSide(color: AppColors.primaryColor),
         ),
         filled: true,
         fillColor: AppColors.surface,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'dart:math' as math;
 import '../../domain/models/transaction_model.dart';
 import '../../domain/services/auth_service.dart';
 import '../theme/app_colors.dart';
@@ -175,7 +176,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     ],
                     
                     _buildDetailRow('Data/Hora:', DateFormat('dd/MM/yyyy - HH:mm:ss').format(widget.transaction.timestamp)),
-                    _buildDetailRow('ID da Transação:', widget.transaction.id.substring(0, math.min(8, widget.transaction.id.length))),
+                    _buildDetailRow('ID da Transação:', 
+                    widget.transaction.id.length > 8 
+                        ? widget.transaction.id.substring(0, 8)
+                        : widget.transaction.id),
                   ],
                 ),
               ),
@@ -184,7 +188,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             const SizedBox(height: 16),
 
             // Seção de autenticação
-            if (widget.transaction.transactionToken != null)
+            if ((widget.transaction.transactionToken ?? '').isNotEmpty)
               Card(
                 color: AppColors.surface,
                 elevation: 0,
@@ -207,7 +211,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                             icon: const Icon(Icons.copy, size: 18),
                             onPressed: () {
                               Clipboard.setData(ClipboardData(
-                                text: widget.transaction.transactionToken!,
+                                text: widget.transaction.transactionToken ?? '',
                               ));
                               Get.snackbar(
                                 'Copiado', 'Código de autenticação copiado para a área de transferência',
@@ -228,8 +232,12 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
                       const SizedBox(height: 4),
                       SelectableText(
-                        widget.transaction.transactionToken!,
-                        style: AppTextStyles.body.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                        widget.transaction.transactionToken ?? '',
+                        style: const TextStyle(
+                          fontFamily: 'monospace', 
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     
                       if (widget.transaction.status != null) ...[
@@ -301,7 +309,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       side: BorderSide(color: chipColor.withOpacity(0.3)),
       label: Text(
         label,
-        style: AppTextStyles.caption.copyWith(
+        style: TextStyle(
           color: chipColor,
           fontWeight: FontWeight.bold,
           fontSize: 12,

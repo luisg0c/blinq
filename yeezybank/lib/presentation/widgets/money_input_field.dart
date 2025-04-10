@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yeezybank/presentation/theme/app_colors.dart';
-import 'package:yeezybank/presentation/theme/app_text_styles.dart';
+import '../theme/app_colors.dart';
 
 class MoneyInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -39,20 +38,20 @@ class MoneyInputField extends StatelessWidget {
       decoration: InputDecoration(
         prefixIcon: icon != null ? Icon(icon, color: AppColors.textColor) : null,
         labelText: label,
-        labelStyle: AppTextStyles.input,
+        labelStyle: const TextStyle(color: AppColors.textColor, fontSize: 16),
         hintText: hint,
-        hintStyle: AppTextStyles.input.copyWith(color: AppColors.subtitle),
+        hintStyle: const TextStyle(color: AppColors.subtitle, fontSize: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.dividerColor),
+          borderSide: const BorderSide(color: AppColors.dividerColor),
         ),
         filled: true,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primaryColor),
+          borderSide: const BorderSide(color: AppColors.primaryColor),
         ),
         fillColor: AppColors.surface,
-        errorStyle: AppTextStyles.error,
+        errorStyle: const TextStyle(color: AppColors.error, fontSize: 14),
       ),
     );
   }
