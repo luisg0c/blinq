@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -10,18 +9,25 @@ class SignupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authController = Get.put(AuthController());
+    final authController = Get.find<AuthController>();
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: AppColors.backgroundColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textColor),
+            onPressed: () => Get.back(),
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 60),
               Image.asset('assets/images/logo_text.png', height: 80),
               const SizedBox(height: 40),
               Text(
@@ -31,7 +37,7 @@ class SignupPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Preencha os dados para come\u00e7ar a usar o YeezyBank.',
+                'Preencha os dados para começar a usar o YeezyBank.',
                 style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                 textAlign: TextAlign.center,
               ),
@@ -49,22 +55,28 @@ class SignupPage extends StatelessWidget {
                 obscureText: true,
               ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  FocusScope.of(context).unfocus();
-                  authController.signup();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  textStyle: AppTextStyles.button,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Cadastrar'),
-              ),
+              Obx(() => ElevatedButton(
+                    onPressed: authController.isLoading.value
+                        ? null
+                        : () {
+                            FocusScope.of(context).unfocus();
+                            authController.signup();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      textStyle: AppTextStyles.button,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: authController.isLoading.value
+                        ? const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : const Text('Cadastrar'),
+                  )),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Get.back(),
@@ -91,13 +103,16 @@ class SignupPage extends StatelessWidget {
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: AppTextStyles.input,
+        labelStyle: AppTextStyles.subtitle,
         prefixIcon: Icon(icon, color: AppColors.textColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppColors.dividerColor),
         ),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primaryColor), borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primaryColor),
+        ),
         filled: true,
         fillColor: AppColors.surface,
       ),

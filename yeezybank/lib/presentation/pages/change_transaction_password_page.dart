@@ -144,7 +144,6 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
     );
   }
 
-
   Future<void> _savePassword() async {
     // Validar entradas
     if (newPasswordController.text.isEmpty ||
@@ -181,55 +180,6 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
         Get.snackbar('Sucesso', 'Senha cadastrada com sucesso');
       }
 
-      Get.back();
-    } catch (e) {
-      Get.snackbar('Erro', e.toString());
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-}
-        ),
-      ),
-    );
-  }
-  
-  Future<void> _savePassword() async {
-    // Validar entradas
-    if (newPasswordController.text.isEmpty || 
-        confirmPasswordController.text.isEmpty ||
-        (hasExistingPassword && currentPasswordController.text.isEmpty)) {
-      Get.snackbar('Erro', 'Preencha todos os campos');
-      return;
-    }
-    
-    if (newPasswordController.text != confirmPasswordController.text) {
-      Get.snackbar('Erro', 'As senhas não conferem');
-      return;
-    }
-    
-    setState(() => isLoading = true);
-    
-    try {
-      final userId = authService.getCurrentUserId();
-      
-      if (hasExistingPassword) {
-        // Alterar senha existente
-        await transactionService.changeTransactionPassword(
-          userId, 
-          currentPasswordController.text,
-          newPasswordController.text,
-        );
-        Get.snackbar('Sucesso', 'Senha alterada com sucesso');
-      } else {
-        // Cadastrar nova senha
-        await transactionService.setTransactionPassword(
-          userId, 
-          newPasswordController.text,
-        );
-        Get.snackbar('Sucesso', 'Senha cadastrada com sucesso');
-      }
-      
       Get.back();
     } catch (e) {
       Get.snackbar('Erro', e.toString());

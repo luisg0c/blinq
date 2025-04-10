@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get/get.dart';
-
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import 'package:line_icons/line_icons.dart';
+
 class BalanceCard extends StatelessWidget {
   final String userId;
   final Animation<double>? animation;
@@ -17,65 +17,61 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget card = Card(
-      width: double.infinity,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.dividerColor),
-      ),      color: AppColors.surface,
+        side: const BorderSide(color: AppColors.dividerColor),
+      ),
+      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Saldo Disponível',
-            style: TextStyle(
+          children: [
+            const Text(
+              'Saldo Disponível',
               style: AppTextStyles.body,
-              color: AppColors.textColor,
             ),
-          ),
-          const SizedBox(height: 8),
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('accounts')
-                .doc(userId)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(
+            const SizedBox(height: 8),
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('accounts')
+                  .doc(userId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-              double realTimeBalance = (data['balance'] as num?)?.toDouble() ?? 0.0;
+                final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+                double realTimeBalance = (data['balance'] as num?)?.toDouble() ?? 0.0;
 
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [ Text(
-                      'R\$ ${realTimeBalance.toStringAsFixed(2)}',              
-                      style: AppTextStyles.title.copyWith(fontSize: 24, fontWeight: FontWeight.bold,),
-                    ),                  
-                  Icon(
-                    LineIcons.wallet,
-                    color: AppColors.primaryColor,                
-                    size: 32,
-                  )
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'R\$ ${realTimeBalance.toStringAsFixed(2)}',
+                      style: AppTextStyles.title.copyWith(
+                        fontSize: 24, 
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),                  
-                ],
-              );
-            },
-          ),
-        ],
+                    ),
+                    Icon(
+                      LineIcons.wallet,
+                      color: AppColors.primaryColor,
+                      size: 32,
+                    )
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
     

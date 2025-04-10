@@ -13,7 +13,7 @@ class LoginPage extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
-    return Scaffold(
+      child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -30,7 +30,7 @@ class LoginPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Entre para continuar usando o [App Name].',
+                'Entre para continuar usando o YeezyBank.',
                 style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                 textAlign: TextAlign.center,
               ),
@@ -94,9 +94,12 @@ class LoginPage extends StatelessWidget {
         prefixIcon: Icon(icon, color: AppColors.textColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.dividerColor),
+          borderSide: const BorderSide(color: AppColors.dividerColor),
         ),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primaryColor), borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: AppColors.primaryColor), 
+          borderRadius: BorderRadius.circular(12)
+        ),
         filled: true,
         fillColor: AppColors.surface,
       ),

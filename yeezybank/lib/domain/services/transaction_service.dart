@@ -375,14 +375,11 @@ class TransactionService extends GetxService {
     return false;
   }
   
-  // Registrar transação processada recentemente
   void _markTransactionAsProcessed(String key) {
     _recentTransactions[key] = DateTime.now();
-    // Limpar entradas antigas periodicamente
     _cleanupOldEntries();
   }
   
-  // Limpar entradas antigas do cache
   void _cleanupOldEntries() {
     final now = DateTime.now();
     _recentTransactions.removeWhere((key, timestamp) {
@@ -390,7 +387,6 @@ class TransactionService extends GetxService {
     });
   }
   
-  // Gerar um ID de dispositivo simples sem usar device_info_plus
   String _generateSimpleDeviceId() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final random = Random();
@@ -403,7 +399,6 @@ class TransactionService extends GetxService {
     return 'yeezybank_${buffer.toString()}_${DateTime.now().millisecondsSinceEpoch}';
   }
   
-  // Buscar transações pendentes do usuário
   Stream<List<TransactionModel>> getPendingTransactionsStream(String userId) {
     return _firestore
         .collection('transactions')

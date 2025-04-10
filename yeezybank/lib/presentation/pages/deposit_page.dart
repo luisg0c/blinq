@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
+import '../../domain/services/transaction_service.dart';
 import '../controllers/transaction_password_handler.dart';
 import '../widgets/money_input_field.dart';
 import '../theme/app_colors.dart';
@@ -55,16 +55,14 @@ class _DepositPageState extends State<DepositPage> {
                 color: AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: AppColors.dividerColor),
+                  side: const BorderSide(color: AppColors.dividerColor),
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: MoneyInputField(
                     controller: amountController,
                     icon: Icons.attach_money,
-                    labelText: 'Valor do depósito (R\$)',
-                    errorText: errorMessage,
+                    label: 'Valor do depósito (R\$)',
                     onChanged: (value) {
                       setState(() {
                         errorMessage = null;
@@ -75,7 +73,7 @@ class _DepositPageState extends State<DepositPage> {
               ),
               if (errorMessage != null) ...[
                 const SizedBox(height: 12),
-                Text(errorMessage!, style: AppTextStyles.error),
+                Text(errorMessage!, style: const TextStyle(color: AppColors.error)),
               ],
               const SizedBox(height: 24),
               ElevatedButton(
@@ -138,6 +136,9 @@ class _DepositPageState extends State<DepositPage> {
       );
 
       if (confirmed == true) {
+        // Aqui deveria executar a lógica real de depósito 
+        // usando o service após a confirmação
+        await transactionService.deposit(userId, amount);
         Get.back(result: true);
       }
     } catch (e) {
@@ -149,14 +150,5 @@ class _DepositPageState extends State<DepositPage> {
         isLoading = false;
       });
     }
-  }
-}
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

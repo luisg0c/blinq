@@ -5,9 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
-  ForgotPasswordPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
+  
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
 
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -15,6 +20,7 @@ class ForgotPasswordPage extends StatelessWidget {
   @override
   void dispose() {
     _emailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -67,25 +73,7 @@ class ForgotPasswordPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : () async {
-                    if (_formKey.currentState!.validate()) {
-                      setState(() => _isLoading = true);
-                      String email = _emailController.text.trim();
-                      try {
-                        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-                        Get.snackbar(
-                          'Sucesso',
-                          'Link de redefinição de senha enviado para $email',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                        Get.back();
-                      } on FirebaseAuthException catch (e) {
-                        Get.snackbar('Erro ao enviar e-mail', e.message ?? 'Tente novamente mais tarde', snackPosition: SnackPosition.BOTTOM);
-                      } finally{
-                        setState(() => _isLoading = false);
-                      }
-                    }
-                  },
+                  onPressed: _isLoading ? null : _sendResetEmail,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                     foregroundColor: AppColors.surface,
@@ -107,27 +95,27 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
-  void setState(Null Function() param0) {}
-}
-
-                try {
-                  await FirebaseAuth.instance.sendPasswordResetEmail(
-                    email: email,
-                  );
-                  Get.snackbar(
-                    'Sucesso',
-                    'Link de redefinição de senha enviado para $email',
-                  );
-                  Get.back();
-                } catch (e) {
-                  Get.snackbar('Erro ao enviar e-mail', e.toString());
-                }
-              },
-              child: const Text('Enviar link'),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _sendResetEmail() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      String email = _emailController.text.trim();
+      try {
+        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+        Get.snackbar(
+          'Sucesso',
+          'Link de redefinição de senha enviado para $email',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        Get.back();
+      } on FirebaseAuthException catch (e) {
+        Get.snackbar(
+          'Erro ao enviar e-mail', 
+          e.message ?? 'Tente novamente mais tarde', 
+          snackPosition: SnackPosition.BOTTOM
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }
