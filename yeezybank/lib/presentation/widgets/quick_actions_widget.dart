@@ -12,11 +12,11 @@ class QuickActionsWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.dividerColor.withOpacity(0.5),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),

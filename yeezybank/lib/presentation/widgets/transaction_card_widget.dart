@@ -46,10 +46,12 @@ class TransactionCard extends StatelessWidget {
             display.title,
             style: TextStyle(fontWeight: FontWeight.bold, color: display.color),
           ),
-          subtitle: Text(\n            DateFormat('dd/MM/yyyy - HH:mm').format(transaction.timestamp),\n            style: TextStyle(color: Colors.grey[600], fontSize: 12),          \n          ),\n          trailing: Text(\n            NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount),\n            style: TextStyle(\n              color: transaction.type == 'transfer' && transaction.senderId == currentUserId\n                  ? Colors.red\n                  : AppColors.textColor,\n              fontWeight: FontWeight.w500,\n              fontSize: 16,\n            ),          \n        ),        \n          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),        \n          tileColor: AppColors.surface,        \n        ),      \n      ),    \n    );\n  }\n  \n  // Método auxiliar para determinar características visuais\n  TransactionDisplay _getTransactionDisplay() {\n    if (transaction.type == 'deposit') {\n      return TransactionDisplay(\n        title: 'Depósito',\n        icon: Icons.add_circle_outline,\n        color: Colors.blue,\n      );\n    } else if (transaction.type == 'transfer') {\n      if (transaction.senderId == currentUserId) {\n        return TransactionDisplay(\n          title: 'Pix Enviado',\n          icon: Icons.arrow_circle_up,\n          color: Colors.red,\n        );\n      } else {\n        return TransactionDisplay(\n          title: 'Pix Recebido',          \n          icon: Icons.arrow_circle_down,\n          color: Colors.green,\n        );      \n    } else {\n      return TransactionDisplay(\n        title: 'Transação',\n        icon: Icons.swap_horiz,\n        color: Colors.grey,\n      );    \n  }\n}\n\n// Classe auxiliar para informações de exibição da transação\nclass TransactionDisplay {\n  final String title;\n  final IconData icon;\n  final Color color;\n  \n  TransactionDisplay({\n    required this.title,\n    required this.icon,\n    required this.color,
+          subtitle: Text(
+            DateFormat('dd/MM/yyyy - HH:mm').format(transaction.timestamp),
+            style: TextStyle(color: AppColors.subtitle, fontSize: 12),
           ),
           trailing: Text(
-            'R\$ ${transaction.amount.toStringAsFixed(2)}',
+            'R$ ${transaction.amount.toStringAsFixed(2)}',
             style: TextStyle(
               color: display.color,
               fontWeight: FontWeight.bold,
@@ -57,6 +59,54 @@ class TransactionCard extends StatelessWidget {
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          tileColor: AppColors.surface,
+        ),
+      ),
+    );
+  }
+
+  TransactionDisplay _getTransactionDisplay() {
+    if (transaction.type == 'deposit') {
+      return TransactionDisplay(
+        title: 'Depósito',
+        icon: Icons.add_circle_outline,
+        color: AppColors.primaryColor,
+      );
+    } else if (transaction.type == 'transfer') {
+      if (transaction.senderId == currentUserId) {
+        return TransactionDisplay(
+          title: 'Pix Enviado',
+          icon: Icons.arrow_upward,
+          color: AppColors.error,
+        );
+      } else {
+        return TransactionDisplay(
+          title: 'Pix Recebido',
+          icon: Icons.arrow_downward,
+          color: AppColors.primaryColor,
+        );
+      }
+    } else {
+      return TransactionDisplay(
+        title: 'Transação',
+        icon: Icons.swap_horiz,
+        color: AppColors.subtitle,
+      );
+    }
+  }
+}
+
+class TransactionDisplay {
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  TransactionDisplay({
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
+}
         ),
       ),
     );

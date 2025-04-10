@@ -52,10 +52,10 @@ class _DepositPageState extends State<DepositPage> {
               ),
               const SizedBox(height: 32),
               Card(
-                elevation: 0,
+                color: AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+                  side: BorderSide(color: AppColors.dividerColor),
                 ),
                 child: Padding(
                   padding:

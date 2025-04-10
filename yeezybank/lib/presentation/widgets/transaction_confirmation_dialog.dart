@@ -73,20 +73,17 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
                 style: AppTextStyles.input.copyWith(letterSpacing: 8, fontSize: 20),
                 decoration: InputDecoration(
                   hintText: '------',
-                  hintStyle: AppTextStyles.input.copyWith(letterSpacing: 8, fontSize: 20, color: Colors.grey[400]),
+                  hintStyle: AppTextStyles.input.copyWith(letterSpacing: 8, fontSize: 20, color: AppColors.hintColor),
                   errorText: _errorMessage,
                   errorStyle: AppTextStyles.error,
                   counterText: '', // Remove o contador de caracteres
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade200),
+                    borderSide: BorderSide(color: AppColors.dividerColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primaryColor),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
+                    borderSide: BorderSide(color: AppColors.primaryColor)), filled: true, fillColor: AppColors.surface,),
                 ),
               ),
               if (_errorMessage != null)
@@ -101,9 +98,7 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: _isConfirming ? null : () => Get.back(result: false),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.textColor),
+                  TextButton(                    onPressed: _isConfirming ? null : () => Get.back(result: false), child: Text('Cancelar', style: AppTextStyles.button.copyWith(color: AppColors.textColor)),
                     child: const Text('Cancelar'),
                   ),
                   const SizedBox(width: 16),
@@ -113,14 +108,12 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
                         Get.back(result: _codeController.text.trim());
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      foregroundColor: Colors.white,
+                    style: ElevatedButton.styleFrom(                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: _isConfirming
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                        : const Text('Confirmar'),
+                    child: _isConfirming                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface)))
+                        : const Text('Confirmar'),                  ),
                   ),
                 ],
               ),
@@ -134,10 +127,8 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.body.copyWith(color: Colors.grey[600]),
+        children: [          Text(            label,
+            style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
             ),          
           ),
           Expanded(

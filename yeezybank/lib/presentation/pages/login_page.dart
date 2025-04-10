@@ -30,8 +30,8 @@ class LoginPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Entre para continuar usando o YeezyBank.',
-                style: AppTextStyles.body.copyWith(color: Colors.grey[700]),
+                'Entre para continuar usando o [App Name].',
+                style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
@@ -90,13 +90,15 @@ class LoginPage extends StatelessWidget {
       obscureText: obscureText,
       decoration: InputDecoration(
         labelText: labelText,
-        prefixIcon: Icon(icon, color: AppColors.primaryColor),
+        labelStyle: AppTextStyles.input,
+        prefixIcon: Icon(icon, color: AppColors.textColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(color: AppColors.dividerColor),
         ),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primaryColor), borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: AppColors.surface,
       ),
     );
   }

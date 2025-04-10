@@ -4,6 +4,7 @@ import 'package:yeezybank/presentation/theme/app_colors.dart';
 import '../controllers/home_controller.dart';
 import 'package:intl/intl.dart';
 
+import 'package:yeezybank/presentation/theme/app_text_styles.dart';
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
@@ -13,6 +14,11 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryColor,
+        iconTheme: IconThemeData(color: AppColors.textColor),
+        title: Text('YeezyBank', style: AppTextStyles.appBarTitle),
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           controller.resetState();
@@ -45,22 +51,21 @@ class HomePage extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Olá,',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+            Text('Olá,', style: AppTextStyles.subtitle),
+            Obx(
+              () => Text(
+                controller.userName.value,
+                style: AppTextStyles.title,
               ),
             ),
-            Text(
-              controller.userName.value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+
+
+
+
           ],
         ),
+
+
         IconButton(
           icon: const Icon(Icons.person_outline),
           onPressed: () => Get.toNamed('/profile'),
@@ -81,23 +86,20 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Saldo disponível',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+            Text('Saldo disponível', style: AppTextStyles.card),
+            const SizedBox(height: 8),
+            Obx(
+              () => Text(
+                NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
+                    .format(controller.accountBalance.value),
+                style: AppTextStyles.cardTitle,
               ),
             ),
-            const SizedBox(height: 8),
-            Obx(() => Text(
-                  NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
-                      .format(controller.accountBalance.value),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )),
+
+
+
+
+
           ],
         ),
       ),
@@ -131,10 +133,7 @@ class HomePage extends StatelessWidget {
           children: [
             Icon(icon, color: AppColors.primaryColor, size: 32),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey[700]),
-              textAlign: TextAlign.center,
+            Text(label, style: AppTextStyles.quickAction, textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -146,12 +145,10 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Últimas transações',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+         Text('Últimas transações', style: AppTextStyles.sectionTitle,),
         const SizedBox(height: 10),
-        Obx(() => controller.isHistoryVisible.value
+        Obx(() => controller.isHistoryVisible.value,
+
             ? controller.transactions.isNotEmpty
                 ? ListView.builder(
                     shrinkWrap: true,
@@ -160,15 +157,14 @@ class HomePage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final transaction = controller.transactions[index];
                       return ListTile(
-                        leading: const Icon(Icons.arrow_forward, color: AppColors.primaryColor),
+                        leading:  Icon(Icons.arrow_forward, color: AppColors.primaryColor),
                         title: Text(transaction.description),
                         subtitle: Text(DateFormat('dd/MM/yyyy').format(transaction.date)),
-                        trailing: Text(
-                          NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: transaction.amount > 0 ? Colors.green : Colors.red,
-                          ),
+                        trailing: Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount), style: AppTextStyles.transactionValue.copyWith(
+                                  color: transaction.amount > 0 ? AppColors.success : AppColors.error,
+                                ),
+
+                        )
                         ),
                       );
                     },
@@ -180,12 +176,17 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-        BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Cartões'),
-        BottomNavigationBarItem(icon: Icon(Icons.account_balance), label: 'Contas'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Ajustes'),
+    return ClipRRect(
+      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+      child: BottomNavigationBar(
+        backgroundColor: AppColors.backgroundColor,
+        selectedItemColor: AppColors.primaryColor,
+        unselectedItemColor: AppColors.hintColor,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
+          BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Cartões'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance), label: 'Contas'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Ajustes'),
       ],
     );
   }

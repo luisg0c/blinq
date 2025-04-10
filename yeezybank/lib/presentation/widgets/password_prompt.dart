@@ -37,10 +37,9 @@ Future<String?> promptPassword(BuildContext context, {bool isNew = false}) async
                 labelStyle: AppTextStyles.input,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: AppColors.dividerColor),
                 ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+                filled: true,                fillColor: AppColors.surface,
               ),
             ),
             const SizedBox(height: 24),
@@ -49,21 +48,16 @@ Future<String?> promptPassword(BuildContext context, {bool isNew = false}) async
               children: [
                 TextButton(
                   onPressed: () => Get.back(result: null),
-                  child: const Text('Cancelar'),
+                  child: Text('Cancelar', style: AppTextStyles.button.copyWith(color: AppColors.primaryColor)),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () => Get.back(result: controller.text.trim()),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    )),
-                  child: const Text('Confirmar'),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryColor, foregroundColor: AppColors.surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: const Text('Confirmar', style: AppTextStyles.button),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

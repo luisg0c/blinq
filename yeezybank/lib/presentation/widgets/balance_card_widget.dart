@@ -21,9 +21,8 @@ class BalanceCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      color: Colors.white,
+        side: BorderSide(color: AppColors.dividerColor),
+      ),      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -49,7 +48,7 @@ class BalanceCard extends StatelessWidget {
               if (!snapshot.hasData) {
                 return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
                     ),
                   ),
                 );
@@ -63,13 +62,11 @@ class BalanceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [ Text(
                       'R\$ ${realTimeBalance.toStringAsFixed(2)}',              
-                      style: AppTextStyles.title.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textColor,
+                      style: AppTextStyles.title.copyWith(fontSize: 24, fontWeight: FontWeight.bold,),
+                    ),                  
                   Icon(
                     LineIcons.wallet,
-                    color: AppColors.primaryColor,
+                    color: AppColors.primaryColor,                
                     size: 32,
                   )
                       ),

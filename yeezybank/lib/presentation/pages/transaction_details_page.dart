@@ -95,7 +95,23 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     final isSent = isTransfer && widget.transaction.senderId == _authService.getCurrentUserId();
     final isDeposit = widget.transaction.type == 'deposit';
     
-    // Determinar título e ícone da transação
+    // Helper function to determine transaction type colors
+    TransactionTypeColors getTransactionTypeColors() {
+      if (isDeposit) {
+        return TransactionTypeColors(AppColors.primaryColor, 'Depósito', Icons.add_circle_outline);
+      } else if (isReceived) {
+        return TransactionTypeColors(AppColors.success, 'Pix Recebido', Icons.arrow_downward);
+      } else if (isSent) {
+        return TransactionTypeColors(AppColors.error, 'Pix Enviado', Icons.arrow_upward);
+      } else {
+        return TransactionTypeColors(AppColors.subtitle, 'Transação', Icons.swap_horiz);
+      }
+    }
+
+    final typeColors = getTransactionTypeColors();
+    final icon = typeColors.icon;
+    final color = typeColors.color;
+    final title = typeColors.title;
     IconData icon;
     Color color;
     String title;
@@ -154,7 +170,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: color.withOpacity(0.2),
+                          backgroundColor: typeColors.color.withOpacity(0.2),
                           radius: 20,
                           child: Icon(icon, color: color, size: 28),
                         ),
@@ -176,7 +192,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         const Spacer(),
                         Text(
                             NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(widget.transaction.amount),
-                          style: TextStyle(
+                          style: AppTextStyles.title.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                           ),
@@ -202,15 +218,14 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     
                     _buildDetailRow('Data/Hora:', DateFormat('dd/MM/yyyy - HH:mm:ss').format(widget.transaction.timestamp)),
                     _buildDetailRow('ID da Transação:', widget.transaction.id.substring(0, 8)),
-                  ],
-                ),
-              )),
-          ),
-            
+                  ]),
+              ),
+            ),
+
           const SizedBox(height: 16),
-          
+
           // Seção de autenticação
-          if (widget.transaction.transactionToken != null)
+            if (widget.transaction.transactionToken != null)
             Card(
               color: AppColors.surface,
               elevation: 0,
@@ -236,20 +251,21 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                               text: widget.transaction.transactionToken!,
                             ));
                             Get.snackbar(
-                              'Copiado',
-                              'Código de autenticação copiado para a área de transferência',
+                              'Copiado', 'Código de autenticação copiado para a área de transferência',
                               snackPosition: SnackPosition.BOTTOM,
                             );
                           },
                           tooltip: 'Copiar código',
                         ),
                       ],
-                    ),
+                    
                     const SizedBox(height: 12),
+
                     Text(
                       'Código de autenticação:',
                       style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                     ),
+
                     const SizedBox(height: 4),
                       SelectableText(
                       widget.transaction.transactionToken!,
@@ -280,7 +296,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               width: 120,
               child: Text(label, style: AppTextStyles.subtitle),
             ),
-          Expanded(
+            Expanded(
             child: Text(value,
                 fontSize: 14,
               ),
@@ -295,7 +311,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     Color color;
     String label;
 
-    switch (status) {
+      switch (status) {
       case 'completed':
         color = AppColors.success;
         label = 'Concluída';
@@ -369,8 +385,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text(
-                      'YeezyBank',
-                      style: pw.TextStyle( 
+                      'YeezyBank', style: pw.TextStyle(
+                        color: PdfColor.fromHex('556B2F'),
                         fontSize: 22,
                         fontWeight: pw.FontWeight.bold,
                       ),
@@ -567,5 +583,13 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         ),
       ],
     );
-  }
+  } 
+}
+
+class TransactionTypeColors {
+  final Color color;
+  final String title;
+  final IconData icon;
+  TransactionTypeColors(this.color, this.title, this.icon);
+}
 }

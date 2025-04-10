@@ -56,7 +56,7 @@ class _TransferPageState extends State<TransferPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: [            
             Text(
               'Para quem você vai enviar?',
               style: AppTextStyles.title,
@@ -66,78 +66,80 @@ class _TransferPageState extends State<TransferPage> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
+                side: BorderSide(color: AppColors.dividerColor),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextField(
+                child: TextFormField(
                   controller: recipientController,
                   decoration: InputDecoration(
                     hintText: 'Email do destinatário',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    border: InputBorder.none,
-                    prefixIcon: Icon(Icons.alternate_email, color: AppColors.primaryColor),
-                    errorText: _getRecipientError(),
+                    hintStyle: AppTextStyles.input.copyWith(color: AppColors.hintColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.dividerColor, width: 1.0),
+                    ),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.dividerColor, width: 1.0)),
+                    prefixIcon: Icon(Icons.alternate_email, color: AppColors.textColor),
+                    errorText: errorMessage, // Exibe a mensagem de erro
+                    errorStyle: AppTextStyles.error,
                   ),
-                  onChanged: _validateRecipient,
+                  onChanged: (value) {                    
+                    if (currentUserEmail != null &&
+                        value.toLowerCase().trim() == currentUserEmail!.toLowerCase().trim()) {
+                      setState(() {
+                        errorMessage = 'Não é possível transferir para sua própria conta';
+                      });
+                    } else {
+                      setState(() {
+                        errorMessage = null;
+                      });
+                    }
+                  },
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            MoneyInputField(
-              controller: recipientController,
-              icon: Icons.alternate_email,
-              label: 'Email do destinatário',
-                labelText: 'Email do destinatário',
-                border: const OutlineInputBorder(),
-                errorText: _getRecipientError(),
-              ),
-              onChanged: (value) {
-                // Validar se não é o mesmo email
-                if (currentUserEmail != null && 
-                    value.toLowerCase().trim() == currentUserEmail!.toLowerCase().trim()) {
-                  setState(() {
-                    errorMessage = 'Não é possível transferir para sua própria conta';
-                  });
-                } else {
-                  setState(() {
-                    errorMessage = null;
-                  });
-                }
-              },
-            ),
+            ),            
             const SizedBox(height: 32),
-            MoneyInputField(
-              controller: amountController,
-              icon: Icons.attach_money,
-              label: 'Valor da transferência (R\$)',
-              validator: (value) {
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
+                side: BorderSide(color: AppColors.dividerColor),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextFormField(
                   controller: amountController,
                   decoration: InputDecoration(
-                    hintText: 'Valor da transferência (R\$)',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    border: InputBorder.none,
-                    prefixIcon: Icon(Icons.attach_money, color: AppColors.primaryColor),
+                    hintText: 'Valor da transferência (R\$)',                  
+                    hintStyle: AppTextStyles.input.copyWith(color: AppColors.hintColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.dividerColor, width: 1.0),
+                    ),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.dividerColor, width: 1.0)),
+                    prefixIcon: Icon(Icons.attach_money, color: AppColors.textColor),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, informe um valor';
-                }
-                final amount = double.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'Valor inválido';
-                }
-                return null;
+                  keyboardType: TextInputType.number,                  
+                  onChanged: (value) {                    
+                    if (value.isNotEmpty) {                      
+                      final amount = double.tryParse(value);
+                      if (amount == null || amount <= 0) {
+                        setState(() {
+                          errorMessage = 'Valor inválido';
+                        });
+                      } else {
+                        setState(() {
+                          errorMessage = null;
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        errorMessage = null;
+                      });
+                    }
+                  },
+                ),
               },
             ),
             if (errorMessage != null) ...[
@@ -149,7 +151,7 @@ class _TransferPageState extends State<TransferPage> {
               onPressed: isLoading ? null : _initiateTransfer,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.surface,
                 minimumSize: const Size(double.infinity, 50),
                 textStyle: AppTextStyles.button,
                 shape: RoundedRectangleBorder(
@@ -157,7 +159,7 @@ class _TransferPageState extends State<TransferPage> {
                 ),
               ),
               child: isLoading
-                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface))
                   : const Text('Transferir'),
             ),
           ],
@@ -166,7 +168,7 @@ class _TransferPageState extends State<TransferPage> {
       bottomSheet: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: AppColors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(

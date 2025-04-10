@@ -96,30 +96,6 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
               obscureText: true,
             ),
             const SizedBox(height: 32),
-            SizedBox(
-              const Text('Nova Senha', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Digite sua nova senha',
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              const Text('Confirmar Nova Senha', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: confirmPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Confirme sua nova senha',
-                ),
-              ),
-              const SizedBox(height: 40),
             ElevatedButton(
               onPressed: isLoading ? null : _savePassword,
               style: ElevatedButton.styleFrom(
@@ -154,12 +130,20 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.dividerColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primaryColor),
+        ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: AppColors.surface,
       ),
     );
   }
+
 
   Future<void> _savePassword() async {
     // Validar entradas

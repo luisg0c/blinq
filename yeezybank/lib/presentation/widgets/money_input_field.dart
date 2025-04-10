@@ -37,17 +37,21 @@ class MoneyInputField extends StatelessWidget {
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       ],
       decoration: InputDecoration(
-        prefixIcon: icon != null ? Icon(icon, color: AppColors.primaryColor) : null,
+        prefixIcon: icon != null ? Icon(icon, color: AppColors.textColor) : null,
         labelText: label,
         labelStyle: AppTextStyles.input,
         hintText: hint,
-        hintStyle: AppTextStyles.input.copyWith(color: Colors.grey[400]),
+        hintStyle: AppTextStyles.input.copyWith(color: AppColors.subtitle),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(color: AppColors.dividerColor),
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primaryColor),
+        ),
+        fillColor: AppColors.surface,
         errorStyle: AppTextStyles.error,
       ),
     );
