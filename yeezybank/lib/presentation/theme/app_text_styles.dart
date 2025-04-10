@@ -8,6 +8,13 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
   );
 
+  // Adicionando o estilo title que estava faltando
+  static const title = TextStyle(
+    color: AppColors.textColor,
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+  );
+
   static const body = TextStyle(
     color: AppColors.textColor,
     fontSize: 16,
@@ -51,7 +58,6 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
   );
   
-  // Adicionados os estilos que faltavam
   static const input = TextStyle(
     color: AppColors.textColor,
     fontSize: 16,

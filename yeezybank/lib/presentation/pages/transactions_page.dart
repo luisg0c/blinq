@@ -6,6 +6,7 @@ import '../theme/app_text_styles.dart';
 import '../controllers/transaction_controller.dart';
 import '../../domain/models/transaction_model.dart';
 import '../theme/app_colors.dart';
+import '../pages/transaction_details_page.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
@@ -13,7 +14,6 @@ class TransactionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TransactionController>();
-    final userId = controller.currentUserId;
 
     return Scaffold(
       appBar: AppBar(
@@ -26,13 +26,33 @@ class TransactionsPage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+              ),
+            );
+          }
+
           final transactions = controller.transactions;
+          final userId = controller.currentUserId;
 
           if (transactions.isEmpty) {
             return Center(
-              child: Text(
-                'Nenhuma transação encontrada.',
-                style: AppTextStyles.body.copyWith(color: Colors.grey[600]),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.receipt_long_outlined,
+                    size: 64,
+                    color: AppColors.subtitle,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Nenhuma transação encontrada.',
+                    style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
+                  ),
+                ],
               ),
             );
           }
@@ -41,7 +61,6 @@ class TransactionsPage extends StatelessWidget {
             itemCount: transactions.length,
             itemBuilder: (context, index) {
               final txn = transactions[index];
-
               return _buildTransactionCard(txn, userId);
             },
           );
@@ -51,29 +70,8 @@ class TransactionsPage extends StatelessWidget {
   }
 
   Widget _buildTransactionCard(TransactionModel txn, String userId) {
-    String title;
-    IconData icon;
-    Color color;
-
-    if (txn.type == 'deposit') {
-      title = 'Depósito';
-      icon = Icons.arrow_downward;
-      color = Colors.green;
-    } else if (txn.type == 'transfer') {
-      if (txn.senderId == userId) {
-        title = 'Transferência enviada';
-        icon = Icons.arrow_outward;
-        color = Colors.red;
-      } else {
-        title = 'Transferência recebida';
-        icon = Icons.arrow_inward;
-        color = Colors.green;
-      }
-    } else {
-      title = 'Outra transação';
-      icon = Icons.swap_horiz;
-      color = Colors.grey;
-    }
+    final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+    final transactionType = _getTransactionType(txn, userId);
 
     return Card(
       elevation: 0,
@@ -82,41 +80,100 @@ class TransactionsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(icon, color: color, size: 32),
-        title: Text(
-          title,
-          style: AppTextStyles.subtitle.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        subtitle: Text(
-          DateFormat('dd/MM/yyyy HH:mm').format(txn.timestamp),
-          style: AppTextStyles.body.copyWith(color: Colors.grey[600]),
-        ),
-        trailing: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'R\$ ${txn.amount.toStringAsFixed(2)}',
-              style: AppTextStyles.amount.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () => Get.to(() => TransactionDetailsPage(transaction: txn)),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: transactionType.color.withOpacity(0.2),
+                radius: 24,
+                child: Icon(transactionType.icon, color: transactionType.color),
               ),
-            ),
-            if (txn.description != null && txn.description!.isNotEmpty)
-              const SizedBox(height: 4),
-            if (txn.description != null && txn.description!.isNotEmpty)
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transactionType.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      dateFormat.format(txn.timestamp),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                    if ((txn.description ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        txn.description!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               Text(
-                txn.description!,
-                style: AppTextStyles.caption.copyWith(color: Colors.grey[600]),
+                NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(txn.amount),
+                style: TextStyle(
+                  color: transactionType.color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+  _TransactionType _getTransactionType(TransactionModel txn, String userId) {
+    if (txn.type == 'deposit') {
+      return _TransactionType(
+        title: 'Depósito',
+        icon: Icons.add_circle_outline,
+        color: AppColors.primaryColor,
+      );
+    } else if (txn.type == 'transfer') {
+      final isSender = txn.senderId == userId;
+      return _TransactionType(
+        title: isSender ? 'Transferência enviada' : 'Transferência recebida',
+        icon: isSender ? Icons.arrow_upward : Icons.arrow_downward,
+        color: isSender ? AppColors.error : AppColors.success,
+      );
+    } else {
+      return _TransactionType(
+        title: 'Outra transação',
+        icon: Icons.swap_horiz,
+        color: AppColors.subtitle,
+      );
+    }
+  }
+}
+
+class _TransactionType {
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  _TransactionType({
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
 }

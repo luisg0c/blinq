@@ -21,15 +21,16 @@ class TransactionModel {
   final String type;
   
   // Campos para segurança e integridade
-  final String? transactionHash;      // Hash para verificação de integridade
-  final String? referenceId;          // Identificação única da transação
+  final String? transactionHash;
+  final String? referenceId;
+  final String? transactionToken;
+  final TransactionStatus? status;
+  final String? deviceId;
+  final String? confirmationCode;
+  final DateTime? confirmedAt;
   
-  // Campos para segurança estilo Nubank
-  final String? transactionToken;     // Token único da transação
-  final TransactionStatus? status;    // Status atual da transação
-  final String? deviceId;             // ID do dispositivo que iniciou
-  final String? confirmationCode;     // Código de 6 dígitos para confirmar
-  final DateTime? confirmedAt;        // Quando foi confirmada
+  // Novo campo: descrição
+  final String? description;
 
   TransactionModel({
     required this.id,
@@ -46,6 +47,7 @@ class TransactionModel {
     this.deviceId,
     this.confirmationCode,
     this.confirmedAt,
+    this.description,
   });
 
   factory TransactionModel.fromMap(Map<String, dynamic> map, String documentId) {
@@ -64,6 +66,7 @@ class TransactionModel {
       deviceId: map['deviceId'],
       confirmationCode: map['confirmationCode'],
       confirmedAt: map['confirmedAt'] != null ? (map['confirmedAt'] as Timestamp).toDate() : null,
+      description: map['description'],
     );
   }
 
@@ -80,14 +83,13 @@ class TransactionModel {
       'transactionToken': transactionToken,
       'deviceId': deviceId,
       'confirmationCode': confirmationCode,
+      'description': description,
     };
     
-    // Adicionar status apenas se não for nulo
     if (status != null) {
       data['status'] = status.toString().split('.').last;
     }
     
-    // Adicionar confirmedAt apenas se não for nulo
     if (confirmedAt != null) {
       data['confirmedAt'] = Timestamp.fromDate(confirmedAt!);
     }
@@ -110,6 +112,7 @@ class TransactionModel {
     String? deviceId,
     String? confirmationCode,
     DateTime? confirmedAt,
+    String? description,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -126,11 +129,12 @@ class TransactionModel {
       deviceId: deviceId ?? this.deviceId,
       confirmationCode: confirmationCode ?? this.confirmationCode,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+      description: description ?? this.description,
     );
   }
-  
+
   // Métodos de integridade
-  
+
   /// Gera um hash para verificação de integridade da transação
   String generateHash() {
     final dataToHash = {
@@ -190,7 +194,7 @@ class TransactionModel {
     final random = Random();
     return String.fromCharCodes(
       Iterable.generate(
-        length, 
+        length,
         (_) => chars.codeUnitAt(random.nextInt(chars.length))
       )
     );

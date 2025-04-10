@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../controllers/home_controller.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_text_styles.dart';
+import '../../domain/models/transaction_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -23,7 +24,6 @@ class HomePage extends StatelessWidget {
         onRefresh: () async {
           controller.resetState();
           await Future.delayed(const Duration(milliseconds: 300));
-          return;
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -53,10 +53,11 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Olá,', style: AppTextStyles.subtitle),
-            // Se userName não existir, usar email ou um placeholder
             Obx(
               () => Text(
-                controller.currentUserEmail ?? 'Usuário',
+                controller.currentUserEmail.value.isEmpty
+                    ? 'Usuário'
+                    : controller.currentUserEmail.value,
                 style: AppTextStyles.title,
               ),
             ),
@@ -74,9 +75,7 @@ class HomePage extends StatelessWidget {
     return Card(
       color: AppColors.primaryColor,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -86,8 +85,10 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 8),
             Obx(
               () => Text(
-                NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
-                    .format(controller.balance.value),
+                NumberFormat.currency(
+                  locale: 'pt_BR',
+                  symbol: 'R\$',
+                ).format(controller.balance.value),
                 style: AppTextStyles.cardTitle,
               ),
             ),
@@ -104,16 +105,32 @@ class HomePage extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         children: [
           _buildQuickActionItem(Icons.pix, 'Pix', () {}),
-          _buildQuickActionItem(Icons.money, 'Transferir', () => Get.toNamed('/transfer')),
-          _buildQuickActionItem(Icons.add_circle_outline, 'Depositar', () => Get.toNamed('/deposit')),
+          _buildQuickActionItem(
+            Icons.money,
+            'Transferir',
+            () => Get.toNamed('/transfer'),
+          ),
+          _buildQuickActionItem(
+            Icons.add_circle_outline,
+            'Depositar',
+            () => Get.toNamed('/deposit'),
+          ),
           _buildQuickActionItem(Icons.payment, 'Pagar', () {}),
-          _buildQuickActionItem(Icons.history, 'Histórico', () => Get.toNamed('/transactions')),
+          _buildQuickActionItem(
+            Icons.history,
+            'Histórico',
+            () => Get.toNamed('/transactions'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionItem(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildQuickActionItem(
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -125,8 +142,8 @@ class HomePage extends StatelessWidget {
             Icon(icon, color: AppColors.primaryColor, size: 32),
             const SizedBox(height: 8),
             Text(
-              label, 
-              style: AppTextStyles.quickAction, 
+              label,
+              style: AppTextStyles.quickAction,
               textAlign: TextAlign.center,
             ),
           ],
@@ -145,7 +162,7 @@ class HomePage extends StatelessWidget {
             const Text('Últimas transações', style: AppTextStyles.sectionTitle),
             TextButton(
               onPressed: () => Get.toNamed('/transactions'),
-              child: Text(
+              child: const Text(
                 'Ver todas',
                 style: TextStyle(color: AppColors.primaryColor),
               ),
@@ -153,59 +170,90 @@ class HomePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        Obx(() => 
-          controller.isHistoryVisible.value
-            ? controller.transactions.isNotEmpty
-                ? SizedBox(
-                    height: 300,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: controller.transactions.length > 5 
-                          ? 5 
-                          : controller.transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = controller.transactions[index];
-                        return ListTile(
-                          leading: Icon(
-                            _getTransactionIcon(transaction, controller.userId),
-                            color: _getTransactionColor(transaction, controller.userId),
-                          ),
-                          title: Text(_getTransactionTitle(transaction, controller.userId)),
-                          subtitle: Text(DateFormat('dd/MM/yyyy').format(transaction.timestamp)),
-                          trailing: Text(
-                            NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount),
-                            style: AppTextStyles.transactionValue.copyWith(
-                              color: _getTransactionColor(transaction, controller.userId),
+        Obx(
+          () =>
+              controller.isHistoryVisible.value
+                  ? controller.transactions.isNotEmpty
+                      ? SizedBox(
+                        height: 300,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount:
+                              controller.transactions.length > 5
+                                  ? 5
+                                  : controller.transactions.length,
+                          itemBuilder: (context, index) {
+                            final transaction = controller.transactions[index];
+                            return ListTile(
+                              leading: Icon(
+                                _getTransactionIcon(
+                                  transaction,
+                                  controller.userId,
+                                ),
+                                color: _getTransactionColor(
+                                  transaction,
+                                  controller.userId,
+                                ),
+                              ),
+                              title: Text(
+                                _getTransactionTitle(
+                                  transaction,
+                                  controller.userId,
+                                ),
+                              ),
+                              subtitle: Text(
+                                DateFormat(
+                                  'dd/MM/yyyy',
+                                ).format(transaction.timestamp),
+                              ),
+                              trailing: Text(
+                                NumberFormat.currency(
+                                  locale: 'pt_BR',
+                                  symbol: 'R\$',
+                                ).format(transaction.amount),
+                                style: TextStyle(
+                                  color: _getTransactionColor(
+                                    transaction,
+                                    controller.userId,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                      : const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(
+                          child: Text('Nenhuma transação recente.'),
+                        ),
+                      )
+                  : GestureDetector(
+                    onTap: () => controller.promptForPassword(Get.context!),
+                    child: Container(
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock,
+                              size: 32,
+                              color: AppColors.primaryColor,
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                : const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: Text('Nenhuma transação recente.')),
-                  )
-            : GestureDetector(
-                onTap: () => controller.promptForPassword(context),
-                child: Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock, size: 32, color: AppColors.primaryColor),
-                        SizedBox(height: 8),
-                        Text('Toque para visualizar o histórico'),
-                      ],
+                            SizedBox(height: 8),
+                            Text('Toque para visualizar o histórico'),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              )
         ),
       ],
     );
@@ -253,8 +301,8 @@ class HomePage extends StatelessWidget {
   Widget _buildBottomNavigationBar() {
     return ClipRRect(
       borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20), 
-        topRight: Radius.circular(20)
+        topLeft: Radius.circular(20),
+        topRight: Radius.circular(20),
       ),
       child: BottomNavigationBar(
         currentIndex: 0,
@@ -264,34 +312,17 @@ class HomePage extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-          BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Cartões'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance), label: 'Contas'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.credit_card),
+            label: 'Cartões',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance),
+            label: 'Contas',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Ajustes'),
         ],
       ),
     );
   }
-}
-
-// Modelo de transação para o exemplo
-class TransactionModel {
-  final String id;
-  final String senderId;
-  final String receiverId;
-  final double amount;
-  final DateTime timestamp;
-  final List<String> participants;
-  final String type;
-  final String? description;
-
-  TransactionModel({
-    required this.id,
-    required this.senderId,
-    required this.receiverId,
-    required this.amount,
-    required this.timestamp,
-    required this.participants,
-    required this.type,
-    this.description,
-  });
 }
