@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yeezybank/presentation/theme/app_colors.dart';
-import 'package:yeezybank/presentation/theme/app_text_styles.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
 class QuickActionsWidget extends StatelessWidget {
   const QuickActionsWidget({Key? key}) : super(key: key);
@@ -51,14 +51,22 @@ class QuickActionsWidget extends StatelessWidget {
   }) {
     return Column(
       children: [
-        IconButton.filled(
+        IconButton(
           onPressed: () => Get.toNamed(route),
           icon: Icon(icon, size: 24, color: AppColors.primaryColor),
-          style: IconButton.styleFrom(backgroundColor: AppColors.primaryColor.withOpacity(0.1),),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+          ),
         ),
         const SizedBox(height: 8),
-        Text(label, style: AppTextStyles.button.copyWith(fontSize: 14, color: AppColors.textColor),),
-      ),
+        Text(
+          label, 
+          style: AppTextStyles.button.copyWith(
+            fontSize: 14, 
+            color: AppColors.textColor
+          ),
+        ),
+      ],
     );
   }
 }

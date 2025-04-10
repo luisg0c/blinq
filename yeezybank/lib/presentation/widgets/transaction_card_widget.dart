@@ -48,10 +48,10 @@ class TransactionCard extends StatelessWidget {
           ),
           subtitle: Text(
             DateFormat('dd/MM/yyyy - HH:mm').format(transaction.timestamp),
-            style: TextStyle(color: AppColors.subtitle, fontSize: 12),
+            style: const TextStyle(color: AppColors.subtitle, fontSize: 12),
           ),
           trailing: Text(
-            'R$ ${transaction.amount.toStringAsFixed(2)}',
+            'R\$ ${transaction.amount.toStringAsFixed(2)}',
             style: TextStyle(
               color: display.color,
               fontWeight: FontWeight.bold,
@@ -83,7 +83,7 @@ class TransactionCard extends StatelessWidget {
         return TransactionDisplay(
           title: 'Pix Recebido',
           icon: Icons.arrow_downward,
-          color: AppColors.primaryColor,
+          color: AppColors.success,
         );
       }
     } else {
@@ -101,55 +101,6 @@ class TransactionDisplay {
   final IconData icon;
   final Color color;
 
-  TransactionDisplay({
-    required this.title,
-    required this.icon,
-    required this.color,
-  });
-}
-        ),
-      ),
-    );
-  }
-  
-  // Método auxiliar para determinar características visuais
-  TransactionDisplay _getTransactionDisplay() {
-    if (transaction.type == 'deposit') {
-      return TransactionDisplay(
-        title: 'Depósito',
-        icon: Icons.add_circle_outline,
-        color: Colors.blue,
-      );
-    } else if (transaction.type == 'transfer') {
-      if (transaction.senderId == currentUserId) {
-        return TransactionDisplay(
-          title: 'Pix Enviado',
-          icon: Icons.arrow_upward,
-          color: Colors.red,
-        );
-      } else {
-        return TransactionDisplay(
-          title: 'Pix Recebido',
-          icon: Icons.arrow_downward,
-          color: Colors.green,
-        );
-      }
-    } else {
-      return TransactionDisplay(
-        title: 'Transação',
-        icon: Icons.swap_horiz,
-        color: Colors.grey,
-      );
-    }
-  }
-}
-
-// Classe auxiliar para informações de exibição da transação
-class TransactionDisplay {
-  final String title;
-  final IconData icon;
-  final Color color;
-  
   TransactionDisplay({
     required this.title,
     required this.icon,

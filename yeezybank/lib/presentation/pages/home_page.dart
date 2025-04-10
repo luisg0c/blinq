@@ -23,8 +23,9 @@ class HomePage extends StatelessWidget {
         onRefresh: () async {
           controller.resetState();
           await Future.delayed(const Duration(milliseconds: 300));
+          return;
         },
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,9 +53,10 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Olá,', style: AppTextStyles.subtitle),
+            // Se userName não existir, usar email ou um placeholder
             Obx(
               () => Text(
-                controller.userName.value,
+                controller.currentUserEmail ?? 'Usuário',
                 style: AppTextStyles.title,
               ),
             ),
@@ -85,7 +87,7 @@ class HomePage extends StatelessWidget {
             Obx(
               () => Text(
                 NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
-                    .format(controller.accountBalance.value),
+                    .format(controller.balance.value),
                 style: AppTextStyles.cardTitle,
               ),
             ),
@@ -103,9 +105,9 @@ class HomePage extends StatelessWidget {
         children: [
           _buildQuickActionItem(Icons.pix, 'Pix', () {}),
           _buildQuickActionItem(Icons.money, 'Transferir', () => Get.toNamed('/transfer')),
+          _buildQuickActionItem(Icons.add_circle_outline, 'Depositar', () => Get.toNamed('/deposit')),
           _buildQuickActionItem(Icons.payment, 'Pagar', () {}),
-          _buildQuickActionItem(Icons.money_off, 'Empréstimos', () {}),
-          _buildQuickActionItem(Icons.credit_card, 'Cartão Virtual', () {}),
+          _buildQuickActionItem(Icons.history, 'Histórico', () => Get.toNamed('/transactions')),
         ],
       ),
     );
@@ -137,33 +139,115 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Últimas transações', style: AppTextStyles.sectionTitle),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Últimas transações', style: AppTextStyles.sectionTitle),
+            TextButton(
+              onPressed: () => Get.toNamed('/transactions'),
+              child: Text(
+                'Ver todas',
+                style: TextStyle(color: AppColors.primaryColor),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
-        Obx(() => controller.isHistoryVisible.value
+        Obx(() => 
+          controller.isHistoryVisible.value
             ? controller.transactions.isNotEmpty
-                ? ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: controller.transactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = controller.transactions[index];
-                      return ListTile(
-                        leading: const Icon(Icons.arrow_forward, color: AppColors.primaryColor),
-                        title: Text(transaction.description ?? ''),
-                        subtitle: Text(DateFormat('dd/MM/yyyy').format(transaction.timestamp)),
-                        trailing: Text(
-                          NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount),
-                          style: AppTextStyles.transactionValue.copyWith(
-                            color: transaction.amount > 0 ? AppColors.success : AppColors.error,
+                ? SizedBox(
+                    height: 300,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: controller.transactions.length > 5 
+                          ? 5 
+                          : controller.transactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = controller.transactions[index];
+                        return ListTile(
+                          leading: Icon(
+                            _getTransactionIcon(transaction, controller.userId),
+                            color: _getTransactionColor(transaction, controller.userId),
                           ),
-                        ),
-                      );
-                    },
+                          title: Text(_getTransactionTitle(transaction, controller.userId)),
+                          subtitle: Text(DateFormat('dd/MM/yyyy').format(transaction.timestamp)),
+                          trailing: Text(
+                            NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(transaction.amount),
+                            style: AppTextStyles.transactionValue.copyWith(
+                              color: _getTransactionColor(transaction, controller.userId),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   )
-                : const Text('Nenhuma transação recente.')
-            : const Text('Histórico de transações bloqueado.')),
+                : const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: Text('Nenhuma transação recente.')),
+                  )
+            : GestureDetector(
+                onTap: () => controller.promptForPassword(context),
+                child: Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock, size: 32, color: AppColors.primaryColor),
+                        SizedBox(height: 8),
+                        Text('Toque para visualizar o histórico'),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+        ),
       ],
     );
+  }
+
+  IconData _getTransactionIcon(TransactionModel transaction, String userId) {
+    if (transaction.type == 'deposit') {
+      return Icons.add_circle_outline;
+    } else if (transaction.type == 'transfer') {
+      if (transaction.senderId == userId) {
+        return Icons.arrow_upward;
+      } else {
+        return Icons.arrow_downward;
+      }
+    }
+    return Icons.swap_horiz;
+  }
+
+  Color _getTransactionColor(TransactionModel transaction, String userId) {
+    if (transaction.type == 'deposit') {
+      return AppColors.primaryColor;
+    } else if (transaction.type == 'transfer') {
+      if (transaction.senderId == userId) {
+        return AppColors.error;
+      } else {
+        return AppColors.success;
+      }
+    }
+    return AppColors.subtitle;
+  }
+
+  String _getTransactionTitle(TransactionModel transaction, String userId) {
+    if (transaction.type == 'deposit') {
+      return 'Depósito';
+    } else if (transaction.type == 'transfer') {
+      if (transaction.senderId == userId) {
+        return 'Transferência enviada';
+      } else {
+        return 'Transferência recebida';
+      }
+    }
+    return 'Transação';
   }
 
   Widget _buildBottomNavigationBar() {
@@ -173,9 +257,11 @@ class HomePage extends StatelessWidget {
         topRight: Radius.circular(20)
       ),
       child: BottomNavigationBar(
+        currentIndex: 0,
         backgroundColor: AppColors.backgroundColor,
         selectedItemColor: AppColors.primaryColor,
         unselectedItemColor: AppColors.hintColor,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
           BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Cartões'),
@@ -185,4 +271,27 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+}
+
+// Modelo de transação para o exemplo
+class TransactionModel {
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final double amount;
+  final DateTime timestamp;
+  final List<String> participants;
+  final String type;
+  final String? description;
+
+  TransactionModel({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    required this.amount,
+    required this.timestamp,
+    required this.participants,
+    required this.type,
+    this.description,
+  });
 }

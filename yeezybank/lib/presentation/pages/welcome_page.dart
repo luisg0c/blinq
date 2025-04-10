@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yeezybank/presentation/theme/app_colors.dart';
-import 'package:yeezybank/presentation/theme/app_text_styles.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -16,9 +16,9 @@ class WelcomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Logo (assuming a white or purple version exists)
+            // Logo
             Image.asset(
-              'assets/images/logo_text.png', // Replace with appropriate logo
+              'assets/images/logo_text.png',
               height: 100,
             ),
             const SizedBox(height: 40),
@@ -34,9 +34,9 @@ class WelcomePage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            // Subtitle or description (optional)
+            // Subtitle or description
             Text(
-              'Seu banco digital, simples e fácil.', // Add a suitable description
+              'Seu banco digital, simples e fácil.',
               style: AppTextStyles.body.copyWith(fontSize: 18, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),

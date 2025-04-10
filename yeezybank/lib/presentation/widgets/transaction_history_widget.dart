@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'dart:ui';
 import '../../domain/models/transaction_model.dart';
 import 'transaction_card_widget.dart';
+import '../theme/app_colors.dart';
 
 class TransactionHistoryWidget extends StatelessWidget {
   final Stream<List<TransactionModel>> transactionsStream;
