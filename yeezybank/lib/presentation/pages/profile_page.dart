@@ -7,6 +7,7 @@ import '../theme/app_text_styles.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+  
   @override
   Widget build(BuildContext context) {
     final authService = Get.find<AuthService>();
@@ -45,14 +46,14 @@ class ProfilePage extends StatelessWidget {
         CircleAvatar(
           radius: 40,
           backgroundColor: AppColors.primaryColor.withOpacity(0.1),
-          child: Icon(Icons.person, size: 40, color: AppColors.primaryColor),
+          child: const Icon(Icons.person, size: 40, color: AppColors.primaryColor),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Olá,', style: AppTextStyles.body),
+              const Text('Olá,', style: AppTextStyles.body),
               Text(email, style: AppTextStyles.title),
             ],
           ),
@@ -66,20 +67,23 @@ class ProfilePage extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.dividerColor),
+        side: const BorderSide(color: AppColors.dividerColor),
       ),
       child: Column(
         children: [
           ListTile(
-            leading: Icon(Icons.email_outlined, color: AppColors.primaryColor),
+            leading: const Icon(Icons.email_outlined, color: AppColors.primaryColor),
             title: const Text('Email', style: AppTextStyles.subtitle),
-            subtitle: Text(authService.getCurrentUser()?.email ?? 'Email não disponível', style: AppTextStyles.body),
+            subtitle: Text(
+              authService.getCurrentUser()?.email ?? 'Email não disponível', 
+              style: AppTextStyles.body
+            ),
           ),
-          Divider(height: 1, color: AppColors.dividerColor),
+          const Divider(height: 1, color: AppColors.dividerColor),
           ListTile(
-            leading: Icon(Icons.security, color: AppColors.primaryColor),
+            leading: const Icon(Icons.security, color: AppColors.primaryColor),
             title: const Text('Senha de Transação', style: AppTextStyles.subtitle),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.subtitle),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.subtitle),
             onTap: () => Get.toNamed('/change-transaction-password'),
           ),
         ],
@@ -92,21 +96,21 @@ class ProfilePage extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.dividerColor),
+        side: const BorderSide(color: AppColors.dividerColor),
       ),
       child: Column(
         children: [
           ListTile(
-            leading: Icon(Icons.help_outline, color: AppColors.primaryColor),
+            leading: const Icon(Icons.help_outline, color: AppColors.primaryColor),
             title: const Text('Ajuda', style: AppTextStyles.subtitle),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             onTap: () {
               Get.snackbar('Em breve', 'Esta funcionalidade estará disponível em breve.');
             },
           ),
-          Divider(height: 1, color: AppColors.dividerColor),
+          const Divider(height: 1, color: AppColors.dividerColor),
           ListTile(
-            leading: Icon(Icons.info_outline, color: AppColors.primaryColor),
+            leading: const Icon(Icons.info_outline, color: AppColors.primaryColor),
             title: const Text('Sobre o YeezyBank', style: AppTextStyles.subtitle),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             onTap: () {
@@ -142,7 +146,6 @@ class ProfilePage extends StatelessWidget {
         minimumSize: const Size(double.infinity, 50),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: AppTextStyles.button,
-
       ),
       child: const Text('Sair'),
     );
@@ -158,16 +161,11 @@ class ProfilePage extends StatelessWidget {
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
           child: const Text('Sair', style: AppTextStyles.button),
         ),
-        TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancelar', style: AppTextStyles.button)),
-      ],
-    );
-  }
-}
-              ),
-            ),
-          ],
+        TextButton(
+          onPressed: () => Get.back(result: false), 
+          child: const Text('Cancelar', style: AppTextStyles.button)
         ),
-      ),
+      ],
     );
   }
 }
