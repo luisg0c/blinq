@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:yeezybank/presentation/theme/app_colors.dart';
+import 'package:yeezybank/presentation/theme/app_text_styles.dart';
 
 class MoneyInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -35,12 +37,18 @@ class MoneyInputField extends StatelessWidget {
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       ],
       decoration: InputDecoration(
-        prefixIcon: icon != null ? Icon(icon) : null,
+        prefixIcon: icon != null ? Icon(icon, color: AppColors.primaryColor) : null,
         labelText: label,
+        labelStyle: AppTextStyles.input,
         hintText: hint,
-        border: const OutlineInputBorder(),
-        // Feedback visual para valores inválidos
-        errorStyle: const TextStyle(color: Colors.red),
+        hintStyle: AppTextStyles.input.copyWith(color: Colors.grey[400]),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        errorStyle: AppTextStyles.error,
       ),
     );
   }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:line_icons/line_icons.dart';
+import 'package:yeezybank/presentation/theme/app_colors.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/transaction_service.dart';
 import '../../domain/models/transaction_model.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/password_prompt.dart';
 import '../widgets/money_input_field.dart';
 import '../widgets/transaction_confirmation_dialog.dart';
@@ -44,21 +45,49 @@ class _TransferPageState extends State<TransferPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enviar Pix')),
+      appBar: AppBar(
+        title: const Text('Enviar Pix', style: AppTextStyles.appBarTitle),
+        backgroundColor: AppColors.backgroundColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textColor),
+      ),
+      backgroundColor: AppColors.backgroundColor,
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Realizar Transferência',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              'Para quem você vai enviar?',
+              style: AppTextStyles.title,
             ),
-            const SizedBox(height: 20),
-            TextField(
+            const SizedBox(height: 32),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  controller: recipientController,
+                  decoration: InputDecoration(
+                    hintText: 'Email do destinatário',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.alternate_email, color: AppColors.primaryColor),
+                    errorText: _getRecipientError(),
+                  ),
+                  onChanged: _validateRecipient,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            MoneyInputField(
               controller: recipientController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(LineIcons.user),
+              icon: Icons.alternate_email,
+              label: 'Email do destinatário',
                 labelText: 'Email do destinatário',
                 border: const OutlineInputBorder(),
                 errorText: _getRecipientError(),
@@ -77,12 +106,30 @@ class _TransferPageState extends State<TransferPage> {
                 }
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
             MoneyInputField(
               controller: amountController,
-              icon: LineIcons.dollarSign,
+              icon: Icons.attach_money,
               label: 'Valor da transferência (R\$)',
               validator: (value) {
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextFormField(
+                  controller: amountController,
+                  decoration: InputDecoration(
+                    hintText: 'Valor da transferência (R\$)',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.attach_money, color: AppColors.primaryColor),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, informe um valor';
                 }
@@ -94,68 +141,49 @@ class _TransferPageState extends State<TransferPage> {
               },
             ),
             if (errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                errorMessage!,
-                style: TextStyle(color: Colors.red[700], fontSize: 14),
-              ),
+              const SizedBox(height: 12),
+              Text(errorMessage!, style: AppTextStyles.error),
             ],
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: isLoading 
-                    ? const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ) 
-                    : const Icon(LineIcons.paperPlane),
-                label: const Text('Iniciar Transferência'),
-                onPressed: isLoading ? null : _initiateTransfer,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  textStyle: const TextStyle(fontSize: 16),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: isLoading ? null : _initiateTransfer,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                textStyle: AppTextStyles.button,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ),
-            
-            // Texto explicativo
-            const SizedBox(height: 24),
-            const Text(
-              'Segurança Estilo Nubank',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Suas transferências agora são mais seguras:\n'
-              '1. Você inicia a transferência\n'
-              '2. Insere um código de confirmação\n'
-              '3. A transação só é concluída após sua confirmação',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              child: isLoading
+                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                  : const Text('Transferir'),
             ),
           ],
         ),
       ),
+      bottomSheet: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Segurança', style: AppTextStyles.sectionTitle),
+            const SizedBox(height: 8),
+            Text(
+              'Suas transferências são protegidas com senha e confirmação.',
+              style: AppTextStyles.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
-  }
-  
-  String? _getRecipientError() {
-    if (currentUserEmail != null && 
-        recipientController.text.isNotEmpty &&
-        recipientController.text.toLowerCase().trim() == currentUserEmail!.toLowerCase().trim()) {
-      return 'Não é possível transferir para você mesmo';
-    }
-    return null;
   }
   
   Future<void> _initiateTransfer() async {

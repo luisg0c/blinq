@@ -1,34 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:yeezybank/presentation/theme/app_colors.dart';
+import 'package:yeezybank/presentation/theme/app_text_styles.dart';
 
 class QuickActionsWidget extends StatelessWidget {
   const QuickActionsWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _actionButton(Icons.add, 'Depositar', '/deposit'),
-        _actionButton(Icons.send, 'Transferir', '/transfer'),
-      ],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _actionButton(
+            icon: Icons.add,
+            label: 'Depositar',
+            route: '/deposit',
+            context: context,
+          ),
+          _actionButton(
+            icon: Icons.send,
+            label: 'Transferir',
+            route: '/transfer',
+            context: context,
+          ),
+        ],
+      ),
     );
   }
-  
-  Widget _actionButton(IconData icon, String label, String route) {
-    return ElevatedButton.icon(
-      onPressed: () => Get.toNamed(route),
-      icon: Icon(icon, size: 20),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(fontSize: 16),
-        backgroundColor: Colors.green[400],
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required String route,
+    required BuildContext context,
+  }) {
+    return Column(
+      children: [
+        IconButton.filled(
+          onPressed: () => Get.toNamed(route),
+          icon: Icon(icon, size: 24, color: AppColors.primaryColor),
+          style: IconButton.styleFrom(backgroundColor: AppColors.primaryColor.withOpacity(0.1),),
         ),
+        const SizedBox(height: 8),
+        Text(label, style: AppTextStyles.button.copyWith(fontSize: 14, color: AppColors.textColor),),
       ),
     );
   }

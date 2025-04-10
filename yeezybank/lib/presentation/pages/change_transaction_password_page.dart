@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/transaction_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
 class ChangeTransactionPasswordPage extends StatefulWidget {
   const ChangeTransactionPasswordPage({super.key});
@@ -52,37 +54,49 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
     return Scaffold(
       appBar: AppBar(
         title: Text(hasExistingPassword 
-          ? 'Alterar Senha de Transação' 
-          : 'Cadastrar Senha de Transação'),
-        backgroundColor: const Color(0xFF388E3C),
+          ? 'Alterar Senha de Transação'
+          : 'Cadastrar Senha de Transação',
+          style: AppTextStyles.appBarTitle,
+        ),
+        backgroundColor: AppColors.backgroundColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textColor),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'A senha de transação é utilizada para autorizar depósitos e transferências',
-                style: TextStyle(fontSize: 16),
+      backgroundColor: AppColors.backgroundColor,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'A senha de transação é utilizada para autorizar depósitos e transferências',
+              style: AppTextStyles.body.copyWith(fontSize: 16),
+            ),
+            const SizedBox(height: 32),
+            // Apenas mostra campo de senha atual se já tiver senha cadastrada
+            if (hasExistingPassword)
+              _buildTextField(
+                controller: currentPasswordController,
+                labelText: 'Senha Atual',
+                hintText: 'Digite sua senha atual',
+                obscureText: true,
               ),
-              const SizedBox(height: 30),
-              
-              // Apenas mostra campo de senha atual se já tiver senha cadastrada
-              if (hasExistingPassword) ...[
-                const Text('Senha Atual', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Digite sua senha atual',
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-              
+            if (hasExistingPassword) const SizedBox(height: 24),
+            _buildTextField(
+              controller: newPasswordController,
+              labelText: 'Nova Senha',
+              hintText: 'Digite sua nova senha',
+              obscureText: true,
+            ),
+            const SizedBox(height: 24),
+            _buildTextField(
+              controller: confirmPasswordController,
+              labelText: 'Confirmar Nova Senha',
+              hintText: 'Confirme sua nova senha',
+              obscureText: true,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
               const Text('Nova Senha', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
@@ -106,22 +120,91 @@ class _ChangeTransactionPasswordPageState extends State<ChangeTransactionPasswor
                 ),
               ),
               const SizedBox(height: 40),
-              
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _savePassword,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.green[600],
-                  ),
-                  child: isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Salvar Senha', style: TextStyle(fontSize: 16)),
+            ElevatedButton(
+              onPressed: isLoading ? null : _savePassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                textStyle: AppTextStyles.button,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
-          ),
+              child: isLoading
+                  ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                  : const Text('Salvar Senha'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required String hintText,
+    bool obscureText = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        labelText: labelText,
+        hintText: hintText,
+        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
+  Future<void> _savePassword() async {
+    // Validar entradas
+    if (newPasswordController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty ||
+        (hasExistingPassword && currentPasswordController.text.isEmpty)) {
+      Get.snackbar('Erro', 'Preencha todos os campos');
+      return;
+    }
+
+    if (newPasswordController.text != confirmPasswordController.text) {
+      Get.snackbar('Erro', 'As senhas não conferem');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final userId = authService.getCurrentUserId();
+
+      if (hasExistingPassword) {
+        // Alterar senha existente
+        await transactionService.changeTransactionPassword(
+          userId,
+          currentPasswordController.text,
+          newPasswordController.text,
+        );
+        Get.snackbar('Sucesso', 'Senha alterada com sucesso');
+      } else {
+        // Cadastrar nova senha
+        await transactionService.setTransactionPassword(
+          userId,
+          newPasswordController.text,
+        );
+        Get.snackbar('Sucesso', 'Senha cadastrada com sucesso');
+      }
+
+      Get.back();
+    } catch (e) {
+      Get.snackbar('Erro', e.toString());
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+}
         ),
       ),
     );

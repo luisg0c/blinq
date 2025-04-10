@@ -11,6 +11,8 @@ import 'dart:io';
 
 import '../../domain/models/transaction_model.dart';
 import '../../domain/services/auth_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../../domain/services/transaction_service.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
@@ -117,13 +119,15 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: color,
+        title: Text(title, style: AppTextStyles.appBarTitle),
+        backgroundColor: AppColors.primaryColor,
+        iconTheme: IconThemeData(color: AppColors.textColor),
         actions: [
           if (isTransfer) // Compartilhar apenas transferências
             IconButton(
-              icon: const Icon(Icons.share),
+              icon: Icon(Icons.share, color: AppColors.textColor),
               onPressed: _isGeneratingPdf ? null : _generateAndSharePdf,
               tooltip: 'Compartilhar comprovante',
             ),
@@ -136,14 +140,14 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
           children: [
             // Card principal
             Card(
-              elevation: 3,
+              color: AppColors.surface,
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: color.withOpacity(0.2), width: 1),
+                side: BorderSide(color: AppColors.dividerColor),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+                padding: const EdgeInsets.all(16),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Ícone e valor
@@ -151,40 +155,36 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       children: [
                         CircleAvatar(
                           backgroundColor: color.withOpacity(0.2),
-                          radius: 24,
+                          radius: 20,
                           child: Icon(icon, color: color, size: 28),
                         ),
                         const SizedBox(width: 16),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: [                            
                             Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                                title,
+                              style: AppTextStyles.title.copyWith(
+                                  color: AppColors.textColor),
                             ),
-                            const SizedBox(height: 4),
                             Text(
                               DateFormat('dd/MM/yyyy - HH:mm:ss').format(widget.transaction.timestamp),
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                              style: AppTextStyles.subtitle,
                             ),
                           ],
                         ),
                         const Spacer(),
                         Text(
-                          'R\$ ${widget.transaction.amount.toStringAsFixed(2)}',
+                            NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(widget.transaction.amount),
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: color,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                     
-                    const Divider(height: 32),
+                    Divider(height: 32, color: AppColors.dividerColor),
                     
                     // Detalhes da transação
                     if (isTransfer) ...[
@@ -204,85 +204,57 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     _buildDetailRow('ID da Transação:', widget.transaction.id.substring(0, 8)),
                   ],
                 ),
-              ),
-            ),
+              )),
+          ),
             
-            const SizedBox(height: 16),
-            
-            // Seção de autenticação
+          const SizedBox(height: 16),
+          
+          // Seção de autenticação
+          if (widget.transaction.transactionToken != null)
             Card(
-              elevation: 2,
+              color: AppColors.surface,
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: AppColors.dividerColor),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.verified, color: Colors.green),
+                        Icon(Icons.lock, color: AppColors.primaryColor),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Autenticação',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('Autenticação', style: AppTextStyles.subtitle),
                         const Spacer(),
-                        if (widget.transaction.transactionToken != null)
-                          IconButton(
-                            icon: const Icon(Icons.copy, size: 18),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(
-                                text: widget.transaction.transactionToken!,
-                              ));
-                              Get.snackbar(
-                                'Copiado', 
-                                'Código de autenticação copiado para a área de transferência',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            },
-                            tooltip: 'Copiar código',
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.copy, size: 18),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(
+                              text: widget.transaction.transactionToken!,
+                            ));
+                            Get.snackbar(
+                              'Copiado',
+                              'Código de autenticação copiado para a área de transferência',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          },
+                          tooltip: 'Copiar código',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (widget.transaction.transactionToken != null) ...[
-                      const Text(
-                        'Código de autenticação:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Text(
-                          widget.transaction.transactionToken!,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      const Text(
-                        'Esta transação não possui código de autenticação.',
-                        style: TextStyle(
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+                    Text(
+                      'Código de autenticação:',
+                      style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
+                    ),
+                    const SizedBox(height: 4),
+                      SelectableText(
+                      widget.transaction.transactionToken!,
+                      style: AppTextStyles.body.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                    ),
                     
                     if (widget.transaction.status != null) ...[
                       const SizedBox(height: 16),
@@ -292,76 +264,24 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 ),
               ),
             ),
-            
-            // Mensagem sobre comprovante
-            if (isTransfer) ...[
-              const SizedBox(height: 24),
-              Card(
-                elevation: 0,
-                color: Colors.blue[50],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(LineIcons.fileAlt, color: Colors.blue[700]),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Comprovante disponível',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue[800],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Toque no botão de compartilhar no topo da tela para gerar um comprovante em PDF.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 120,
+              child: Text(label, style: AppTextStyles.subtitle),
             ),
-          ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+            child: Text(value,
                 fontSize: 14,
               ),
             ),
@@ -369,43 +289,43 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         ],
       ),
     );
-  }
-  
+  } 
+
   Widget _buildStatusChip(String status) {
     Color color;
     String label;
-    
+
     switch (status) {
       case 'completed':
-        color = Colors.green;
+        color = AppColors.success;
         label = 'Concluída';
         break;
       case 'confirmed':
-        color = Colors.blue;
+        color = AppColors.primaryColor;
         label = 'Confirmada';
         break;
-      case 'pending':
-        color = Colors.orange;
+    case 'pending':
+        color = AppColors.secondaryColor;
         label = 'Pendente';
         break;
       case 'failed':
-        color = Colors.red;
+        color = AppColors.error;
         label = 'Falha';
         break;
       default:
-        color = Colors.grey;
+        color = AppColors.hintColor;
         label = status;
     }
-    
+
     return Chip(
       backgroundColor: color.withOpacity(0.1),
       side: BorderSide(color: color.withOpacity(0.3)),
       label: Text(
         label,
-        style: TextStyle(
+        style: AppTextStyles.caption.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
-        ),
+          fontSize: 12,
       ),
       avatar: CircleAvatar(
         backgroundColor: color,
@@ -413,19 +333,19 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         child: const SizedBox(),
       ),
     );
-  }
-  
+  } 
+
   Future<void> _generateAndSharePdf() async {
     if (_isGeneratingPdf) return;
-    
+
     setState(() {
       _isGeneratingPdf = true;
     });
-    
+
     try {
       // Gerar PDF
       final pdf = pw.Document();
-      
+
       final isReceived = widget.transaction.receiverId == _authService.getCurrentUserId();
       final isSent = widget.transaction.senderId == _authService.getCurrentUserId();
       
@@ -450,7 +370,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   children: [
                     pw.Text(
                       'YeezyBank',
-                      style: pw.TextStyle(
+                      style: pw.TextStyle( 
                         fontSize: 22,
                         fontWeight: pw.FontWeight.bold,
                       ),
@@ -536,7 +456,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       pw.SizedBox(height: 12),
                       _buildPdfRow('Autenticação:', widget.transaction.transactionToken ?? 'Não disponível'),
                     ],
-                  ),
+                  )
                 ),
                 
                 pw.SizedBox(height: 30),
@@ -546,7 +466,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   padding: const pw.EdgeInsets.all(16),
                   decoration: pw.BoxDecoration(
                     color: PdfColors.green50,
-                    borderRadius: pw.BorderRadius.circular(8),
+                      borderRadius: pw.BorderRadius.circular(8),
                     border: pw.Border.all(color: PdfColors.green),
                   ),
                   child: pw.Row(
@@ -600,11 +520,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         ),
       );
       
-      // Salvar PDF
-      final output = await getTemporaryDirectory();
-      final file = File('${output.path}/comprovante_${DateFormat('ddMMyyyyHHmmss').format(DateTime.now())}.pdf');
-      await file.writeAsBytes(await pdf.save());
-      
+
+        // Salvar PDF
+        final output = await getTemporaryDirectory();
+        final file = File('${output.path}/comprovante_${DateFormat('ddMMyyyyHHmmss').format(DateTime.now())}.pdf');
+        await file.writeAsBytes(await pdf.save());
       // Compartilhar PDF
       await Share.shareXFiles(
         [XFile(file.path)],

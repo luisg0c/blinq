@@ -2,78 +2,155 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
-import '../../domain/services/transaction_service.dart';
-import '../widgets/password_prompt.dart';
 import '../controllers/transaction_password_handler.dart';
 import '../widgets/money_input_field.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
+import '../widgets/transaction_confirmation_dialog.dart';
+import '../../domain/models/transaction_model.dart';
 
-class DepositPage extends StatelessWidget {
+class DepositPage extends StatefulWidget {
   const DepositPage({super.key});
 
   @override
+  State<DepositPage> createState() => _DepositPageState();
+}
+
+class _DepositPageState extends State<DepositPage> {
+  final amountController = TextEditingController();
+  final authService = Get.find<AuthService>();
+  final transactionService = Get.find<TransactionService>();
+  final passwordHandler = Get.find<TransactionPasswordHandler>();
+  bool isLoading = false;
+  String? errorMessage;
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final amountController = TextEditingController();
-    final authService = Get.find<AuthService>();
-    final transactionService = Get.find<TransactionService>();
-    
-    // Duas opções de inicialização:
-    // 1. Usar o Get.find se registrado no InitialBinding
-    final passwordHandler = Get.isRegistered<TransactionPasswordHandler>() 
-        ? Get.find<TransactionPasswordHandler>() 
-        : TransactionPasswordHandler(); // 2. Instanciar diretamente se não registrado
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Depositar')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Valor do Depósito', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            MoneyInputField(
-              controller: amountController,
-              icon: Icons.attach_money,
-              label: 'Valor do depósito (R\$)',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, informe um valor';
-                }
-                final amount = double.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'Valor inválido';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Depositar'),
-                onPressed: () async {
-                  double? amount = double.tryParse(amountController.text.trim());
-                  if (amount == null || amount <= 0) {
-                    Get.snackbar('Erro', 'Informe um valor válido');
-                    return;
-                  }
-
-                  try {
-                    String userId = authService.getCurrentUserId();
-                    bool allowed = await passwordHandler.ensureValidPassword(context, userId);
-                    if (!allowed) return;
-
-                    await transactionService.deposit(userId, amount);
-                    Get.snackbar('Sucesso', 'Depósito de R\$ ${amount.toStringAsFixed(2)} realizado!');
-                    Get.back(result: true); // Refresh saldo
-                  } catch (e) {
-                    Get.snackbar('Erro ao depositar', e.toString());
-                  }
-                },
+      appBar: AppBar(
+        title: const Text('Depositar', style: AppTextStyles.appBarTitle),
+        backgroundColor: AppColors.backgroundColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textColor),
+      ),
+      backgroundColor: AppColors.backgroundColor,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Qual valor você quer depositar?',
+                style: AppTextStyles.title,
+              ),
+              const SizedBox(height: 32),
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: MoneyInputField(
+                    controller: amountController,
+                    icon: Icons.attach_money,
+                    labelText: 'Valor do depósito (R\$)',
+                    errorText: errorMessage,
+                    onChanged: (value) {
+                      setState(() {
+                        errorMessage = null;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(errorMessage!, style: AppTextStyles.error),
+              ],
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: isLoading ? null : _initiateDeposit,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  textStyle: const TextStyle(fontSize: 16),
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  textStyle: AppTextStyles.button,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                    : const Text('Depositar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _initiateDeposit() async {
+    final amountText = amountController.text.trim();
+    final amount = double.tryParse(amountText);
+
+    if (amount == null || amount <= 0) {
+      setState(() {
+        errorMessage = 'Informe um valor válido';
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final userId = authService.getCurrentUserId();
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => TransactionConfirmationDialog(
+          transaction: TransactionModel(
+            id: '',
+            senderId: '',
+            receiverId: userId,
+            amount: amount,
+            timestamp: DateTime.now(),
+            participants: [],
+            type: 'deposit',
+          ),
+          receiverEmail: authService.getCurrentUser()!.email!,
+        ),
+      );
+
+      if (confirmed == true) {
+        Get.back(result: true);
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+}
                 ),
               ),
             ),

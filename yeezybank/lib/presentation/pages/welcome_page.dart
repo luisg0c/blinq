@@ -1,61 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:yeezybank/presentation/theme/app_colors.dart';
+import 'package:yeezybank/presentation/theme/app_text_styles.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 251, 247, 226),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 60.0,
+    return  Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Logo (assuming a white or purple version exists)
+            Image.asset(
+              'assets/images/logo_text.png', // Replace with appropriate logo
+              height: 100,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo
-                Image.asset('assets/images/logo_text_black.png', height: 60),
-                const SizedBox(height: 60),
-                // Imagem do cartão
-                Center(
-                  child: Image.asset('assets/images/cards.png', height: 250),
-                ),
-                const SizedBox(height: 60),
-                const Text(
-                  'Yeezy',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const Text(
-                  'Bank & Co',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-              ],
+            const SizedBox(height: 40),
+            // Main text
+            Text(
+              'Yeezy',
+              style: AppTextStyles.title.copyWith(fontSize: 32),
+              textAlign: TextAlign.center,
             ),
-          ),
-          // Botão de seta
-          Positioned(
-            bottom: 40,
-            right: 30,
-            child: GestureDetector(
-              onTap: () {
-                Get.toNamed('/login');
-              },
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
+            Text(
+              'Bank & Co',
+              style: AppTextStyles.title.copyWith(fontSize: 32),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            // Subtitle or description (optional)
+            Text(
+              'Seu banco digital, simples e fácil.', // Add a suitable description
+              style: AppTextStyles.body.copyWith(fontSize: 18, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 60),
+            // Navigation button
+            ElevatedButton(
+              onPressed: () => Get.toNamed('/login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.arrow_forward, color: Colors.white),
+              ),
+              child: const Text(
+                'Continuar',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

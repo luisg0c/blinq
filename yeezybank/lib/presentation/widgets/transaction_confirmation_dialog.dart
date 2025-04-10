@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../domain/models/transaction_model.dart';
-import '../../domain/services/transaction_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
+/// Diálogo de confirmação de transação com código de segurança.
+/// Apresenta detalhes da transação e solicita código para confirmar.
 class TransactionConfirmationDialog extends StatefulWidget {
   final TransactionModel transaction;
   final String receiverEmail;
@@ -19,7 +22,6 @@ class TransactionConfirmationDialog extends StatefulWidget {
 }
 
 class _TransactionConfirmationDialogState extends State<TransactionConfirmationDialog> {
-  final TransactionService _transactionService = Get.find<TransactionService>();
   final TextEditingController _codeController = TextEditingController();
   bool _isConfirming = false;
   String? _errorMessage;
@@ -32,102 +34,99 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Confirmar Transferência'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Para sua segurança, confirme os detalhes da transferência:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Destinatário:', widget.receiverEmail),
-            _buildInfoRow('Valor:', 'R\$ ${widget.transaction.amount.toStringAsFixed(2)}'),
-            _buildInfoRow('Data:', _formatDate(widget.transaction.timestamp)),
-            
-            const SizedBox(height: 24),
-            const Text(
-              'Digite o código de confirmação:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'O código de 6 dígitos para esta transação é:',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            
-            // Display do código (simulando que foi enviado por outro canal)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green[200]!),
+    return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppColors.backgroundColor,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Confirmar Transferência',
+                style: AppTextStyles.title.copyWith(fontSize: 20),
               ),
-              child: Text(
-                widget.transaction.confirmationCode ?? 'Erro: código não gerado',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 4,
-                ),
+              const SizedBox(height: 16),
+              Text(
+                'Para sua segurança, confirme os detalhes da transferência:',
+                style: AppTextStyles.body,
+              ),
+              const SizedBox(height: 16),
+              _buildInfoRow('Destinatário:', widget.receiverEmail),
+              _buildInfoRow('Valor:', 'R\$ ${widget.transaction.amount.toStringAsFixed(2)}'),
+              _buildInfoRow('Data:', _formatDate(widget.transaction.timestamp)),
+              const SizedBox(height: 24),
+              Text(
+                'Digite o código de confirmação:',
+                style: AppTextStyles.body,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _codeController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
                 textAlign: TextAlign.center,
+                style: AppTextStyles.input.copyWith(letterSpacing: 8, fontSize: 20),
+                decoration: InputDecoration(
+                  hintText: '------',
+                  hintStyle: AppTextStyles.input.copyWith(letterSpacing: 8, fontSize: 20, color: Colors.grey[400]),
+                  errorText: _errorMessage,
+                  errorStyle: AppTextStyles.error,
+                  counterText: '', // Remove o contador de caracteres
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
               ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Campo de entrada do código
-            TextField(
-              controller: _codeController,
-              decoration: InputDecoration(
-                labelText: 'Código de confirmação',
-                border: const OutlineInputBorder(),
-                errorText: _errorMessage,
-                prefixIcon: const Icon(Icons.lock_outline),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _errorMessage!,
+                    style: AppTextStyles.error,
+                  ),
+                ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _isConfirming ? null : () => Get.back(result: false),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.textColor),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: _isConfirming ? null : () {
+                      if (_validateCode()) {
+                        Get.back(result: _codeController.text.trim());
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isConfirming
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                        : const Text('Confirmar'),
+                  ),
+                ],
               ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                letterSpacing: 8,
-                fontSize: 20,
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            Text(
-              'Em um aplicativo real, este código seria enviado por SMS ou notificação push.',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12, fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isConfirming ? null : () => Get.back(result: false),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: _isConfirming ? null : _confirmTransaction,
-          child: _isConfirming
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Confirmar'),
-        ),
-      ],
-    );
+            ],
+          ),
+        ));
   }
 
   Widget _buildInfoRow(String label, String value) {
@@ -136,14 +135,10 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.black54,
-              ),
-            ),
+          Text(
+            label,
+            style: AppTextStyles.body.copyWith(color: Colors.grey[600]),
+            ),          
           ),
           Expanded(
             child: Text(
@@ -159,50 +154,15 @@ class _TransactionConfirmationDialogState extends State<TransactionConfirmationD
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _confirmTransaction() async {
-    final code = _codeController.text.trim();
-    
-    if (code.isEmpty) {
-      setState(() {
-        _errorMessage = 'Insira o código de confirmação';
-      });
-      return;
+  bool _validateCode() {
+    if (_codeController.text.trim().length != 6) {
+      setState(() => _errorMessage = 'Código inválido');
+      return false;
     }
-    
-    if (code.length != 6) {
-      setState(() {
-        _errorMessage = 'O código deve ter 6 dígitos';
-      });
-      return;
-    }
-    
-    setState(() {
-      _isConfirming = true;
-      _errorMessage = null;
-    });
-    
-    try {
-      await _transactionService.confirmTransaction(
-        widget.transaction.id,
-        code,
-      );
-      
-      Get.back(result: true);
-      Get.snackbar(
-        'Sucesso', 
-        'Transferência confirmada com sucesso!',
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
-        duration: const Duration(seconds: 3),
-      );
-    } catch (e) {
-      setState(() {
-        _isConfirming = false;
-        _errorMessage = e.toString();
-      });
-    }
+    setState(() => _errorMessage = null);
+    return true;
   }
 }

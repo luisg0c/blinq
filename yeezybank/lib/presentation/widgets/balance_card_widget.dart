@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 class BalanceCard extends StatelessWidget {
   final String userId;
   final Animation<double>? animation;
@@ -14,24 +16,18 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget card = Container(
+    Widget card = Card(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green[800]!, Colors.green[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,8 +35,8 @@ class BalanceCard extends StatelessWidget {
           const Text(
             'Saldo Disponível',
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
+              style: AppTextStyles.body,
+              color: AppColors.textColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -51,9 +47,7 @@ class BalanceCard extends StatelessWidget {
                 .snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return const SizedBox(
-                  height: 40,
-                  child: Center(
+                return const Center(
                     child: CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
@@ -67,20 +61,19 @@ class BalanceCard extends StatelessWidget {
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'R\$ ${realTimeBalance.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 28, 
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const Icon(
-                    Icons.account_balance_wallet,
-                    color: Colors.white70,
-                    size: 28,
-                  ),
+                children: [ Text(
+                      'R\$ ${realTimeBalance.toStringAsFixed(2)}',              
+                      style: AppTextStyles.title.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textColor,
+                  Icon(
+                    LineIcons.wallet,
+                    color: AppColors.primaryColor,
+                    size: 32,
+                  )
+                      ),
+                    ),                  
                 ],
               );
             },
@@ -89,14 +82,13 @@ class BalanceCard extends StatelessWidget {
       ),
     );
     
-    // Se existir animação, envolve o card com ScaleTransition
     if (animation != null) {
       return ScaleTransition(
         scale: animation!,
         child: card,
       );
     }
-    
+
     return card;
   }
 }
