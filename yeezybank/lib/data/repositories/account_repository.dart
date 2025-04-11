@@ -1,7 +1,7 @@
 // lib/data/repositories/account_repository.dart
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/firebase_service.dart';
+import '../firebase_service.dart';
 import '../../domain/models/account_model.dart';
 
 class AccountRepository extends GetxService {

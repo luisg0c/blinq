@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
-import '../../domain/firebase_service.dart';
+import '../../data/firebase_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 

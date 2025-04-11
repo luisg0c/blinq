@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:yeezybank/domain/firebase_service.dart';
+import 'package:yeezybank/data/firebase_service.dart';
 import 'package:yeezybank/data/repositories/account_repository.dart';
 import 'package:yeezybank/data/repositories/transaction_repository.dart';
 import 'package:yeezybank/domain/services/auth_service.dart';

@@ -2,7 +2,7 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/transaction_model.dart';
-import '../../domain/firebase_service.dart';
+import '../firebase_service.dart';
 
 class TransactionRepository extends GetxService {
   final FirebaseService _firebaseService = Get.find<FirebaseService>();
@@ -10,18 +10,32 @@ class TransactionRepository extends GetxService {
 
   // Adicionar transação
   Future<TransactionModel> addTransaction(TransactionModel transaction) async {
-    final docRef = await _firestore
-        .collection('transactions')
-        .add(transaction.toMap());
-    return transaction.copyWith(id: docRef.id);
+    try {
+      final docRef = await _firestore
+          .collection('transactions')
+          .add(transaction.toMap());
+
+      // Retornar com o ID atualizado
+      return transaction.copyWith(id: docRef.id);
+    } catch (e) {
+      print('Erro ao adicionar transação: $e');
+      rethrow;
+    }
   }
 
   // Obter transação por ID
   Future<TransactionModel?> getTransaction(String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
-    if (!doc.exists) return null;
-    return TransactionModel.fromMap(doc.data()!, doc.id);
+    try {
+      final doc =
+          await _firestore.collection('transactions').doc(transactionId).get();
+
+      if (!doc.exists || doc.data() == null) return null;
+
+      return TransactionModel.fromMap(doc.data()!, doc.id);
+    } catch (e) {
+      print('Erro ao buscar transação: $e');
+      return null;
+    }
   }
 
   // Atualizar status da transação
@@ -30,16 +44,21 @@ class TransactionRepository extends GetxService {
     TransactionStatus status, {
     bool confirmed = false,
   }) async {
-    final updates = {'status': status.toString().split('.').last};
+    try {
+      final updates = {'status': status.toString().split('.').last};
 
-    if (confirmed) {
-      updates['confirmedAt'] = FieldValue.serverTimestamp();
+      if (confirmed) {
+        updates['confirmedAt'] = FieldValue.serverTimestamp();
+      }
+
+      await _firestore
+          .collection('transactions')
+          .doc(transactionId)
+          .update(updates);
+    } catch (e) {
+      print('Erro ao atualizar status da transação: $e');
+      rethrow;
     }
-
-    await _firestore
-        .collection('transactions')
-        .doc(transactionId)
-        .update(updates);
   }
 
   // Processar transação (transferência)
@@ -71,14 +90,15 @@ class TransactionRepository extends GetxService {
         final receiverDoc = _firestore
             .collection('accounts')
             .doc(txn.receiverId);
+
         final receiverSnapshot = await transaction.get(receiverDoc);
 
         if (!receiverSnapshot.exists) {
-          // Criar conta para o destinatário se não existir
-          final receiverEmail = await _getReceiverEmail(txn.receiverId);
+          // Criar conta para o destinatário com valor default
           transaction.set(receiverDoc, {
             'balance': txn.amount,
-            'email': receiverEmail,
+            'email':
+                await _getReceiverEmail(txn.receiverId) ?? 'email_not_found',
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -103,11 +123,15 @@ class TransactionRepository extends GetxService {
 
       print('Transferência de ${txn.amount} executada com sucesso');
     } catch (e) {
-      // Marcar transação como falha
+      // Marcar transação como falha se tiver ID
       if (txn.id.isNotEmpty) {
-        await _firestore.collection('transactions').doc(txn.id).update({
-          'status': TransactionStatus.failed.toString().split('.').last,
-        });
+        try {
+          await _firestore.collection('transactions').doc(txn.id).update({
+            'status': TransactionStatus.failed.toString().split('.').last,
+          });
+        } catch (updateError) {
+          print('Erro ao marcar transação como falha: $updateError');
+        }
       }
 
       print('Erro ao executar transferência: $e');
@@ -115,11 +139,24 @@ class TransactionRepository extends GetxService {
     }
   }
 
-  // Obter email do destinatário
+  // Obter email do destinatário - método simplificado para evitar dependência de getUserByUid
   Future<String?> _getReceiverEmail(String userId) async {
     try {
-      final userAuth = await _firebaseService.getAuth().getUserByUid(userId);
-      return userAuth?.email;
+      // Tentamos buscar a conta no Firestore primeiro
+      final accountDoc =
+          await _firestore.collection('accounts').doc(userId).get();
+      if (accountDoc.exists &&
+          accountDoc.data() != null &&
+          accountDoc.data()!.containsKey('email')) {
+        return accountDoc.data()!['email'] as String?;
+      }
+
+      // Se não encontrou, verificamos se é o usuário atual
+      if (_firebaseService.currentUser?.uid == userId) {
+        return _firebaseService.currentUser?.email;
+      }
+
+      return null;
     } catch (e) {
       print('Erro ao obter email do destinatário: $e');
       return null;
@@ -137,9 +174,11 @@ class TransactionRepository extends GetxService {
 
         if (!userSnapshot.exists) {
           // Criar conta se não existir
+          final email =
+              _firebaseService.currentUser?.email?.toLowerCase() ?? '';
           transaction.set(userDoc, {
             'balance': txn.amount,
-            'email': _firebaseService.currentUser?.email?.toLowerCase(),
+            'email': email,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -154,16 +193,21 @@ class TransactionRepository extends GetxService {
         }
 
         // Registrar transação
+        final Map<String, dynamic> txnData = txn.toMap();
+
         if (txn.id.isEmpty) {
           // Se não tem ID, criar novo documento
           final txnRef = _firestore.collection('transactions').doc();
-          transaction.set(txnRef, {...txn.toMap(), 'id': txnRef.id});
+          transaction.set(txnRef, {
+            ...txnData,
+            'status': TransactionStatus.completed.toString().split('.').last,
+          });
         } else {
           // Se já tem ID, atualizar
-          transaction.set(
-            _firestore.collection('transactions').doc(txn.id),
-            txn.toMap(),
-          );
+          transaction.set(_firestore.collection('transactions').doc(txn.id), {
+            ...txnData,
+            'status': TransactionStatus.completed.toString().split('.').last,
+          });
         }
       });
 
@@ -180,38 +224,50 @@ class TransactionRepository extends GetxService {
     int limit = 20,
     DocumentSnapshot? startAfterDoc,
   }) {
-    Query query = _firestore
-        .collection('transactions')
-        .where('participants', arrayContains: userId)
-        .orderBy('timestamp', descending: true)
-        .limit(limit);
+    try {
+      Query query = _firestore
+          .collection('transactions')
+          .where('participants', arrayContains: userId)
+          .orderBy('timestamp', descending: true)
+          .limit(limit);
 
-    if (startAfterDoc != null) {
-      query = query.startAfterDocument(startAfterDoc);
+      if (startAfterDoc != null) {
+        query = query.startAfterDocument(startAfterDoc);
+      }
+
+      return query.snapshots().map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = doc.data();
+          return TransactionModel.fromMap(data, doc.id);
+        }).toList();
+      });
+    } catch (e) {
+      print('Erro ao obter stream de transações: $e');
+      // Retornar stream vazio em caso de erro
+      return Stream.value([]);
     }
-
-    return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return TransactionModel.fromMap(doc.data(), doc.id);
-      }).toList();
-    });
   }
 
   // Stream de transações pendentes
   Stream<List<TransactionModel>> getPendingTransactionsStream(String userId) {
-    return _firestore
-        .collection('transactions')
-        .where('senderId', isEqualTo: userId)
-        .where(
-          'status',
-          isEqualTo: TransactionStatus.pending.toString().split('.').last,
-        )
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return TransactionModel.fromMap(doc.data(), doc.id);
-          }).toList();
-        });
+    try {
+      final pendingStatus =
+          TransactionStatus.pending.toString().split('.').last;
+
+      return _firestore
+          .collection('transactions')
+          .where('senderId', isEqualTo: userId)
+          .where('status', isEqualTo: pendingStatus)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs.map((doc) {
+              return TransactionModel.fromMap(doc.data(), doc.id);
+            }).toList();
+          });
+    } catch (e) {
+      print('Erro ao obter transações pendentes: $e');
+      return Stream.value([]);
+    }
   }
 
   // Obter transações por período
@@ -221,30 +277,35 @@ class TransactionRepository extends GetxService {
     DateTime? endDate,
     int limit = 50,
   }) async {
-    Query query = _firestore
-        .collection('transactions')
-        .where('participants', arrayContains: userId)
-        .orderBy('timestamp', descending: true);
+    try {
+      Query query = _firestore
+          .collection('transactions')
+          .where('participants', arrayContains: userId)
+          .orderBy('timestamp', descending: true);
 
-    if (startDate != null) {
-      query = query.where(
-        'timestamp',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
-      );
+      if (startDate != null) {
+        query = query.where(
+          'timestamp',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        );
+      }
+
+      if (endDate != null) {
+        query = query.where(
+          'timestamp',
+          isLessThanOrEqualTo: Timestamp.fromDate(endDate),
+        );
+      }
+
+      query = query.limit(limit);
+
+      final snapshot = await query.get();
+      return snapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      print('Erro ao obter transações por período: $e');
+      return [];
     }
-
-    if (endDate != null) {
-      query = query.where(
-        'timestamp',
-        isLessThanOrEqualTo: Timestamp.fromDate(endDate),
-      );
-    }
-
-    query = query.limit(limit);
-
-    final snapshot = await query.get();
-    return snapshot.docs
-        .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
-        .toList();
   }
 }

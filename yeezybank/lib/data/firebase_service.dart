@@ -1,12 +1,16 @@
+// lib/data/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'models/account_model.dart';
-import 'models/transaction_model.dart';
+import '../domain/models/account_model.dart';
+import '../domain/models/transaction_model.dart';
 
 class FirebaseService extends GetxService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Getter para Auth
+  FirebaseAuth getAuth() => _auth;
 
   // Auth functions
   User? get currentUser => _auth.currentUser;
@@ -175,6 +179,21 @@ class FirebaseService extends GetxService {
     final account = await getAccount(userId);
     if (account != null) {
       await updateAccount(userId, {'balance': account.balance + amount});
+    }
+  }
+
+  // Obter informações de usuário pelo UID
+  Future<User?> getUserByUid(String uid) async {
+    try {
+      // Não é possível obter diretamente um usuário pelo UID com o Firebase Client SDK
+      // Então verificamos apenas se é o usuário atual
+      if (currentUser?.uid == uid) {
+        return currentUser;
+      }
+      return null;
+    } catch (e) {
+      print('Erro ao obter usuário por UID: $e');
+      return null;
     }
   }
 }
