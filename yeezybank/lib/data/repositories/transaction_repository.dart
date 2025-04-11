@@ -1,6 +1,6 @@
 // lib/data/repositories/transaction_repository.dart
-import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
 import '../../domain/models/transaction_model.dart';
 import '../firebase_service.dart';
 
@@ -15,7 +15,6 @@ class TransactionRepository extends GetxService {
           .collection('transactions')
           .add(transaction.toMap());
 
-      // Retornar com o ID atualizado
       return transaction.copyWith(id: docRef.id);
     } catch (e) {
       print('Erro ao adicionar transação: $e');
@@ -28,10 +27,11 @@ class TransactionRepository extends GetxService {
     try {
       final doc =
           await _firestore.collection('transactions').doc(transactionId).get();
+      if (!doc.exists) return null;
 
-      if (!doc.exists || doc.data() == null) return null;
-
-      return TransactionModel.fromMap(doc.data()!, doc.id);
+      // Verificamos se os dados existem e fornecemos um mapa vazio se não existirem
+      final data = doc.data() ?? {};
+      return TransactionModel.fromMap(data, doc.id);
     } catch (e) {
       print('Erro ao buscar transação: $e');
       return null;
@@ -45,7 +45,9 @@ class TransactionRepository extends GetxService {
     bool confirmed = false,
   }) async {
     try {
-      final updates = {'status': status.toString().split('.').last};
+      final Map<String, dynamic> updates = {
+        'status': status.toString().split('.').last,
+      };
 
       if (confirmed) {
         updates['confirmedAt'] = FieldValue.serverTimestamp();
@@ -74,8 +76,14 @@ class TransactionRepository extends GetxService {
           throw Exception('Usuário não logado');
         }
 
-        final currentBalance =
-            (senderSnapshot.data()!['balance'] as num).toDouble();
+        // Se os dados não existirem, fornecemos um mapa vazio
+        final senderData = senderSnapshot.data() ?? {};
+        if (!senderData.containsKey('balance')) {
+          throw Exception('Conta sem saldo definido');
+        }
+
+        final currentBalance = (senderData['balance'] as num).toDouble();
+
         if (currentBalance < txn.amount) {
           throw Exception('Saldo insuficiente');
         }
@@ -90,22 +98,44 @@ class TransactionRepository extends GetxService {
         final receiverDoc = _firestore
             .collection('accounts')
             .doc(txn.receiverId);
-
         final receiverSnapshot = await transaction.get(receiverDoc);
 
         if (!receiverSnapshot.exists) {
-          // Criar conta para o destinatário com valor default
+          // Obter email do destinatário de forma segura
+          String receiverEmail = 'usuario@exemplo.com';
+
+          try {
+            final accountDoc =
+                await _firestore
+                    .collection('accounts')
+                    .doc(txn.receiverId)
+                    .get();
+            final accountData = accountDoc.data() ?? {};
+            if (accountDoc.exists && accountData.containsKey('email')) {
+              receiverEmail = accountData['email'] as String;
+            } else if (_firebaseService.currentUser?.uid == txn.receiverId) {
+              receiverEmail =
+                  _firebaseService.currentUser?.email ?? receiverEmail;
+            }
+          } catch (e) {
+            print('Erro ao buscar email do destinatário: $e');
+          }
+
+          // Criar conta para o destinatário se não existir
           transaction.set(receiverDoc, {
             'balance': txn.amount,
-            'email':
-                await _getReceiverEmail(txn.receiverId) ?? 'email_not_found',
+            'email': receiverEmail,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
         } else {
           // Atualizar saldo existente
+          final receiverData = receiverSnapshot.data() ?? {};
           final receiverBalance =
-              (receiverSnapshot.data()!['balance'] as num).toDouble();
+              receiverData.containsKey('balance')
+                  ? (receiverData['balance'] as num).toDouble()
+                  : 0.0;
+
           transaction.update(receiverDoc, {
             'balance': receiverBalance + txn.amount,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -123,7 +153,7 @@ class TransactionRepository extends GetxService {
 
       print('Transferência de ${txn.amount} executada com sucesso');
     } catch (e) {
-      // Marcar transação como falha se tiver ID
+      // Marcar transação como falha
       if (txn.id.isNotEmpty) {
         try {
           await _firestore.collection('transactions').doc(txn.id).update({
@@ -139,30 +169,6 @@ class TransactionRepository extends GetxService {
     }
   }
 
-  // Obter email do destinatário - método simplificado para evitar dependência de getUserByUid
-  Future<String?> _getReceiverEmail(String userId) async {
-    try {
-      // Tentamos buscar a conta no Firestore primeiro
-      final accountDoc =
-          await _firestore.collection('accounts').doc(userId).get();
-      if (accountDoc.exists &&
-          accountDoc.data() != null &&
-          accountDoc.data()!.containsKey('email')) {
-        return accountDoc.data()!['email'] as String?;
-      }
-
-      // Se não encontrou, verificamos se é o usuário atual
-      if (_firebaseService.currentUser?.uid == userId) {
-        return _firebaseService.currentUser?.email;
-      }
-
-      return null;
-    } catch (e) {
-      print('Erro ao obter email do destinatário: $e');
-      return null;
-    }
-  }
-
   // Processar depósito
   Future<void> processDeposit(TransactionModel txn) async {
     try {
@@ -174,8 +180,10 @@ class TransactionRepository extends GetxService {
 
         if (!userSnapshot.exists) {
           // Criar conta se não existir
-          final email =
-              _firebaseService.currentUser?.email?.toLowerCase() ?? '';
+          String email =
+              _firebaseService.currentUser?.email?.toLowerCase() ??
+              'usuario@exemplo.com';
+
           transaction.set(userDoc, {
             'balance': txn.amount,
             'email': email,
@@ -184,8 +192,12 @@ class TransactionRepository extends GetxService {
           });
         } else {
           // Atualizar saldo
+          final userData = userSnapshot.data() ?? {};
           final currentBalance =
-              (userSnapshot.data()!['balance'] as num).toDouble();
+              userData.containsKey('balance')
+                  ? (userData['balance'] as num).toDouble()
+                  : 0.0;
+
           transaction.update(userDoc, {
             'balance': currentBalance + txn.amount,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -193,21 +205,23 @@ class TransactionRepository extends GetxService {
         }
 
         // Registrar transação
-        final Map<String, dynamic> txnData = txn.toMap();
+        // Criamos uma cópia segura do mapa
+        final Map<String, dynamic> txnData = Map<String, dynamic>.from(
+          txn.toMap(),
+        );
+        txnData['status'] =
+            TransactionStatus.completed.toString().split('.').last;
 
         if (txn.id.isEmpty) {
           // Se não tem ID, criar novo documento
           final txnRef = _firestore.collection('transactions').doc();
-          transaction.set(txnRef, {
-            ...txnData,
-            'status': TransactionStatus.completed.toString().split('.').last,
-          });
+          transaction.set(txnRef, txnData);
         } else {
           // Se já tem ID, atualizar
-          transaction.set(_firestore.collection('transactions').doc(txn.id), {
-            ...txnData,
-            'status': TransactionStatus.completed.toString().split('.').last,
-          });
+          transaction.set(
+            _firestore.collection('transactions').doc(txn.id),
+            txnData,
+          );
         }
       });
 
@@ -237,13 +251,13 @@ class TransactionRepository extends GetxService {
 
       return query.snapshots().map((snapshot) {
         return snapshot.docs.map((doc) {
-          final data = doc.data();
+          // Usamos um mapa vazio como fallback se os dados forem nulos
+          Map<String, dynamic> data = doc.data() ?? {};
           return TransactionModel.fromMap(data, doc.id);
         }).toList();
       });
     } catch (e) {
       print('Erro ao obter stream de transações: $e');
-      // Retornar stream vazio em caso de erro
       return Stream.value([]);
     }
   }
@@ -261,7 +275,9 @@ class TransactionRepository extends GetxService {
           .snapshots()
           .map((snapshot) {
             return snapshot.docs.map((doc) {
-              return TransactionModel.fromMap(doc.data(), doc.id);
+              // Usamos um mapa vazio como fallback
+              Map<String, dynamic> data = doc.data() ?? {};
+              return TransactionModel.fromMap(data, doc.id);
             }).toList();
           });
     } catch (e) {
@@ -300,9 +316,11 @@ class TransactionRepository extends GetxService {
       query = query.limit(limit);
 
       final snapshot = await query.get();
-      return snapshot.docs
-          .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
-          .toList();
+      return snapshot.docs.map((doc) {
+        // Fornecemos um mapa vazio se os dados forem nulos
+        Map<String, dynamic> data = doc.data() ?? {};
+        return TransactionModel.fromMap(data, doc.id);
+      }).toList();
     } catch (e) {
       print('Erro ao obter transações por período: $e');
       return [];
