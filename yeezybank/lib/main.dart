@@ -8,7 +8,7 @@ import 'bindings/initial_binding.dart';
 import 'presentation/pages/welcome_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/signup_page.dart';
-import 'presentation/pages/home_view.dart';
+import 'presentation/pages/home_page.dart';
 import 'presentation/pages/transactions_page.dart';
 import 'presentation/pages/deposit_page.dart';
 import 'presentation/pages/profile_page.dart';

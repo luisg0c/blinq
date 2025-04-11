@@ -8,6 +8,7 @@ import '../theme/app_text_styles.dart';
 import '../widgets/password_prompt.dart';
 import '../widgets/money_input_field.dart';
 import '../widgets/transaction_confirmation_dialog.dart';
+import '../controllers/transaction_controller.dart';
 
 class TransferPage extends StatefulWidget {
   const TransferPage({super.key});
@@ -19,26 +20,29 @@ class TransferPage extends StatefulWidget {
 class _TransferPageState extends State<TransferPage> {
   final recipientController = TextEditingController();
   final amountController = TextEditingController();
+  final descriptionController = TextEditingController();
   final authService = Get.find<AuthService>();
   final transactionService = Get.find<TransactionService>();
-  
+  final transactionController = Get.find<TransactionController>();
+
   bool isLoading = false;
   String? errorMessage;
-  
+
   // Email do usuário atual
   String? currentUserEmail;
-  
+
   @override
   void initState() {
     super.initState();
     // Obter email do usuário atual
     currentUserEmail = authService.getCurrentUser()?.email;
   }
-  
+
   @override
   void dispose() {
     recipientController.dispose();
     amountController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
@@ -52,27 +56,29 @@ class _TransferPageState extends State<TransferPage> {
         iconTheme: const IconThemeData(color: AppColors.textColor),
       ),
       backgroundColor: AppColors.backgroundColor,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [            
-              Text(
-                'Para quem você vai enviar?',
-                style: AppTextStyles.title,
-              ),
-              const SizedBox(height: 32),
-              _buildRecipientField(),
-              const SizedBox(height: 32),
-              _buildAmountField(),
-              if (errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(errorMessage!, style: AppTextStyles.error),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Para quem você vai enviar?', style: AppTextStyles.title),
+                const SizedBox(height: 32),
+                _buildRecipientField(),
+                const SizedBox(height: 32),
+                _buildAmountField(),
+                const SizedBox(height: 24),
+                _buildDescriptionField(),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(errorMessage!, style: AppTextStyles.error),
+                ],
+                const SizedBox(height: 24),
+                _buildTransferButton(),
               ],
-              const SizedBox(height: 24),
-              _buildTransferButton(),
-            ],
+            ),
           ),
         ),
       ),
@@ -96,21 +102,30 @@ class _TransferPageState extends State<TransferPage> {
             hintStyle: AppTextStyles.input.copyWith(color: AppColors.hintColor),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.dividerColor, width: 1.0),
+              borderSide: const BorderSide(
+                color: AppColors.dividerColor,
+                width: 1.0,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12), 
-              borderSide: const BorderSide(color: AppColors.dividerColor, width: 1.0)
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.dividerColor,
+                width: 1.0,
+              ),
             ),
-            prefixIcon: const Icon(Icons.alternate_email, color: AppColors.textColor),
-            errorText: errorMessage,
-            errorStyle: AppTextStyles.error,
+            prefixIcon: const Icon(
+              Icons.alternate_email,
+              color: AppColors.textColor,
+            ),
           ),
-          onChanged: (value) {                    
+          onChanged: (value) {
             if (currentUserEmail != null &&
-                value.toLowerCase().trim() == currentUserEmail!.toLowerCase().trim()) {
+                value.toLowerCase().trim() ==
+                    currentUserEmail!.toLowerCase().trim()) {
               setState(() {
-                errorMessage = 'Não é possível transferir para sua própria conta';
+                errorMessage =
+                    'Não é possível transferir para sua própria conta';
               });
             } else {
               setState(() {
@@ -159,6 +174,46 @@ class _TransferPageState extends State<TransferPage> {
     );
   }
 
+  Widget _buildDescriptionField() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.dividerColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: TextFormField(
+          controller: descriptionController,
+          decoration: InputDecoration(
+            labelText: 'Descrição (opcional)',
+            hintText: 'Ex: Pagamento de almoço',
+            hintStyle: AppTextStyles.input.copyWith(color: AppColors.hintColor),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.dividerColor,
+                width: 1.0,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.dividerColor,
+                width: 1.0,
+              ),
+            ),
+            prefixIcon: const Icon(
+              Icons.description_outlined,
+              color: AppColors.textColor,
+            ),
+          ),
+          maxLength: 100,
+        ),
+      ),
+    );
+  }
+
   Widget _buildTransferButton() {
     return ElevatedButton(
       onPressed: isLoading ? null : _initiateTransfer,
@@ -167,13 +222,14 @@ class _TransferPageState extends State<TransferPage> {
         foregroundColor: AppColors.surface,
         minimumSize: const Size(double.infinity, 50),
         textStyle: AppTextStyles.button,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: isLoading
-          ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface))
-          : const Text('Transferir'),
+      child:
+          isLoading
+              ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+              )
+              : const Text('Transferir'),
     );
   }
 
@@ -199,19 +255,20 @@ class _TransferPageState extends State<TransferPage> {
       ),
     );
   }
-  
+
   Future<void> _initiateTransfer() async {
     // Validar entradas
     final email = recipientController.text.trim();
     final amountText = amountController.text.trim();
-    
+    final description = descriptionController.text.trim();
+
     if (email.isEmpty) {
       setState(() {
         errorMessage = 'Informe o email do destinatário';
       });
       return;
     }
-    
+
     final amount = double.tryParse(amountText.replaceAll(',', '.'));
     if (amount == null || amount <= 0) {
       setState(() {
@@ -219,25 +276,25 @@ class _TransferPageState extends State<TransferPage> {
       });
       return;
     }
-    
+
     // Validar novamente se não é transferência para si mesmo
-    if (currentUserEmail != null && 
+    if (currentUserEmail != null &&
         email.toLowerCase() == currentUserEmail!.toLowerCase()) {
       setState(() {
         errorMessage = 'Não é possível transferir para você mesmo';
       });
       return;
     }
-    
+
     // Validar senha de transação
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
-    
+
     try {
       final userId = authService.getCurrentUserId();
-      
+
       // Solicitar senha de transação
       final password = await promptPassword(context);
       if (password == null || password.isEmpty) {
@@ -246,9 +303,12 @@ class _TransferPageState extends State<TransferPage> {
         });
         return;
       }
-      
+
       // Validar senha
-      final isValid = await transactionService.validateTransactionPassword(userId, password);
+      final isValid = await transactionService.validateTransactionPassword(
+        userId,
+        password,
+      );
       if (!isValid) {
         setState(() {
           isLoading = false;
@@ -256,43 +316,30 @@ class _TransferPageState extends State<TransferPage> {
         });
         return;
       }
-      
-      // Criar estrutura de transação
-      final txn = TransactionModel(
-        id: '',
-        senderId: userId,
-        receiverId: '', // será preenchido pelo serviço
-        amount: amount,
-        timestamp: DateTime.now(),
-        participants: [],
-        type: 'transfer',
+
+      // Verificar limite diário
+      final withinLimit = await transactionService.checkDailyTransferLimit(
+        userId,
+        amount,
       );
-      
-      // Iniciar transação
-      final pendingTxn = await transactionService.initiateTransaction(
-        userId, 
-        email, 
-        amount
-      );
-      
-      setState(() {
-        isLoading = false;
-      });
-      
-      // Mostrar dialog de confirmação
-      final confirmed = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => TransactionConfirmationDialog(
-          transaction: pendingTxn,
-          receiverEmail: email,
-        ),
-      );
-      
-      if (confirmed == true) {
-        // Transação confirmada com sucesso - volta para home
-        Get.back(result: true);
+      if (!withinLimit) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Limite diário de transferência excedido';
+        });
+        return;
       }
+
+      // Iniciar transação usando o controller melhorado
+      await transactionController.transfer(
+        amount,
+        email,
+        password,
+        description: description.isNotEmpty ? description : null,
+      );
+
+      // Sucesso - voltar para a página anterior
+      Get.back(result: true);
     } catch (e) {
       setState(() {
         isLoading = false;

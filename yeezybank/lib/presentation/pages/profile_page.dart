@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
-import '../../data/firebase_service.dart';
+import '../../domain/firebase_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     final authService = Get.find<AuthService>();
@@ -46,7 +46,11 @@ class ProfilePage extends StatelessWidget {
         CircleAvatar(
           radius: 40,
           backgroundColor: AppColors.primaryColor.withOpacity(0.1),
-          child: const Icon(Icons.person, size: 40, color: AppColors.primaryColor),
+          child: const Icon(
+            Icons.person,
+            size: 40,
+            color: AppColors.primaryColor,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -72,18 +76,28 @@ class ProfilePage extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.email_outlined, color: AppColors.primaryColor),
+            leading: const Icon(
+              Icons.email_outlined,
+              color: AppColors.primaryColor,
+            ),
             title: const Text('Email', style: AppTextStyles.subtitle),
             subtitle: Text(
-              authService.getCurrentUser()?.email ?? 'Email não disponível', 
-              style: AppTextStyles.body
+              authService.getCurrentUser()?.email ?? 'Email não disponível',
+              style: AppTextStyles.body,
             ),
           ),
           const Divider(height: 1, color: AppColors.dividerColor),
           ListTile(
             leading: const Icon(Icons.security, color: AppColors.primaryColor),
-            title: const Text('Senha de Transação', style: AppTextStyles.subtitle),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.subtitle),
+            title: const Text(
+              'Senha de Transação',
+              style: AppTextStyles.subtitle,
+            ),
+            trailing: const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.subtitle,
+            ),
             onTap: () => Get.toNamed('/change-transaction-password'),
           ),
         ],
@@ -101,27 +115,50 @@ class ProfilePage extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.help_outline, color: AppColors.primaryColor),
+            leading: const Icon(
+              Icons.help_outline,
+              color: AppColors.primaryColor,
+            ),
             title: const Text('Ajuda', style: AppTextStyles.subtitle),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            trailing: const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
             onTap: () {
-              Get.snackbar('Em breve', 'Esta funcionalidade estará disponível em breve.');
+              Get.snackbar(
+                'Em breve',
+                'Esta funcionalidade estará disponível em breve.',
+              );
             },
           ),
           const Divider(height: 1, color: AppColors.dividerColor),
           ListTile(
-            leading: const Icon(Icons.info_outline, color: AppColors.primaryColor),
-            title: const Text('Sobre o YeezyBank', style: AppTextStyles.subtitle),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            leading: const Icon(
+              Icons.info_outline,
+              color: AppColors.primaryColor,
+            ),
+            title: const Text(
+              'Sobre o YeezyBank',
+              style: AppTextStyles.subtitle,
+            ),
+            trailing: const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
             onTap: () {
               showAboutDialog(
                 context: context,
                 applicationName: 'YeezyBank',
                 applicationVersion: '1.0.0',
-                applicationLegalese: '© 2025 YeezyBank. Todos os direitos reservados.',
+                applicationLegalese:
+                    '© 2025 YeezyBank. Todos os direitos reservados.',
                 children: const [
                   SizedBox(height: 20),
-                  Text('YeezyBank é um projeto acadêmico para demonstração de um aplicativo bancário utilizando Flutter e Firebase.'),
+                  Text(
+                    'YeezyBank é um projeto acadêmico para demonstração de um aplicativo bancário utilizando Flutter e Firebase.',
+                  ),
                 ],
               );
             },
@@ -134,7 +171,9 @@ class ProfilePage extends StatelessWidget {
   Widget _buildLogoutButton(AuthService authService) {
     return ElevatedButton(
       onPressed: () async {
-        final confirm = await Get.dialog<bool>(_buildLogoutConfirmationDialog());
+        final confirm = await Get.dialog<bool>(
+          _buildLogoutConfirmationDialog(),
+        );
         if (confirm == true) {
           await authService.signOut();
           Get.offAllNamed('/login');
@@ -154,7 +193,10 @@ class ProfilePage extends StatelessWidget {
   Widget _buildLogoutConfirmationDialog() {
     return AlertDialog(
       title: const Text('Sair da conta', style: AppTextStyles.title),
-      content: const Text('Tem certeza que deseja sair?', style: AppTextStyles.body),
+      content: const Text(
+        'Tem certeza que deseja sair?',
+        style: AppTextStyles.body,
+      ),
       actions: [
         ElevatedButton(
           onPressed: () => Get.back(result: true),
@@ -162,8 +204,8 @@ class ProfilePage extends StatelessWidget {
           child: const Text('Sair', style: AppTextStyles.button),
         ),
         TextButton(
-          onPressed: () => Get.back(result: false), 
-          child: const Text('Cancelar', style: AppTextStyles.button)
+          onPressed: () => Get.back(result: false),
+          child: const Text('Cancelar', style: AppTextStyles.button),
         ),
       ],
     );

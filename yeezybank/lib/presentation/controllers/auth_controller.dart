@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
-import '../../data/firebase_service.dart';
+import '../../domain/firebase_service.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -72,7 +72,9 @@ class AuthController extends GetxController {
         await _firebaseService.createAccount(userId, email);
       } else if (account.email.isEmpty) {
         // Se existe mas email está vazio, atualizar
-        await _firebaseService.updateAccount(userId, {'email': email.toLowerCase().trim()});
+        await _firebaseService.updateAccount(userId, {
+          'email': email.toLowerCase().trim(),
+        });
       }
     } catch (e) {
       print('Erro ao verificar/criar conta: $e');
