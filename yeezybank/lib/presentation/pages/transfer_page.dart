@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/transaction_service.dart';
-import '../../domain/models/transaction_model.dart';
+import '../controllers/transaction_controller.dart';
+import '../controllers/transaction_password_handler.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/password_prompt.dart';
 import '../widgets/money_input_field.dart';
 import '../widgets/transaction_confirmation_dialog.dart';
-import '../controllers/transaction_controller.dart';
 
 class TransferPage extends StatefulWidget {
   const TransferPage({super.key});
@@ -21,21 +20,69 @@ class _TransferPageState extends State<TransferPage> {
   final recipientController = TextEditingController();
   final amountController = TextEditingController();
   final descriptionController = TextEditingController();
-  final authService = Get.find<AuthService>();
-  final transactionService = Get.find<TransactionService>();
-  final transactionController = Get.find<TransactionController>();
+
+  // Usar Get.find para evitar problemas de ciclo de vida
+  late final AuthService authService;
+  late final TransactionService transactionService;
+  late final TransactionController transactionController;
+  late final TransactionPasswordHandler passwordHandler;
 
   bool isLoading = false;
   String? errorMessage;
-
-  // Email do usuário atual
   String? currentUserEmail;
+  bool isLoggedIn = true;
 
   @override
   void initState() {
     super.initState();
+    // Inicializar services e controllers
+    _initDependencies();
     // Obter email do usuário atual
-    currentUserEmail = authService.getCurrentUser()?.email;
+    _loadUserEmail();
+  }
+
+  void _initDependencies() {
+    try {
+      authService = Get.find<AuthService>();
+      transactionService = Get.find<TransactionService>();
+      transactionController = Get.find<TransactionController>();
+      passwordHandler = Get.find<TransactionPasswordHandler>();
+    } catch (e) {
+      print('Erro ao inicializar dependências: $e');
+      // Marcar como não logado para redirecionar
+      isLoggedIn = false;
+      // Redirecionar para login após construção da UI
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed('/login');
+      });
+    }
+  }
+
+  void _loadUserEmail() {
+    try {
+      final user = authService.getCurrentUser();
+      if (user != null) {
+        setState(() {
+          currentUserEmail = user.email;
+        });
+      } else {
+        // Usuário não está logado
+        setState(() {
+          isLoggedIn = false;
+        });
+
+        // Redirecionar para login após construção da UI
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.offAllNamed('/login');
+        });
+      }
+    } catch (e) {
+      print('Erro ao carregar email do usuário: $e');
+      // Marcar como não logado para possível redirecionamento
+      setState(() {
+        isLoggedIn = false;
+      });
+    }
   }
 
   @override
@@ -48,6 +95,11 @@ class _TransferPageState extends State<TransferPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Se não estiver logado, mostrar tela de carregamento
+    if (!isLoggedIn) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Enviar Pix', style: AppTextStyles.appBarTitle),
@@ -257,6 +309,19 @@ class _TransferPageState extends State<TransferPage> {
   }
 
   Future<void> _initiateTransfer() async {
+    // Verificar estado de autenticação
+    if (!isLoggedIn) {
+      setState(() {
+        errorMessage = 'Sessão expirada. Por favor, faça login novamente.';
+      });
+
+      Future.delayed(Duration(seconds: 1), () {
+        Get.offAllNamed('/login');
+      });
+
+      return;
+    }
+
     // Validar entradas
     final email = recipientController.text.trim();
     final amountText = amountController.text.trim();
@@ -293,10 +358,24 @@ class _TransferPageState extends State<TransferPage> {
     });
 
     try {
-      final userId = authService.getCurrentUserId();
+      String? userId;
+      try {
+        userId = authService.getCurrentUserId();
+        if (userId.isEmpty) {
+          throw Exception('Usuário não logado');
+        }
+      } catch (e) {
+        throw Exception('Sessão expirada. Faça login novamente.');
+      }
 
-      // Solicitar senha de transação
-      final password = await promptPassword(context);
+      // Solicitar senha de transação de forma mais robusta
+      String? password;
+      try {
+        password = await passwordHandler.ensureValidPassword(context, userId);
+      } catch (e) {
+        throw Exception('Erro ao processar senha: $e');
+      }
+
       if (password == null || password.isEmpty) {
         setState(() {
           isLoading = false;
@@ -304,30 +383,21 @@ class _TransferPageState extends State<TransferPage> {
         return;
       }
 
-      // Validar senha
-      final isValid = await transactionService.validateTransactionPassword(
-        userId,
-        password,
-      );
-      if (!isValid) {
-        setState(() {
-          isLoading = false;
-          errorMessage = 'Senha de transação incorreta';
-        });
-        return;
-      }
-
-      // Verificar limite diário
-      final withinLimit = await transactionService.checkDailyTransferLimit(
-        userId,
-        amount,
-      );
-      if (!withinLimit) {
-        setState(() {
-          isLoading = false;
-          errorMessage = 'Limite diário de transferência excedido';
-        });
-        return;
+      // Verificar limite diário com tratamento de erro
+      try {
+        final withinLimit = await transactionService.checkDailyTransferLimit(
+          userId,
+          amount,
+        );
+        if (!withinLimit) {
+          throw Exception('Limite diário de transferência excedido');
+        }
+      } catch (e) {
+        if (e.toString().contains('limite')) {
+          throw e;
+        } else {
+          throw Exception('Erro ao verificar limite diário');
+        }
       }
 
       // Iniciar transação usando o controller melhorado
@@ -344,6 +414,21 @@ class _TransferPageState extends State<TransferPage> {
       setState(() {
         isLoading = false;
         errorMessage = e.toString();
+      });
+
+      // Verificar se erro é de autenticação
+      String errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('sessão') ||
+          errorStr.contains('login') ||
+          errorStr.contains('autenticação') ||
+          errorStr.contains('usuário não logado')) {
+        Future.delayed(Duration(seconds: 2), () {
+          Get.offAllNamed('/login');
+        });
+      }
+    } finally {
+      setState(() {
+        isLoading = false;
       });
     }
   }

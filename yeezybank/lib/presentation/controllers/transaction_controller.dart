@@ -13,45 +13,100 @@ class TransactionController extends GetxController {
   var transactions = <TransactionModel>[].obs;
   var pendingTransactions = <TransactionModel>[].obs;
   var isLoading = false.obs;
+  var hasValidAuth = true.obs; // Indica se a autenticação está válida
   var lastTransactionDoc;
 
-  String get currentUserId => _authService.getCurrentUserId();
+  String? get currentUserId {
+    try {
+      return _authService.getCurrentUserId();
+    } catch (e) {
+      hasValidAuth.value = false;
+      return null;
+    }
+  }
 
   @override
   void onInit() {
     super.onInit();
+    _initData();
+  }
+
+  // Inicializar dados com tratamento de erro
+  void _initData() {
     try {
-      final _ = _authService.getCurrentUserId(); // dispara erro se não logado
-      _loadBalance();
-      _listenTransactions();
-      _listenPendingTransactions();
+      final userId = currentUserId;
+      if (userId != null) {
+        _loadBalance();
+        _listenTransactions();
+        _listenPendingTransactions();
+        hasValidAuth.value = true;
+      }
     } catch (e) {
-      showError('Usuário não autenticado.');
+      hasValidAuth.value = false;
+      showError('Usuário não autenticado. Por favor, faça login novamente.');
+      _redirectToLogin();
     }
+  }
+
+  // Recarregar dados (útil após reconexão)
+  void refreshData() {
+    _initData();
   }
 
   Future<void> _loadBalance() async {
     try {
-      final userId = _authService.getCurrentUserId();
+      final userId = currentUserId;
+      if (userId == null) {
+        _handleAuthError();
+        return;
+      }
+
       final currentBalance = await _transactionService.getUserBalance(userId);
       balance.value = currentBalance;
     } catch (e) {
-      showError('Falha ao carregar saldo.');
+      showError('Falha ao carregar saldo: $e');
+      _checkAuthError(e);
     }
   }
 
   void _listenTransactions() {
-    final userId = _authService.getCurrentUserId();
-    _transactionService.getUserTransactionsStream(userId).listen((txnList) {
-      transactions.assignAll(txnList);
-    });
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      return;
+    }
+
+    _transactionService
+        .getUserTransactionsStream(userId)
+        .listen(
+          (txnList) {
+            transactions.assignAll(txnList);
+          },
+          onError: (e) {
+            print('Erro ao carregar transações: $e');
+            _checkAuthError(e);
+          },
+        );
   }
 
   void _listenPendingTransactions() {
-    final userId = _authService.getCurrentUserId();
-    _transactionService.getPendingTransactionsStream(userId).listen((txnList) {
-      pendingTransactions.assignAll(txnList);
-    });
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      return;
+    }
+
+    _transactionService
+        .getPendingTransactionsStream(userId)
+        .listen(
+          (txnList) {
+            pendingTransactions.assignAll(txnList);
+          },
+          onError: (e) {
+            print('Erro ao carregar transações pendentes: $e');
+            _checkAuthError(e);
+          },
+        );
   }
 
   Future<bool> _validatePassword(String userId, String password) async {
@@ -62,6 +117,7 @@ class TransactionController extends GetxController {
       );
     } catch (e) {
       showError('Erro ao validar senha: $e');
+      _checkAuthError(e);
       return false;
     }
   }
@@ -72,7 +128,13 @@ class TransactionController extends GetxController {
     String? description,
   }) async {
     isLoading.value = true;
-    final userId = _authService.getCurrentUserId();
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      isLoading.value = false;
+      return;
+    }
+
     try {
       final hasPassword = await _transactionService.hasTransactionPassword(
         userId,
@@ -93,6 +155,7 @@ class TransactionController extends GetxController {
       showSuccess('Depósito realizado com sucesso!');
     } catch (e) {
       showError(e.toString());
+      _checkAuthError(e);
     } finally {
       isLoading.value = false;
     }
@@ -105,7 +168,13 @@ class TransactionController extends GetxController {
     String? description,
   }) async {
     isLoading.value = true;
-    final userId = _authService.getCurrentUserId();
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      isLoading.value = false;
+      return;
+    }
+
     try {
       // Validar senha primeiro
       final valid = await _validatePassword(userId, password);
@@ -125,6 +194,7 @@ class TransactionController extends GetxController {
       showSuccess('Transferência realizada com sucesso!');
     } catch (e) {
       showError(e.toString());
+      _checkAuthError(e);
     } finally {
       isLoading.value = false;
     }
@@ -145,6 +215,7 @@ class TransactionController extends GetxController {
       showSuccess('Transação confirmada com sucesso!');
     } catch (e) {
       showError(e.toString());
+      _checkAuthError(e);
     } finally {
       isLoading.value = false;
     }
@@ -154,9 +225,14 @@ class TransactionController extends GetxController {
   Future<void> loadMoreTransactions() async {
     if (isLoading.value || transactions.isEmpty) return;
 
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      return;
+    }
+
     isLoading.value = true;
     try {
-      final userId = _authService.getCurrentUserId();
       final moreTxns =
           await _transactionService
               .getUserTransactionsStream(
@@ -172,6 +248,7 @@ class TransactionController extends GetxController {
       }
     } catch (e) {
       showError('Erro ao carregar mais transações: $e');
+      _checkAuthError(e);
     } finally {
       isLoading.value = false;
     }
@@ -183,8 +260,15 @@ class TransactionController extends GetxController {
     DateTime endDate,
   ) async {
     isLoading.value = true;
+
+    final userId = currentUserId;
+    if (userId == null) {
+      _handleAuthError();
+      isLoading.value = false;
+      return {'deposits': 0, 'sent': 0, 'received': 0, 'balance': 0};
+    }
+
     try {
-      final userId = _authService.getCurrentUserId();
       final report = await _transactionService.getFinancialSummary(
         userId,
         startDate: startDate,
@@ -193,10 +277,40 @@ class TransactionController extends GetxController {
       return report;
     } catch (e) {
       showError('Erro ao gerar relatório: $e');
+      _checkAuthError(e);
       return {'deposits': 0, 'sent': 0, 'received': 0, 'balance': 0};
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Tratamento de erros de autenticação
+  void _checkAuthError(dynamic error) {
+    String errorStr = error.toString().toLowerCase();
+    if (errorStr.contains('usuário não logado') ||
+        errorStr.contains('user not logged in') ||
+        errorStr.contains('permission') ||
+        errorStr.contains('não autenticado') ||
+        errorStr.contains('not authenticated') ||
+        errorStr.contains('token') ||
+        errorStr.contains('permission-denied')) {
+      _handleAuthError();
+    }
+  }
+
+  void _handleAuthError() {
+    hasValidAuth.value = false;
+    _redirectToLogin();
+  }
+
+  void _redirectToLogin() {
+    // Evita múltiplas chamadas de redirect com um delayed call
+    Future.delayed(Duration.zero, () {
+      if (!hasValidAuth.value && Get.currentRoute != '/login') {
+        Get.offAllNamed('/login');
+        showError('Sua sessão expirou. Por favor, faça login novamente.');
+      }
+    });
   }
 
   void showError(String msg) {

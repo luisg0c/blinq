@@ -14,29 +14,26 @@ import 'package:yeezybank/presentation/controllers/home_controller.dart';
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
-    // Serviço Firebase centralizado
-    Get.lazyPut<FirebaseService>(() => FirebaseService(), fenix: true);
+    // Serviço Firebase centralizado - precisa ser permanente
+    Get.put<FirebaseService>(FirebaseService(), permanent: true);
 
-    // Repositórios
-    Get.lazyPut<AccountRepository>(() => AccountRepository(), fenix: true);
-    Get.lazyPut<TransactionRepository>(
-      () => TransactionRepository(),
-      fenix: true,
-    );
+    // Repositórios - também permanentes para manter estado
+    Get.put<AccountRepository>(AccountRepository(), permanent: true);
+    Get.put<TransactionRepository>(TransactionRepository(), permanent: true);
 
-    // Serviços de domínio
-    Get.lazyPut<AuthService>(() => AuthService(), fenix: true);
-    Get.lazyPut<TransactionSecurityService>(
-      () => TransactionSecurityService(),
-      fenix: true,
+    // Serviços de domínio - permanentes
+    Get.put<AuthService>(AuthService(), permanent: true);
+    Get.put<TransactionSecurityService>(
+      TransactionSecurityService(),
+      permanent: true,
     );
-    Get.lazyPut<TransactionValidationService>(
-      () => TransactionValidationService(),
-      fenix: true,
+    Get.put<TransactionValidationService>(
+      TransactionValidationService(),
+      permanent: true,
     );
-    Get.lazyPut<TransactionService>(() => TransactionService(), fenix: true);
+    Get.put<TransactionService>(TransactionService(), permanent: true);
 
-    // Controllers
+    // Controllers - usando lazyPut com parameter permanent para manter instância quando necessário
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
     Get.lazyPut<TransactionController>(

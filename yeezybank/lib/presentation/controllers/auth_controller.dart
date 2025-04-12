@@ -10,6 +10,23 @@ class AuthController extends GetxController {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final isLoading = false.obs;
+  final isAuthenticated = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Verificar estado de autenticação atual
+    checkAuthStatus();
+    // Escutar mudanças de autenticação
+    _firebaseService.authStateChanges.listen((user) {
+      isAuthenticated.value = user != null;
+    });
+  }
+
+  // Verificar se o usuário está autenticado
+  void checkAuthStatus() {
+    isAuthenticated.value = _authService.getCurrentUser() != null;
+  }
 
   // Login
   Future<void> login() async {
@@ -27,11 +44,13 @@ class AuthController extends GetxController {
       if (user != null) {
         // Garantir que o email está corretamente armazenado no Firestore
         await _ensureAccountExists(user.uid, email);
+        isAuthenticated.value = true;
       }
       clearFields();
       Get.offAllNamed('/home');
     } catch (e) {
       _showError(e.toString());
+      isAuthenticated.value = false;
     } finally {
       isLoading.value = false;
     }
@@ -53,11 +72,13 @@ class AuthController extends GetxController {
       if (user != null) {
         // Criar conta no Firestore com email
         await _firebaseService.createAccount(user.uid, email);
+        isAuthenticated.value = true;
       }
       clearFields();
       Get.offAllNamed('/home');
     } catch (e) {
       _showError(e.toString());
+      isAuthenticated.value = false;
     } finally {
       isLoading.value = false;
     }
@@ -83,8 +104,13 @@ class AuthController extends GetxController {
 
   // Logout
   Future<void> logout() async {
-    await _authService.signOut();
-    Get.offAllNamed('/');
+    try {
+      await _authService.signOut();
+      isAuthenticated.value = false;
+      Get.offAllNamed('/');
+    } catch (e) {
+      _showError('Erro ao fazer logout: $e');
+    }
   }
 
   void clearFields() {
@@ -93,7 +119,14 @@ class AuthController extends GetxController {
   }
 
   void _showError(String message) {
-    Get.snackbar('Erro', message, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar(
+      'Erro',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.1),
+      colorText: Colors.red,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   @override
