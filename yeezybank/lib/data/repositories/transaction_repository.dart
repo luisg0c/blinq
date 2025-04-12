@@ -1,4 +1,3 @@
-// lib/data/repositories/transaction_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import '../../domain/models/transaction_model.dart';
@@ -8,239 +7,134 @@ class TransactionRepository extends GetxService {
   final FirebaseService _firebaseService = Get.find<FirebaseService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Adicionar transação
+  // Referências de coleções para evitar strings duplicadas
+  CollectionReference get _transactionsCollection =>
+      _firestore.collection('transactions');
+  CollectionReference get _accountsCollection =>
+      _firestore.collection('accounts');
+
+  // MARK: - Métodos públicos
+
+  /// Adiciona uma nova transação no Firestore
   Future<TransactionModel> addTransaction(TransactionModel transaction) async {
     try {
-      final docRef = await _firestore
-          .collection('transactions')
-          .add(transaction.toMap());
-
+      final docRef = await _transactionsCollection.add(transaction.toMap());
       return transaction.copyWith(id: docRef.id);
     } catch (e) {
-      print('Erro ao adicionar transação: $e');
+      _logError('adicionar transação', e);
       rethrow;
     }
   }
 
-  // Obter transação por ID
+  /// Busca uma transação específica pelo ID
   Future<TransactionModel?> getTransaction(String transactionId) async {
     try {
-      final doc =
-          await _firestore.collection('transactions').doc(transactionId).get();
+      final doc = await _transactionsCollection.doc(transactionId).get();
       if (!doc.exists) return null;
 
-      // Verificamos se os dados existem e fornecemos um mapa vazio se não existirem
-      final data = doc.data() ?? {};
+      final data = doc.data() as Map<String, dynamic>? ?? {};
       return TransactionModel.fromMap(data, doc.id);
     } catch (e) {
-      print('Erro ao buscar transação: $e');
+      _logError('buscar transação', e);
       return null;
     }
   }
 
-  // Atualizar status da transação
+  /// Atualiza o status de uma transação existente
   Future<void> updateTransactionStatus(
     String transactionId,
     TransactionStatus status, {
     bool confirmed = false,
   }) async {
     try {
-      final Map<String, dynamic> updates = {
-        'status': status.toString().split('.').last,
-      };
+      final Map<String, dynamic> updates = {'status': _getStatusString(status)};
 
       if (confirmed) {
         updates['confirmedAt'] = FieldValue.serverTimestamp();
       }
 
-      await _firestore
-          .collection('transactions')
-          .doc(transactionId)
-          .update(updates);
+      await _transactionsCollection.doc(transactionId).update(updates);
     } catch (e) {
-      print('Erro ao atualizar status da transação: $e');
+      _logError('atualizar status da transação', e);
       rethrow;
     }
   }
 
-  // Processar transação (transferência)
+  /// Processa uma transação de transferência entre contas
   Future<void> processTransaction(TransactionModel txn) async {
     try {
-      // Executar transação em modo atômico
       await _firestore.runTransaction((transaction) async {
-        // Verificar saldo do remetente
-        final senderDoc = _firestore.collection('accounts').doc(txn.senderId);
+        // Verificação e atualização da conta do remetente
+        final senderDoc = _accountsCollection.doc(txn.senderId);
         final senderSnapshot = await transaction.get(senderDoc);
 
-        if (!senderSnapshot.exists) {
-          throw Exception('Usuário não logado');
-        }
+        _validateSenderAccount(senderSnapshot);
+        final senderData = senderSnapshot.data() as Map<String, dynamic>? ?? {};
+        final currentBalance = _getBalanceFromData(senderData);
 
-        // Se os dados não existirem, fornecemos um mapa vazio
-        final senderData = senderSnapshot.data() ?? {};
-        if (!senderData.containsKey('balance')) {
-          throw Exception('Conta sem saldo definido');
-        }
-
-        final currentBalance = (senderData['balance'] as num).toDouble();
-
+        // Valida se há saldo suficiente
         if (currentBalance < txn.amount) {
           throw Exception('Saldo insuficiente');
         }
 
-        // Atualizar saldo do remetente (débito)
+        // Atualiza o saldo do remetente
         transaction.update(senderDoc, {
           'balance': currentBalance - txn.amount,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // Atualizar saldo do destinatário (crédito)
-        final receiverDoc = _firestore
-            .collection('accounts')
-            .doc(txn.receiverId);
-        final receiverSnapshot = await transaction.get(receiverDoc);
+        // Atualiza a conta do destinatário
+        await _updateReceiverAccount(transaction, txn);
 
-        if (!receiverSnapshot.exists) {
-          // Obter email do destinatário de forma segura
-          String receiverEmail = 'usuario@exemplo.com';
-
-          try {
-            final accountDoc =
-                await _firestore
-                    .collection('accounts')
-                    .doc(txn.receiverId)
-                    .get();
-            final accountData = accountDoc.data() ?? {};
-            if (accountDoc.exists && accountData.containsKey('email')) {
-              receiverEmail = accountData['email'] as String;
-            } else if (_firebaseService.currentUser?.uid == txn.receiverId) {
-              receiverEmail =
-                  _firebaseService.currentUser?.email ?? receiverEmail;
-            }
-          } catch (e) {
-            print('Erro ao buscar email do destinatário: $e');
-          }
-
-          // Criar conta para o destinatário se não existir
-          transaction.set(receiverDoc, {
-            'balance': txn.amount,
-            'email': receiverEmail,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        } else {
-          // Atualizar saldo existente
-          final receiverData = receiverSnapshot.data() ?? {};
-          final receiverBalance =
-              receiverData.containsKey('balance')
-                  ? (receiverData['balance'] as num).toDouble()
-                  : 0.0;
-
-          transaction.update(receiverDoc, {
-            'balance': receiverBalance + txn.amount,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
-
-        // Atualizar status da transação para completada
+        // Atualiza o status da transação
         if (txn.id.isNotEmpty) {
-          transaction.update(
-            _firestore.collection('transactions').doc(txn.id),
-            {'status': TransactionStatus.completed.toString().split('.').last},
-          );
+          transaction.update(_transactionsCollection.doc(txn.id), {
+            'status': _getStatusString(TransactionStatus.completed),
+          });
         }
       });
 
       print('Transferência de ${txn.amount} executada com sucesso');
     } catch (e) {
-      // Marcar transação como falha
-      if (txn.id.isNotEmpty) {
-        try {
-          await _firestore.collection('transactions').doc(txn.id).update({
-            'status': TransactionStatus.failed.toString().split('.').last,
-          });
-        } catch (updateError) {
-          print('Erro ao marcar transação como falha: $updateError');
-        }
-      }
-
-      print('Erro ao executar transferência: $e');
+      await _handleTransactionFailure(txn, e);
       rethrow;
     }
   }
 
-  // Processar depósito
+  /// Processa um depósito na conta do usuário
   Future<void> processDeposit(TransactionModel txn) async {
     try {
-      // Executar transação atômica
       await _firestore.runTransaction((transaction) async {
-        // Verificar conta
-        final userDoc = _firestore.collection('accounts').doc(txn.senderId);
+        final userDoc = _accountsCollection.doc(txn.senderId);
         final userSnapshot = await transaction.get(userDoc);
 
         if (!userSnapshot.exists) {
           // Criar conta se não existir
-          String email =
-              _firebaseService.currentUser?.email?.toLowerCase() ??
-              'usuario@exemplo.com';
-
-          transaction.set(userDoc, {
-            'balance': txn.amount,
-            'email': email,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          _createNewAccount(transaction, userDoc, txn.amount);
         } else {
-          // Atualizar saldo
-          final userData = userSnapshot.data() ?? {};
-          final currentBalance =
-              userData.containsKey('balance')
-                  ? (userData['balance'] as num).toDouble()
-                  : 0.0;
-
-          transaction.update(userDoc, {
-            'balance': currentBalance + txn.amount,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          // Atualizar saldo existente
+          _updateExistingAccount(transaction, userSnapshot, txn.amount);
         }
 
-        // Registrar transação
-        // Criamos uma cópia segura do mapa
-        final Map<String, dynamic> txnData = Map<String, dynamic>.from(
-          txn.toMap(),
-        );
-        txnData['status'] =
-            TransactionStatus.completed.toString().split('.').last;
-
-        if (txn.id.isEmpty) {
-          // Se não tem ID, criar novo documento
-          final txnRef = _firestore.collection('transactions').doc();
-          transaction.set(txnRef, txnData);
-        } else {
-          // Se já tem ID, atualizar
-          transaction.set(
-            _firestore.collection('transactions').doc(txn.id),
-            txnData,
-          );
-        }
+        // Registrar a transação
+        await _registerCompletedTransaction(transaction, txn);
       });
 
       print('Depósito de ${txn.amount} realizado com sucesso');
     } catch (e) {
-      print('Erro ao processar depósito: $e');
+      _logError('processar depósito', e);
       rethrow;
     }
   }
 
-  // Stream de transações do usuário
+  /// Obtém um stream de transações do usuário
   Stream<List<TransactionModel>> getUserTransactionsStream(
     String userId, {
     int limit = 20,
     DocumentSnapshot? startAfterDoc,
   }) {
     try {
-      Query query = _firestore
-          .collection('transactions')
+      Query query = _transactionsCollection
           .where('participants', arrayContains: userId)
           .orderBy('timestamp', descending: true)
           .limit(limit);
@@ -251,42 +145,39 @@ class TransactionRepository extends GetxService {
 
       return query.snapshots().map((snapshot) {
         return snapshot.docs.map((doc) {
-          // Usamos um mapa vazio como fallback se os dados forem nulos
-          Map<String, dynamic> data = doc.data() ?? {};
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
           return TransactionModel.fromMap(data, doc.id);
         }).toList();
       });
     } catch (e) {
-      print('Erro ao obter stream de transações: $e');
+      _logError('obter stream de transações', e);
       return Stream.value([]);
     }
   }
 
-  // Stream de transações pendentes
+  /// Obtém as transações pendentes do usuário
   Stream<List<TransactionModel>> getPendingTransactionsStream(String userId) {
     try {
-      final pendingStatus =
-          TransactionStatus.pending.toString().split('.').last;
+      final pendingStatus = _getStatusString(TransactionStatus.pending);
 
-      return _firestore
-          .collection('transactions')
+      return _transactionsCollection
           .where('senderId', isEqualTo: userId)
           .where('status', isEqualTo: pendingStatus)
           .snapshots()
           .map((snapshot) {
             return snapshot.docs.map((doc) {
-              // Usamos um mapa vazio como fallback
-              Map<String, dynamic> data = doc.data() ?? {};
+              Map<String, dynamic> data =
+                  doc.data() as Map<String, dynamic>? ?? {};
               return TransactionModel.fromMap(data, doc.id);
             }).toList();
           });
     } catch (e) {
-      print('Erro ao obter transações pendentes: $e');
+      _logError('obter transações pendentes', e);
       return Stream.value([]);
     }
   }
 
-  // Obter transações por período
+  /// Obtém transações em um período específico
   Future<List<TransactionModel>> getTransactionsByPeriod(
     String userId, {
     DateTime? startDate,
@@ -294,8 +185,7 @@ class TransactionRepository extends GetxService {
     int limit = 50,
   }) async {
     try {
-      Query query = _firestore
-          .collection('transactions')
+      Query query = _transactionsCollection
           .where('participants', arrayContains: userId)
           .orderBy('timestamp', descending: true);
 
@@ -317,13 +207,163 @@ class TransactionRepository extends GetxService {
 
       final snapshot = await query.get();
       return snapshot.docs.map((doc) {
-        // Fornecemos um mapa vazio se os dados forem nulos
-        Map<String, dynamic> data = doc.data() ?? {};
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
         return TransactionModel.fromMap(data, doc.id);
       }).toList();
     } catch (e) {
-      print('Erro ao obter transações por período: $e');
+      _logError('obter transações por período', e);
       return [];
     }
+  }
+
+  // MARK: - Métodos privados de suporte
+
+  /// Obtém a representação string de um status de transação
+  String _getStatusString(TransactionStatus status) {
+    return status.toString().split('.').last;
+  }
+
+  /// Valida se a conta do remetente é válida para a transação
+  void _validateSenderAccount(DocumentSnapshot senderSnapshot) {
+    if (!senderSnapshot.exists) {
+      throw Exception('Usuário não logado');
+    }
+
+    final senderData = senderSnapshot.data() as Map<String, dynamic>? ?? {};
+    if (!senderData.containsKey('balance')) {
+      throw Exception('Conta sem saldo definido');
+    }
+  }
+
+  /// Obtém o saldo atual do usuário a partir dos dados da conta
+  double _getBalanceFromData(Map<String, dynamic> data) {
+    return data.containsKey('balance')
+        ? (data['balance'] as num).toDouble()
+        : 0.0;
+  }
+
+  /// Atualiza a conta do destinatário durante uma transferência
+  Future<void> _updateReceiverAccount(
+    Transaction transaction,
+    TransactionModel txn,
+  ) async {
+    final receiverDoc = _accountsCollection.doc(txn.receiverId);
+    final receiverSnapshot = await transaction.get(receiverDoc);
+
+    if (!receiverSnapshot.exists) {
+      // Criar conta para o destinatário
+      String receiverEmail = await _getReceiverEmail(txn.receiverId);
+
+      transaction.set(receiverDoc, {
+        'balance': txn.amount,
+        'email': receiverEmail,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      // Atualizar saldo existente
+      final receiverData =
+          receiverSnapshot.data() as Map<String, dynamic>? ?? {};
+      final receiverBalance = _getBalanceFromData(receiverData);
+
+      transaction.update(receiverDoc, {
+        'balance': receiverBalance + txn.amount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  /// Busca o email do destinatário
+  Future<String> _getReceiverEmail(String receiverId) async {
+    String defaultEmail = 'usuario@exemplo.com';
+
+    try {
+      final accountDoc = await _accountsCollection.doc(receiverId).get();
+      final accountData = accountDoc.data() as Map<String, dynamic>? ?? {};
+
+      if (accountDoc.exists && accountData.containsKey('email')) {
+        return accountData['email'] as String;
+      } else if (_firebaseService.currentUser?.uid == receiverId) {
+        return _firebaseService.currentUser?.email ?? defaultEmail;
+      }
+    } catch (e) {
+      _logError('buscar email do destinatário', e);
+    }
+
+    return defaultEmail;
+  }
+
+  /// Trata falha na transação
+  Future<void> _handleTransactionFailure(
+    TransactionModel txn,
+    dynamic error,
+  ) async {
+    if (txn.id.isNotEmpty) {
+      try {
+        await _transactionsCollection.doc(txn.id).update({
+          'status': _getStatusString(TransactionStatus.failed),
+        });
+      } catch (updateError) {
+        _logError('marcar transação como falha', updateError);
+      }
+    }
+
+    _logError('executar transferência', error);
+  }
+
+  /// Cria uma nova conta para o usuário durante depósito
+  void _createNewAccount(
+    Transaction transaction,
+    DocumentReference userDoc,
+    double amount,
+  ) {
+    String email =
+        _firebaseService.currentUser?.email?.toLowerCase() ??
+        'usuario@exemplo.com';
+
+    transaction.set(userDoc, {
+      'balance': amount,
+      'email': email,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Atualiza uma conta existente durante depósito
+  void _updateExistingAccount(
+    Transaction transaction,
+    DocumentSnapshot userSnapshot,
+    double amount,
+  ) {
+    final userData = userSnapshot.data() as Map<String, dynamic>? ?? {};
+    final currentBalance = _getBalanceFromData(userData);
+
+    transaction.update(userSnapshot.reference, {
+      'balance': currentBalance + amount,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Registra uma transação completa
+  Future<void> _registerCompletedTransaction(
+    Transaction transaction,
+    TransactionModel txn,
+  ) async {
+    final Map<String, dynamic> txnData = Map<String, dynamic>.from(txn.toMap());
+    txnData['status'] = _getStatusString(TransactionStatus.completed);
+
+    if (txn.id.isEmpty) {
+      // Se não tem ID, criar novo documento
+      final txnRef = _transactionsCollection.doc();
+      transaction.set(txnRef, txnData);
+    } else {
+      // Se já tem ID, atualizar
+      transaction.set(_transactionsCollection.doc(txn.id), txnData);
+    }
+  }
+
+  /// Registra erros no console de forma padronizada
+  void _logError(String operacao, dynamic erro) {
+    print('Erro ao $operacao: $erro');
   }
 }
