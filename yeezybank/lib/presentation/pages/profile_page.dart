@@ -139,7 +139,7 @@ class ProfilePage extends StatelessWidget {
               color: AppColors.primaryColor,
             ),
             title: const Text(
-              'Sobre o YeezyBank',
+              'Sobre o Blinq',
               style: AppTextStyles.subtitle,
             ),
             trailing: const Icon(
@@ -150,14 +150,14 @@ class ProfilePage extends StatelessWidget {
             onTap: () {
               showAboutDialog(
                 context: context,
-                applicationName: 'YeezyBank',
+                applicationName: 'Blinq',
                 applicationVersion: '1.0.0',
                 applicationLegalese:
-                    '© 2025 YeezyBank. Todos os direitos reservados.',
+                    '© 2025 Blinq. Todos os direitos reservados.',
                 children: const [
                   SizedBox(height: 20),
                   Text(
-                    'YeezyBank é um projeto acadêmico para demonstração de um aplicativo bancário utilizando Flutter e Firebase.',
+                    'Blinq é um projeto acadêmico para demonstração de um aplicativo bancário utilizando Flutter e Firebase.',
                   ),
                 ],
               );

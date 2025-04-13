@@ -30,7 +30,7 @@ class LoginPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Entre para continuar usando o YeezyBank.',
+                'Entre para continuar usando o Blinq.',
                 style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                 textAlign: TextAlign.center,
               ),

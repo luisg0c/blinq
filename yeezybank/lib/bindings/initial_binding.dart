@@ -1,15 +1,15 @@
 import 'package:get/get.dart';
-import 'package:yeezybank/data/firebase_service.dart';
-import 'package:yeezybank/data/repositories/account_repository.dart';
-import 'package:yeezybank/data/repositories/transaction_repository.dart';
-import 'package:yeezybank/domain/services/auth_service.dart';
-import 'package:yeezybank/domain/services/transaction_service.dart';
-import 'package:yeezybank/domain/services/transaction_validation_service.dart';
-import 'package:yeezybank/domain/services/transaction_security_service.dart';
-import 'package:yeezybank/presentation/controllers/auth_controller.dart';
-import 'package:yeezybank/presentation/controllers/transaction_controller.dart';
-import 'package:yeezybank/presentation/controllers/transaction_password_handler.dart';
-import 'package:yeezybank/presentation/controllers/home_controller.dart';
+import 'package:blinq/data/firebase_service.dart';
+import 'package:blinq/data/repositories/account_repository.dart';
+import 'package:blinq/data/repositories/transaction_repository.dart';
+import 'package:blinq/domain/services/auth_service.dart';
+import 'package:blinq/domain/services/transaction_service.dart';
+import 'package:blinq/domain/services/transaction_validation_service.dart';
+import 'package:blinq/domain/services/transaction_security_service.dart';
+import 'package:blinq/presentation/controllers/auth_controller.dart';
+import 'package:blinq/presentation/controllers/transaction_controller.dart';
+import 'package:blinq/presentation/controllers/transaction_password_handler.dart';
+import 'package:blinq/presentation/controllers/home_controller.dart';
 
 class InitialBinding extends Bindings {
   @override

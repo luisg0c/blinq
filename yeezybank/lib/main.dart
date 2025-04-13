@@ -38,7 +38,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Executar o app
-  runApp(const YeezyBankApp());
+  runApp(const BlinqApp());
 }
 
 // Middleware para verificar autenticação
@@ -58,14 +58,14 @@ class AuthMiddleware extends GetMiddleware {
   }
 }
 
-class YeezyBankApp extends StatelessWidget {
-  const YeezyBankApp({Key? key}) : super(key: key);
+class BlinqApp extends StatelessWidget {
+  const BlinqApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'YeezyBank',
+      title: 'Blinq',
       initialBinding: InitialBinding(),
       initialRoute: '/',
       defaultTransition: Transition.fade,

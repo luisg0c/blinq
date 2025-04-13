@@ -37,7 +37,7 @@ class SignupPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Preencha os dados para começar a usar o YeezyBank.',
+                'Preencha os dados para começar a usar o Blinq.',
                 style: AppTextStyles.body.copyWith(color: AppColors.subtitle),
                 textAlign: TextAlign.center,
               ),

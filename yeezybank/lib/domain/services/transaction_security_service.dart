@@ -42,7 +42,7 @@ class TransactionSecurityService extends GetxService {
       buffer.write(chars[random.nextInt(chars.length)]);
     }
 
-    return 'yeezybank_${buffer.toString()}_${DateTime.now().millisecondsSinceEpoch}';
+    return 'blinq_${buffer.toString()}_${DateTime.now().millisecondsSinceEpoch}';
   }
 
   // Senha de transação
