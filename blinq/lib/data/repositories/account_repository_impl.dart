@@ -1,4 +1,4 @@
-import '../../data/models/account_model.dart';
+import '../models/account_model.dart';
 
 /// Interface para o repositório de contas
 abstract class AccountRepository {
