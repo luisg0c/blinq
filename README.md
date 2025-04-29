@@ -32,17 +32,6 @@ lib/
 └── main.dart             # Ponto de entrada do aplicativo
 ```
 
-## 📷 Screenshots
-
-<table>
-  <tr>
-    <td><img src="docs/screenshots/login.png" width="200"/></td>
-    <td><img src="docs/screenshots/home.png" width="200"/></td>
-    <td><img src="docs/screenshots/transfer.png" width="200"/></td>
-    <td><img src="docs/screenshots/history.png" width="200"/></td>
-  </tr>
-</table>
-
 ## 🚀 Instalação e Execução
 
 ### Pré-requisitos
