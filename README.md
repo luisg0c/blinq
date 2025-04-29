@@ -124,5 +124,5 @@ Contribuições são bem-vindas! Por favor, sinta-se à vontade para submeter um
 ---
 
 <p align="center">
-  Desenvolvido com ❤️ utilizando Flutter e Firebase
+  Desenvolvido utilizando Flutter e Firebase
 </p>
