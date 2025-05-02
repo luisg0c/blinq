@@ -100,18 +100,6 @@ lib/
 
 Este projeto está licenciado sob a [Licença MIT](LICENSE).
 
-## 👥 Contribuição
-
-Contribuições são bem-vindas! Por favor, sinta-se à vontade para submeter um Pull Request.
-
-1. Faça um fork do projeto
-2. Crie sua branch de feature (`git checkout -b feature/amazing-feature`)
-3. Faça commit das suas mudanças (`git commit -m 'Add some amazing feature'`)
-4. Envie para a branch (`git push origin feature/amazing-feature`)
-5. Abra um Pull Request
-
----
-
 <p align="center">
   Desenvolvido utilizando Flutter e Firebase
 </p>
