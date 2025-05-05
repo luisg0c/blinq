@@ -1,11 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+<<<<<<< HEAD
 import '../../core/utils/logger.dart';
+=======
+import '../utils/logger.dart';
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
 
 /// Serviço para operações com Firestore
 class FirestoreService extends GetxService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AppLogger logger = AppLogger('FirestoreService');
+<<<<<<< HEAD
 
   // Referências de coleções
   CollectionReference get usersCollection => _firestore.collection('users');
@@ -14,6 +19,14 @@ class FirestoreService extends GetxService {
   CollectionReference get transactionsCollection =>
       _firestore.collection('transactions');
 
+=======
+  
+  // Referências de coleções
+  CollectionReference get usersCollection => _firestore.collection('users');
+  CollectionReference get accountsCollection => _firestore.collection('accounts');
+  CollectionReference get transactionsCollection => _firestore.collection('transactions');
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Cria um documento com ID automático
   Future<DocumentReference> addDocument(
     CollectionReference collection,
@@ -22,7 +35,11 @@ class FirestoreService extends GetxService {
     try {
       data['createdAt'] = FieldValue.serverTimestamp();
       data['updatedAt'] = FieldValue.serverTimestamp();
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       final docRef = await collection.add(data);
       logger.info('Documento criado: ${docRef.id}');
       return docRef;
@@ -31,7 +48,11 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Cria ou atualiza um documento com ID específico
   Future<void> setDocument(
     CollectionReference collection,
@@ -41,6 +62,7 @@ class FirestoreService extends GetxService {
   }) async {
     try {
       data['updatedAt'] = FieldValue.serverTimestamp();
+<<<<<<< HEAD
 
       if (!merge) {
         data['createdAt'] = FieldValue.serverTimestamp();
@@ -55,6 +77,21 @@ class FirestoreService extends GetxService {
     }
   }
 
+=======
+      
+      if (!merge) {
+        data['createdAt'] = FieldValue.serverTimestamp();
+      }
+      
+      await collection.doc(docId).set(data, SetOptions(merge: merge));
+      logger.info('Documento ${merge ? 'atualizado' : 'criado'}: $docId');
+    } catch (e, stackTrace) {
+      logger.error('Erro ao ${merge ? 'atualizar' : 'criar'} documento', e, stackTrace);
+      rethrow;
+    }
+  }
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Atualiza campos específicos de um documento
   Future<void> updateDocument(
     CollectionReference collection,
@@ -63,7 +100,11 @@ class FirestoreService extends GetxService {
   ) async {
     try {
       data['updatedAt'] = FieldValue.serverTimestamp();
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       await collection.doc(docId).update(data);
       logger.info('Documento atualizado: $docId');
     } catch (e, stackTrace) {
@@ -71,7 +112,11 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Obtém um documento por ID
   Future<DocumentSnapshot?> getDocument(
     CollectionReference collection,
@@ -79,19 +124,31 @@ class FirestoreService extends GetxService {
   ) async {
     try {
       final docSnapshot = await collection.doc(docId).get();
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       if (!docSnapshot.exists) {
         logger.warn('Documento não encontrado: $docId');
         return null;
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       return docSnapshot;
     } catch (e, stackTrace) {
       logger.error('Erro ao buscar documento', e, stackTrace);
       rethrow;
     }
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Exclui um documento
   Future<void> deleteDocument(
     CollectionReference collection,
@@ -105,7 +162,11 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Busca documentos com filtros
   Future<QuerySnapshot> queryDocuments(
     CollectionReference collection, {
@@ -115,7 +176,11 @@ class FirestoreService extends GetxService {
   }) async {
     try {
       Query query = collection;
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       // Aplicar filtros
       for (final filter in filters) {
         if (filter.length == 3) {
@@ -131,7 +196,11 @@ class FirestoreService extends GetxService {
           );
         }
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       // Aplicar ordenação
       for (final order in orderBy) {
         if (order.length == 2) {
@@ -141,12 +210,20 @@ class FirestoreService extends GetxService {
           );
         }
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       // Aplicar limite
       if (limit != null) {
         query = query.limit(limit);
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       final querySnapshot = await query.get();
       logger.info('Consulta retornou ${querySnapshot.docs.length} documentos');
       return querySnapshot;
@@ -155,7 +232,11 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Cria um stream para um documento específico
   Stream<DocumentSnapshot> documentStream(
     CollectionReference collection,
@@ -163,7 +244,11 @@ class FirestoreService extends GetxService {
   ) {
     return collection.doc(docId).snapshots();
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Cria um stream para uma consulta
   Stream<QuerySnapshot> queryStream(
     CollectionReference collection, {
@@ -172,7 +257,11 @@ class FirestoreService extends GetxService {
     int? limit,
   }) {
     Query query = collection;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
     // Aplicar filtros
     for (final filter in filters) {
       if (filter.length == 3) {
@@ -188,7 +277,11 @@ class FirestoreService extends GetxService {
         );
       }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
     // Aplicar ordenação
     for (final order in orderBy) {
       if (order.length == 2) {
@@ -198,15 +291,26 @@ class FirestoreService extends GetxService {
         );
       }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
     // Aplicar limite
     if (limit != null) {
       query = query.limit(limit);
     }
+<<<<<<< HEAD
 
     return query.snapshots();
   }
 
+=======
+    
+    return query.snapshots();
+  }
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Executa uma transação atômica
   Future<T> runTransaction<T>(
     Future<T> Function(Transaction transaction) transactionHandler,
@@ -218,10 +322,16 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 
   /// Executa operações em lote
   Future<void> executeBatch(
       void Function(WriteBatch batch) batchHandler) async {
+=======
+  
+  /// Executa operações em lote
+  Future<void> executeBatch(void Function(WriteBatch batch) batchHandler) async {
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
     try {
       final batch = _firestore.batch();
       batchHandler(batch);
@@ -232,4 +342,8 @@ class FirestoreService extends GetxService {
       rethrow;
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d

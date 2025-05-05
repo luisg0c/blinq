@@ -8,7 +8,11 @@ class AppLogger {
 
   // Niveles de log disponíveis
   static const _defaultLogLevel = log_package.Level.info;
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   // Configuração global
   static bool _debugMode = kDebugMode;
   static log_package.Level _logLevel = _defaultLogLevel;
@@ -41,32 +45,58 @@ class AppLogger {
   /// Log verbose (detalhado)
   void verbose(String message, [dynamic error, StackTrace? stackTrace]) {
     if (!_debugMode) return;
+<<<<<<< HEAD
     _logger.v('[$_tag] $message', error: error, stackTrace: stackTrace);
+=======
+    _logger.v('[$_tag] $message', error, stackTrace);
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   }
 
   /// Log de debug
   void debug(String message, [dynamic error, StackTrace? stackTrace]) {
     if (!_debugMode) return;
+<<<<<<< HEAD
     _logger.d('[$_tag] $message', error: error, stackTrace: stackTrace);
+=======
+    _logger.d('[$_tag] $message', error, stackTrace);
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   }
 
   /// Log informativo
   void info(String message, [dynamic error, StackTrace? stackTrace]) {
+<<<<<<< HEAD
     _logger.i('[$_tag] $message', error: error, stackTrace: stackTrace);
+=======
+    _logger.i('[$_tag] $message', error, stackTrace);
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   }
 
   /// Log de aviso
   void warn(String message, [dynamic error, StackTrace? stackTrace]) {
+<<<<<<< HEAD
     _logger.w('[$_tag] $message', error: error, stackTrace: stackTrace);
+=======
+    _logger.w('[$_tag] $message', error, stackTrace);
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   }
 
   /// Log de erro
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
+<<<<<<< HEAD
     _logger.e('[$_tag] $message', error: error, stackTrace: stackTrace);
+=======
+    _logger.e('[$_tag] $message', error, stackTrace);
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   }
 
   /// Log de erro crítico/fatal
   void wtf(String message, [dynamic error, StackTrace? stackTrace]) {
+<<<<<<< HEAD
     _logger.wtf('[$_tag] $message', error: error, stackTrace: stackTrace);
   }
 }
+=======
+    _logger.wtf('[$_tag] $message', error, stackTrace);
+  }
+}
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d

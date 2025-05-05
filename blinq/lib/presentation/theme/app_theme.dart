@@ -29,7 +29,11 @@ class AppTheme {
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+<<<<<<< HEAD
         iconTheme: const IconThemeData(
+=======
+        iconTheme: IconThemeData(
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
           color: AppColors.textDark,
         ),
       ),
@@ -97,7 +101,11 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
+<<<<<<< HEAD
           side: const BorderSide(color: AppColors.primary),
+=======
+          side: BorderSide(color: AppColors.primary),
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
           textStyle: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -124,6 +132,7 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
+<<<<<<< HEAD
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
@@ -137,6 +146,21 @@ class AppTheme {
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
+=======
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.error, width: 2),
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
         ),
         hintStyle: GoogleFonts.poppins(
           color: AppColors.textLight,
@@ -161,7 +185,11 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
+<<<<<<< HEAD
       dividerTheme: const DividerThemeData(
+=======
+      dividerTheme: DividerThemeData(
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
         color: AppColors.border,
         thickness: 1,
       ),
@@ -178,7 +206,11 @@ class AppTheme {
         primary: AppColors.primaryDark,
         secondary: AppColors.secondaryDark,
         background: AppColors.backgroundDark,
+<<<<<<< HEAD
         surface: Colors.white
       )
       );
   }
+=======
+        surface: AppColors
+>>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
