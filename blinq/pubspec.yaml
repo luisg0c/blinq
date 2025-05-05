@@ -1,0 +1,44 @@
+name: blinq
+description: Blinq - Aplicativo bancário moderno e seguro.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  
+  # Firebase
+  firebase_core: ^2.25.5
+  firebase_auth: ^4.17.6
+  cloud_firestore: ^4.15.6
+  
+  # Estado e navegação
+  get: ^4.6.6
+  
+  # Utilitários
+  intl: ^0.19.0
+  flutter_secure_storage: ^9.0.0
+  uuid: ^4.3.3
+  logger: ^2.0.2+1
+  fluttertoast: ^8.2.4
+  
+  # UI
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  shimmer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
