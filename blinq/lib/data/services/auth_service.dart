@@ -1,16 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-<<<<<<< HEAD
 import '../../core/utils/logger.dart';
-=======
-import '../utils/logger.dart';
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
 
 /// Serviço para autenticação usando Firebase Auth
 class AuthService extends GetxService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AppLogger logger = AppLogger('AuthService');
-<<<<<<< HEAD
 
   // Stream reativa do usuário atual
   Rx<User?> currentUser = Rx<User?>(null);
@@ -18,35 +13,16 @@ class AuthService extends GetxService {
   // Estado de autenticação
   RxBool isAuthenticated = false.obs;
 
-=======
-  
-  // Stream reativa do usuário atual
-  Rx<User?> currentUser = Rx<User?>(null);
-  
-  // Estado de autenticação
-  RxBool isAuthenticated = false.obs;
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   @override
   void onInit() {
     super.onInit();
     // Inicializa o usuário atual
     currentUser.value = _auth.currentUser;
     isAuthenticated.value = _auth.currentUser != null;
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
     // Observa mudanças no estado de autenticação
     _auth.authStateChanges().listen((User? user) {
       currentUser.value = user;
       isAuthenticated.value = user != null;
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       if (user != null) {
         logger.info('Usuário autenticado: ${user.uid}');
       } else {
@@ -54,11 +30,7 @@ class AuthService extends GetxService {
       }
     });
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Registra um novo usuário com email e senha
   Future<User?> signUp(String email, String password) async {
     try {
@@ -74,11 +46,7 @@ class AuthService extends GetxService {
       return null;
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Faz login com email e senha
   Future<User?> signIn(String email, String password) async {
     try {
@@ -94,11 +62,7 @@ class AuthService extends GetxService {
       return null;
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Faz logout do usuário atual
   Future<void> signOut() async {
     try {
@@ -109,11 +73,7 @@ class AuthService extends GetxService {
       rethrow;
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Envia email de redefinição de senha
   Future<void> sendPasswordResetEmail(String email) async {
     try {
@@ -123,11 +83,7 @@ class AuthService extends GetxService {
       _handleFirebaseAuthException(e);
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Recarrega os dados do usuário atual
   Future<void> reloadUser() async {
     try {
@@ -137,30 +93,18 @@ class AuthService extends GetxService {
       logger.error('Erro ao recarregar usuário', e, stackTrace);
     }
   }
-<<<<<<< HEAD
 
   /// Verifica se o email já está em uso
   Future<bool> isEmailInUse(String email) async {
     try {
       final List<String> methods =
           await _auth.fetchSignInMethodsForEmail(email);
-=======
-  
-  /// Verifica se o email já está em uso
-  Future<bool> isEmailInUse(String email) async {
-    try {
-      final List<String> methods = await _auth.fetchSignInMethodsForEmail(email);
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
       return methods.isNotEmpty;
     } catch (e) {
       return false;
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d
   /// Mapeia exceções do Firebase Auth para mensagens amigáveis
   void _handleFirebaseAuthException(FirebaseAuthException e) {
     switch (e.code) {
@@ -182,8 +126,4 @@ class AuthService extends GetxService {
         throw 'Erro de autenticação: ${e.message}';
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> ffa49ab2c1fa4a3b6c7f91b5797bf82cb828d29d

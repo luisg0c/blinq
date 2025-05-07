@@ -6,6 +6,7 @@ plugins {
 }
 
 android {
+    ndkVersion = "27.0.12077973"
     namespace = "com.example.blinq"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -42,3 +43,4 @@ android {
 flutter {
     source = "../.."
 }
+
