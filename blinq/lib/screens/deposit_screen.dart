@@ -10,18 +10,17 @@ import '../widgets/custom_text_field.dart';
 import '../utils/formatters.dart';
 import '../utils/validators.dart';
 
-class TransferScreen extends StatefulWidget {
-  const TransferScreen({Key? key}) : super(key: key);
+class DepositScreen extends StatefulWidget {
+  const DepositScreen({Key? key}) : super(key: key);
 
-  static const String routeName = '/transfer';
+  static const String routeName = '/deposit';
 
   @override
-  State<TransferScreen> createState() => _TransferScreenState();
+  State<DepositScreen> createState() => _DepositScreenState();
 }
 
-class _TransferScreenState extends State<TransferScreen> {
+class _DepositScreenState extends State<DepositScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _transactionPasswordController = TextEditingController();
@@ -32,10 +31,9 @@ class _TransferScreenState extends State<TransferScreen> {
 
   bool _isLoading = false;
   bool _showTransactionPasswordDialog = false;
-  double? _accountBalance;
   String? _userId;
   String? _errorMessage;
-  double? _transferAmount;
+  double? _depositAmount;
 
   @override
   void initState() {
@@ -45,7 +43,6 @@ class _TransferScreenState extends State<TransferScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
     _transactionPasswordController.dispose();
@@ -53,78 +50,60 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
       final user = await _authService.getCurrentUserModel();
       if (user != null) {
-        _userId = user.id;
-        final account = await _accountService.getAccount(user.id);
         setState(() {
-          _accountBalance = account?.balance ?? 0;
+          _userId = user.id;
         });
       }
     } catch (e) {
       print('Erro ao carregar dados do usuário: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
-  Future<void> _initiateTransfer() async {
+  Future<void> _initiateDeposit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final amount =
         double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0;
 
     // Check if amount is within limits
-    if (amount < AppConstants.minTransferAmount) {
+    if (amount < AppConstants.minDepositAmount) {
       setState(() {
         _errorMessage =
-            'Valor mínimo de transferência: ${Formatters.formatCurrency(AppConstants.minTransferAmount)}';
+            'Valor mínimo de depósito: ${Formatters.formatCurrency(AppConstants.minDepositAmount)}';
       });
       return;
     }
 
-    if (amount > AppConstants.maxTransferAmount) {
+    if (amount > AppConstants.maxDepositAmount) {
       setState(() {
         _errorMessage =
-            'Valor máximo de transferência: ${Formatters.formatCurrency(AppConstants.maxTransferAmount)}';
-      });
-      return;
-    }
-
-    // Check if user has enough balance
-    if (amount > (_accountBalance ?? 0)) {
-      setState(() {
-        _errorMessage = 'Saldo insuficiente para realizar esta transferência';
+            'Valor máximo de depósito: ${Formatters.formatCurrency(AppConstants.maxDepositAmount)}';
       });
       return;
     }
 
     setState(() {
-      _transferAmount = amount;
+      _depositAmount = amount;
       _errorMessage = null;
       _showTransactionPasswordDialog = true;
     });
   }
 
-  Future<void> _confirmTransfer() async {
+  Future<void> _confirmDeposit() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      if (_userId == null || _transferAmount == null) {
-        throw Exception('Dados de transferência inválidos');
+      if (_userId == null || _depositAmount == null) {
+        throw Exception('Dados de depósito inválidos');
       }
 
-      // First validate transaction password
+      // First validate or set transaction password
       final hasPassword =
           await _accountService.hasTransactionPassword(_userId!);
 
@@ -159,11 +138,10 @@ class _TransferScreenState extends State<TransferScreen> {
         );
       }
 
-      // Process transfer
-      await _transactionService.transfer(
-        senderId: _userId!,
-        receiverEmail: _emailController.text,
-        amount: _transferAmount!,
+      // Process deposit
+      await _transactionService.deposit(
+        userId: _userId!,
+        amount: _depositAmount!,
         description: _descriptionController.text.isNotEmpty
             ? _descriptionController.text
             : null,
@@ -173,7 +151,7 @@ class _TransferScreenState extends State<TransferScreen> {
       _showSuccessDialog();
     } catch (e) {
       setState(() {
-        _errorMessage = 'Erro ao realizar transferência: ${e.toString()}';
+        _errorMessage = 'Erro ao realizar depósito: ${e.toString()}';
         _isLoading = false;
         _showTransactionPasswordDialog = false;
       });
@@ -205,7 +183,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Transferência realizada!',
+              'Depósito realizado!',
               style: GoogleFonts.lexend(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -215,7 +193,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Sua transferência foi processada com sucesso.',
+              'Seu depósito foi processado com sucesso.',
               style: GoogleFonts.lexend(
                 fontSize: 14,
                 color: AppColors.textLight,
@@ -251,7 +229,7 @@ class _TransferScreenState extends State<TransferScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Transferência',
+          'Depósito',
           style: GoogleFonts.lexend(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -269,68 +247,8 @@ class _TransferScreenState extends State<TransferScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Available Balance Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Saldo disponível',
-                              style: GoogleFonts.lexend(
-                                fontSize: 14,
-                                color: AppColors.textLight,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              Formatters.formatCurrency(_accountBalance ?? 0),
-                              style: GoogleFonts.lexend(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.text,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
                       Text(
-                        'Para quem você deseja transferir?',
-                        style: GoogleFonts.lexend(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.text,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Recipient Email
-                      CustomTextField(
-                        controller: _emailController,
-                        label: 'Email do destinatário',
-                        hint: 'Digite o email',
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: Icons.email_outlined,
-                        validator: (value) => Validators.validateEmail(value),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      Text(
-                        'Qual valor você deseja transferir?',
+                        'Qual valor você deseja depositar?',
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -400,7 +318,7 @@ class _TransferScreenState extends State<TransferScreen> {
                       // Continue Button
                       CustomButton(
                         text: 'Continuar',
-                        onPressed: _initiateTransfer,
+                        onPressed: _initiateDeposit,
                         isFullWidth: true,
                       ),
                     ],
@@ -435,7 +353,7 @@ class _TransferScreenState extends State<TransferScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Confirmar transferência',
+                        'Confirmar depósito',
                         style: GoogleFonts.lexend(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -461,7 +379,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
                   // Summary
                   Text(
-                    'Você está transferindo:',
+                    'Você está depositando:',
                     style: GoogleFonts.lexend(
                       fontSize: 14,
                       color: AppColors.textLight,
@@ -471,21 +389,11 @@ class _TransferScreenState extends State<TransferScreen> {
                   const SizedBox(height: 8),
 
                   Text(
-                    Formatters.formatCurrency(_transferAmount ?? 0),
+                    Formatters.formatCurrency(_depositAmount ?? 0),
                     style: GoogleFonts.lexend(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppColors.text,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    'Para: ${_emailController.text}',
-                    style: GoogleFonts.lexend(
-                      fontSize: 14,
-                      color: AppColors.textLight,
                     ),
                   ),
 
@@ -538,7 +446,7 @@ class _TransferScreenState extends State<TransferScreen> {
                   // Confirm Button
                   CustomButton(
                     text: 'Confirmar',
-                    onPressed: _isLoading ? null : _confirmTransfer,
+                    onPressed: _isLoading ? null : _confirmDeposit,
                     isLoading: _isLoading,
                     isFullWidth: true,
                   ),
