@@ -1,24 +1,47 @@
-import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import '../../firebase_options.dart';
-import '../../core/utils/logger.dart';
 
-/// Serviço central para gerenciar a inicialização e instâncias do Firebase
 class FirebaseService extends GetxService {
-  final logger = AppLogger('FirebaseService');
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Inicializa os serviços do Firebase
-  Future<FirebaseService> init() async {
+  // Autenticação
+  Future<User?> signUp(String email, String password) async {
     try {
-      logger.info('Inicializando Firebase...');
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password
       );
-      logger.info('Firebase inicializado com sucesso');
-      return this;
-    } catch (e, stackTrace) {
-      logger.error('Erro ao inicializar Firebase', e, stackTrace);
-      rethrow;
+      return userCredential.user;
+    } catch (e) {
+      print('Erro no cadastro: $e');
+      return null;
     }
   }
+
+  Future<User?> signIn(String email, String password) async {
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+      return userCredential.user;
+    } catch (e) {
+      print('Erro no login: $e');
+      return null;
+    }
+  }
+
+  // Operações de Conta
+  Future<void> createUserAccount(String userId, String email) async {
+    await _firestore.collection('accounts').doc(userId).set({
+      'email': email,
+      'balance': 0.0,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp()
+    });
+  }
+
+  // Métodos adicionais podem ser implementados conforme necessário
 }
