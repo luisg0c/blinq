@@ -1,308 +1,107 @@
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:cloud_firestore/cloud_firestore.dart';
-<<<<<<< Updated upstream
-import 'package:flutter/foundation.dart';
-import '../core/constants.dart';
-import '../models/user.dart' as app_models;
-=======
-import '../models/user.dart';
-import '../core/constants.dart';
->>>>>>> Stashed changes
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_model.dart';
+import '../repositories/user_repository.dart';
+import 'dart:math';
 
 class AuthService {
-  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final UserRepository _userRepository = UserRepository();
 
-<<<<<<< Updated upstream
-  // Obtém o usuário atual do Firebase
-  firebase_auth.User? get currentUser => _auth.currentUser;
-
-  // Verifica se o usuário está autenticado
-  bool get isAuthenticated => _auth.currentUser != null;
-
-  // Stream de mudanças no estado de autenticação
-  Stream<bool> get authStateChanges =>
-      _auth.authStateChanges().map((user) => user != null);
-
-  // Obtém o modelo de usuário atual
-  Future<app_models.User?> getCurrentUserModel() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
-
-    try {
-      final doc = await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists) {
-        return app_models.User.fromMap(doc.data() ?? {}, doc.id);
-      } else {
-        // Criar documento de usuário se não existir
-        final newUser = app_models.User(
-          id: user.uid,
-          email: user.email ?? '',
-          name: user.displayName ?? '',
-          isEmailVerified: user.emailVerified,
-        );
-
-        await _firestore
-            .collection(AppConstants.usersCollection)
-            .doc(user.uid)
-            .set(newUser.toMap());
-
-        return newUser;
-      }
-    } catch (e) {
-      debugPrint('Erro ao obter usuário: $e');
-      return null;
-    }
+  String _generateAccountNumber() {
+    final random = Random();
+    return (100000 + random.nextInt(900000)).toString();
   }
 
-  // Busca usuário pelo ID
-  Future<app_models.User?> getUserById(String userId) async {
+  Future<UserModel?> signUp({
+    required String name,
+    required String email, 
+    required String password,
+    DateTime? birthDate,
+  }) async {
     try {
-      final doc = await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(userId)
-          .get();
-
-      if (doc.exists) {
-        return app_models.User.fromMap(doc.data() ?? {}, doc.id);
+      final existingUser = await _userRepository.getUserByEmail(email);
+      if (existingUser != null) {
+        throw Exception('Email já cadastrado');
       }
-      return null;
-    } catch (e) {
-      debugPrint('Erro ao buscar usuário por ID: $e');
-      return null;
-    }
-  }
 
-  // Cadastrar novo usuário
-  Future<app_models.User?> signUp(
-      String email, String password, String name) async {
-    try {
-      final result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (result.user != null) {
-        // Atualizar o nome do usuário no Firebase Auth
-        await result.user!.updateDisplayName(name);
-
-        // Criar o documento do usuário no Firestore
-        final user = app_models.User(
-=======
-  // Stream de estado de autenticação
-  Stream<bool> get authStateChanges => 
-      _auth.authStateChanges().map((user) => user != null);
-
-  // Obter usuário atual
-  Future<User?> getCurrentUser() async {
-    final firebaseUser = _auth.currentUser;
-    if (firebaseUser == null) return null;
-    
-    try {
-      final doc = await _firestore
-          .collection(AppConstants.usersCollection)
-          .doc(firebaseUser.uid)
-          .get();
-      
-      if (doc.exists) {
-        return User.fromMap(doc.data() ?? {}, doc.id);
-      }
-    } catch (e) {
-      print('Erro ao obter usuário: $e');
-    }
-    return null;
-  }
-
-  // Cadastrar novo usuário
-  Future<User?> signUp(String email, String password, String name) async {
-    try {
-      final result = await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email, 
         password: password
       );
+
+      if (userCredential.user == null) {
+        throw Exception('Falha ao criar usuário');
+      }
+
+      String accountNumber;
+      do {
+        accountNumber = _generateAccountNumber();
+      } while (await _userRepository.getUserByEmail(accountNumber) != null);
+
+      final user = UserModel(
+        id: userCredential.user!.uid,
+        email: email,
+        name: name,
+        accountNumber: accountNumber,
+        birthDate: birthDate,
+        isEmailVerified: false
+      );
+
+      final savedUser = await _userRepository.createUser(user);
       
-      if (result.user != null) {
-        final user = User(
->>>>>>> Stashed changes
-          id: result.user!.uid,
-          email: email,
-          name: name,
-          isEmailVerified: result.user!.emailVerified,
-        );
-<<<<<<< Updated upstream
-
-=======
-        
->>>>>>> Stashed changes
-        await _firestore
-            .collection(AppConstants.usersCollection)
-            .doc(user.id)
-            .set(user.toMap());
-<<<<<<< Updated upstream
-
-        return user;
-      }
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      String errorMessage;
-
-      switch (e.code) {
-        case 'email-already-in-use':
-          errorMessage = 'Este email já está sendo usado por outra conta.';
-          break;
-        case 'weak-password':
-          errorMessage = 'A senha é muito fraca.';
-          break;
-        case 'invalid-email':
-          errorMessage = 'O email fornecido é inválido.';
-          break;
-        default:
-          errorMessage = 'Ocorreu um erro durante o cadastro: ${e.message}';
+      if (savedUser == null) {
+        await userCredential.user!.delete();
+        throw Exception('Falha ao salvar usuário');
       }
 
-      throw Exception(errorMessage);
-    } catch (e) {
-      debugPrint('Erro no cadastro: $e');
-      throw Exception('Erro ao criar conta.');
-=======
-        
-        return user;
-      }
+      return savedUser;
     } catch (e) {
       print('Erro no cadastro: $e');
-      rethrow;
->>>>>>> Stashed changes
+      return null;
     }
-    return null;
   }
 
-<<<<<<< Updated upstream
-  // Login com email e senha
-  Future<app_models.User?> signIn(String email, String password) async {
+  Future<UserModel?> signIn(String email, String password) async {
     try {
-      final result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (result.user != null) {
-        return getCurrentUserModel();
-      }
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      String errorMessage;
-
-      switch (e.code) {
-        case 'user-not-found':
-          errorMessage = 'Não existe usuário com este email.';
-          break;
-        case 'wrong-password':
-          errorMessage = 'Senha incorreta.';
-          break;
-        case 'invalid-email':
-          errorMessage = 'O email fornecido é inválido.';
-          break;
-        case 'user-disabled':
-          errorMessage = 'Este usuário foi desativado.';
-          break;
-        default:
-          errorMessage = 'Erro ao fazer login: ${e.message}';
-      }
-
-      throw Exception(errorMessage);
-    } catch (e) {
-      debugPrint('Erro no login: $e');
-      throw Exception('Erro ao fazer login.');
-=======
-  // Login
-  Future<User?> signIn(String email, String password) async {
-    try {
-      final result = await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email, 
         password: password
       );
-      
-      if (result.user != null) {
-        return getCurrentUser();
+
+      if (userCredential.user == null) {
+        throw Exception('Usuário não encontrado');
       }
+
+      return await _userRepository.getUserById(userCredential.user!.uid);
     } catch (e) {
       print('Erro no login: $e');
-      rethrow;
->>>>>>> Stashed changes
+      return null;
     }
-    return null;
   }
 
-  // Logout
+  Future<UserModel?> getUserByEmail(String email) async {
+    try {
+      return await _userRepository.getUserByEmail(email);
+    } catch (e) {
+      print('Erro ao buscar usuário por email: $e');
+      return null;
+    }
+  }
+
+  UserModel? getCurrentUser() {
+    final user = _auth.currentUser;
+    return user != null 
+      ? UserModel(
+          id: user.uid,
+          email: user.email!,
+          name: user.displayName ?? '',
+          accountNumber: '', 
+          isEmailVerified: user.emailVerified
+        )
+      : null;
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }
-<<<<<<< Updated upstream
-
-  // Enviar email de recuperação de senha
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      String errorMessage;
-
-      switch (e.code) {
-        case 'invalid-email':
-          errorMessage = 'O email fornecido é inválido.';
-          break;
-        case 'user-not-found':
-          errorMessage = 'Não existe usuário com este email.';
-          break;
-        default:
-          errorMessage = 'Erro ao enviar email: ${e.message}';
-      }
-
-      throw Exception(errorMessage);
-    } catch (e) {
-      debugPrint('Erro ao enviar email de recuperação: $e');
-      throw Exception('Erro ao enviar email de recuperação de senha.');
-    }
-  }
-
-  // Atualizar informações do usuário
-  Future<void> updateUserProfile({
-    required String userId,
-    String? name,
-    String? photoUrl,
-  }) async {
-    try {
-      final updates = <String, dynamic>{};
-
-      if (name != null) {
-        updates['name'] = name;
-        // Atualizar o nome no Firebase Auth também
-        if (currentUser != null) {
-          await currentUser!.updateDisplayName(name);
-        }
-      }
-
-      if (photoUrl != null) {
-        updates['photoUrl'] = photoUrl;
-        // Atualizar a foto no Firebase Auth também
-        if (currentUser != null) {
-          await currentUser!.updatePhotoURL(photoUrl);
-        }
-      }
-
-      if (updates.isNotEmpty) {
-        await _firestore
-            .collection(AppConstants.usersCollection)
-            .doc(userId)
-            .update(updates);
-      }
-    } catch (e) {
-      debugPrint('Erro ao atualizar perfil: $e');
-      throw Exception('Erro ao atualizar informações do perfil.');
-    }
-  }
 }
-=======
-}
->>>>>>> Stashed changes

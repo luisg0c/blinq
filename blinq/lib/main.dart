@@ -1,41 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
-import 'core/theme.dart';
-import 'core/routes.dart';
-import 'services/auth_service.dart';
-import 'services/account_service.dart';
-import 'services/transaction_service.dart';
+import 'package:get/get.dart';
+import 'firebase_options.dart'; // Certifique-se de gerar este arquivo com flutterfire
+
+import 'lib/core/services/auth_service.dart';
+import '/DisplayProfiles/';
+import 'controllers/transaction_controller.dart';
 
 void main() async {
+  // Garantir que os widgets do Flutter estejam inicializados
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
+
+  // Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Configurar injeção de dependências com GetX
+  Get.put(AuthService());
+  Get.put(TransactionService());
+  Get.put(TransactionController());
+
+  runApp(const BlinqApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class BlinqApp extends StatelessWidget {
+  const BlinqApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<AuthService>(
-          create: (_) => AuthService(),
-        ),
-        Provider<AccountService>(
-          create: (_) => AccountService(),
-        ),
-        Provider<TransactionService>(
-          create: (_) => TransactionService(),
-        ),
-      ],
-      child: MaterialApp(
-        title: 'Blinq',
-        theme: AppTheme.theme,
-        routes: AppRoutes.routes,
-        initialRoute: AppRoutes.splash,
+    return GetMaterialApp(
+      title: 'Blinq Bank',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      // Defina suas rotas aqui
+      initialRoute: '/login',
+      getPages: [
+        // Adicione suas rotas aqui quando criar as telas
+        // GetPage(name: '/login', page: () => LoginScreen()),
+        // GetPage(name: '/home', page: () => HomeScreen()),
+      ],
     );
   }
 }
