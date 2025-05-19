@@ -6,8 +6,14 @@ import '../services/transaction_service.dart';
 import '../services/auth_service.dart';
 
 class TransactionController extends GetxController {
-  final TransactionService _transactionService = TransactionService();
-  final AuthService _authService = AuthService();
+  final TransactionService _transactionService;
+  final AuthService _authService;
+
+  TransactionController({
+    TransactionService? transactionService,
+    AuthService? authService,
+  })  : _transactionService = transactionService ?? TransactionService(),
+        _authService = authService ?? AuthService();
 
   // Controladores de texto para formulários
   final amountController = TextEditingController();
@@ -23,12 +29,7 @@ class TransactionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Carregar transações do usuário atual quando o controlador for inicializado
-    final currentUser = _authService.getCurrentUser();
-    if (currentUser != null) {
-      fetchUserTransactions(currentUser.id);
-      fetchUserBalance(currentUser.id);
-    }
+    _initializeUserData();
   }
 
   @override
@@ -39,32 +40,26 @@ class TransactionController extends GetxController {
     super.onClose();
   }
 
+  void _initializeUserData() {
+    final currentUser = _authService.getCurrentUser();
+    if (currentUser != null) {
+      fetchUserTransactions();
+    }
+  }
+
+  // Método de depósito
   Future<bool> deposit() async {
     try {
       isLoading.value = true;
       error.value = '';
 
-      final currentUser = _authService.getCurrentUser();
-      if (currentUser == null) {
-        error.value = 'Usuário não autenticado';
-        return false;
-      }
-
-      final amount = double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
-      
-      if (amount <= 0) {
-        error.value = 'Valor de depósito inválido';
-        return false;
-      }
+      final amount = _parseAmount();
 
       final transaction = await _transactionService.deposit(
-        userId: currentUser.id, 
-        amount: amount
-      );
+          amount: amount, description: descriptionController.text.trim());
 
       if (transaction != null) {
-        await fetchUserTransactions(currentUser.id);
-        await fetchUserBalance(currentUser.id);
+        await fetchUserTransactions();
         clearFields();
         return true;
       }
@@ -79,41 +74,22 @@ class TransactionController extends GetxController {
     }
   }
 
+  // Método de transferência
   Future<bool> transfer() async {
     try {
       isLoading.value = true;
       error.value = '';
 
-      final currentUser = _authService.getCurrentUser();
-      if (currentUser == null) {
-        error.value = 'Usuário não autenticado';
-        return false;
-      }
-
-      final amount = double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
+      final amount = _parseAmount();
       final receiverEmail = receiverEmailController.text.trim();
-      
-      if (amount <= 0) {
-        error.value = 'Valor de transferência inválido';
-        return false;
-      }
-
-      // Encontrar destinatário
-      final receiverUser = await _authService.getUserByEmail(receiverEmail);
-      if (receiverUser == null) {
-        error.value = 'Destinatário não encontrado';
-        return false;
-      }
 
       final transaction = await _transactionService.transfer(
-        senderId: currentUser.id, 
-        receiverId: receiverUser.id, 
-        amount: amount
-      );
+          receiverEmail: receiverEmail,
+          amount: amount,
+          description: descriptionController.text.trim());
 
       if (transaction != null) {
-        await fetchUserTransactions(currentUser.id);
-        await fetchUserBalance(currentUser.id);
+        await fetchUserTransactions();
         clearFields();
         return true;
       }
@@ -128,49 +104,58 @@ class TransactionController extends GetxController {
     }
   }
 
-  Future<void> fetchUserTransactions(String userId) async {
+  // Buscar transações do usuário
+  Future<void> fetchUserTransactions() async {
     try {
       isLoading.value = true;
-      transactions.value = await _transactionService.getUserTransactions(userId);
+      transactions.value = await _transactionService.getUserTransactions();
     } catch (e) {
       error.value = 'Erro ao buscar transações';
+      transactions.value = [];
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> fetchUserBalance(String userId) async {
-    try {
-      isLoading.value = true;
-      final userBalance = await _transactionService.getUserBalance(userId);
-      balance.value = userBalance;
-    } catch (e) {
-      error.value = 'Erro ao buscar saldo';
-      balance.value = 0.0;
-    } finally {
-      isLoading.value = false;
-    }
+  // Converter valor do campo de texto para double
+  double _parseAmount() {
+    return double.tryParse(
+            amountController.text.replaceAll('.', '').replaceAll(',', '.')) ??
+        0.0;
   }
 
-  // Resumo financeiro
-  Future<Map<String, double>> getFinancialSummary(String userId) async {
-    try {
-      final deposits = await _transactionService.getTotalDeposits(userId);
-      final transfers = await _transactionService.getTotalTransfers(userId);
-
-      return {
-        'deposits': deposits,
-        'transfers': transfers,
-        'total': deposits - transfers
-      };
-    } catch (e) {
-      return {'deposits': 0.0, 'transfers': 0.0, 'total': 0.0};
-    }
-  }
-
+  // Limpar campos de formulário
   void clearFields() {
     amountController.clear();
     receiverEmailController.clear();
     descriptionController.clear();
+  }
+
+  // Obter resumo financeiro
+  Future<Map<String, double>> getFinancialSummary() async {
+    try {
+      return await _transactionService.getFinancialSummary();
+    } catch (e) {
+      error.value = 'Erro ao buscar resumo financeiro';
+      return {'deposits': 0.0, 'transfers': 0.0, 'total': 0.0};
+    }
+  }
+
+  // Gerar comprovante de transação
+  Future<void> generateTransactionReceipt(TransactionModel transaction) async {
+    try {
+      await _transactionService.generateTransactionReceipt(transaction);
+    } catch (e) {
+      error.value = 'Erro ao gerar comprovante';
+    }
+  }
+
+  // Compartilhar comprovante de transação
+  Future<void> shareTransactionReceipt(TransactionModel transaction) async {
+    try {
+      await _transactionService.shareTransactionReceipt(transaction);
+    } catch (e) {
+      error.value = 'Erro ao compartilhar comprovante';
+    }
   }
 }

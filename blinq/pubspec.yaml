@@ -19,13 +19,14 @@ dependencies:
   intl: ^0.18.1
   
   # Gerenciamento de estado e navegação
-  provider: ^6.0.5
+  get: ^4.6.6
   
   # Utilitários
   crypto: ^3.0.3         # Para hash de senhas de transação
   path_provider: ^2.1.0  # Para armazenamento local
   pdf: ^3.10.4           # Para gerar comprovantes
   share_plus: ^7.1.0     # Para compartilhar comprovantes
+  uuid: ^3.0.7           # Geração de identificadores únicos
   
   # Armazenamento local seguro
   flutter_secure_storage: ^8.0.0
@@ -40,3 +41,12 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/
+  
+  # Exemplo de configuração de fontes (opcional)
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
