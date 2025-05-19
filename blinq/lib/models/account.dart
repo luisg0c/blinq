@@ -4,7 +4,11 @@ class Account {
   final String id;
   final String userId;
   final double balance;
+<<<<<<< Updated upstream
   final String? transactionPassword;
+=======
+  final String? transactionPassword; // Hash da senha
+>>>>>>> Stashed changes
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -17,8 +21,14 @@ class Account {
     this.isActive = true,
     DateTime? createdAt,
     DateTime? updatedAt,
+<<<<<<< Updated upstream
   })  : this.createdAt = createdAt ?? DateTime.now(),
         this.updatedAt = updatedAt ?? DateTime.now();
+=======
+  }) : 
+    this.createdAt = createdAt ?? DateTime.now(),
+    this.updatedAt = updatedAt ?? DateTime.now();
+>>>>>>> Stashed changes
 
   Map<String, dynamic> toMap() {
     return {
@@ -35,12 +45,20 @@ class Account {
     return Account(
       id: id,
       userId: map['userId'] ?? '',
+<<<<<<< Updated upstream
       balance:
           (map['balance'] is num) ? (map['balance'] as num).toDouble() : 0.0,
+=======
+      balance: (map['balance'] is num) ? (map['balance'] as num).toDouble() : 0.0,
+>>>>>>> Stashed changes
       transactionPassword: map['transactionPassword'],
       isActive: map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

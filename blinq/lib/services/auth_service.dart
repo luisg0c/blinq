@@ -1,13 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
+<<<<<<< Updated upstream
 import 'package:flutter/foundation.dart';
 import '../core/constants.dart';
 import '../models/user.dart' as app_models;
+=======
+import '../models/user.dart';
+import '../core/constants.dart';
+>>>>>>> Stashed changes
 
 class AuthService {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+<<<<<<< Updated upstream
   // Obtém o usuário atual do Firebase
   firebase_auth.User? get currentUser => _auth.currentUser;
 
@@ -86,16 +92,57 @@ class AuthService {
 
         // Criar o documento do usuário no Firestore
         final user = app_models.User(
+=======
+  // Stream de estado de autenticação
+  Stream<bool> get authStateChanges => 
+      _auth.authStateChanges().map((user) => user != null);
+
+  // Obter usuário atual
+  Future<User?> getCurrentUser() async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return null;
+    
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(firebaseUser.uid)
+          .get();
+      
+      if (doc.exists) {
+        return User.fromMap(doc.data() ?? {}, doc.id);
+      }
+    } catch (e) {
+      print('Erro ao obter usuário: $e');
+    }
+    return null;
+  }
+
+  // Cadastrar novo usuário
+  Future<User?> signUp(String email, String password, String name) async {
+    try {
+      final result = await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+      
+      if (result.user != null) {
+        final user = User(
+>>>>>>> Stashed changes
           id: result.user!.uid,
           email: email,
           name: name,
           isEmailVerified: result.user!.emailVerified,
         );
+<<<<<<< Updated upstream
 
+=======
+        
+>>>>>>> Stashed changes
         await _firestore
             .collection(AppConstants.usersCollection)
             .doc(user.id)
             .set(user.toMap());
+<<<<<<< Updated upstream
 
         return user;
       }
@@ -120,10 +167,19 @@ class AuthService {
     } catch (e) {
       debugPrint('Erro no cadastro: $e');
       throw Exception('Erro ao criar conta.');
+=======
+        
+        return user;
+      }
+    } catch (e) {
+      print('Erro no cadastro: $e');
+      rethrow;
+>>>>>>> Stashed changes
     }
     return null;
   }
 
+<<<<<<< Updated upstream
   // Login com email e senha
   Future<app_models.User?> signIn(String email, String password) async {
     try {
@@ -159,6 +215,22 @@ class AuthService {
     } catch (e) {
       debugPrint('Erro no login: $e');
       throw Exception('Erro ao fazer login.');
+=======
+  // Login
+  Future<User?> signIn(String email, String password) async {
+    try {
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+      
+      if (result.user != null) {
+        return getCurrentUser();
+      }
+    } catch (e) {
+      print('Erro no login: $e');
+      rethrow;
+>>>>>>> Stashed changes
     }
     return null;
   }
@@ -167,6 +239,7 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+<<<<<<< Updated upstream
 
   // Enviar email de recuperação de senha
   Future<void> sendPasswordResetEmail(String email) async {
@@ -230,3 +303,6 @@ class AuthService {
     }
   }
 }
+=======
+}
+>>>>>>> Stashed changes

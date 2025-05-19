@@ -37,4 +37,8 @@ class User {
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );
   }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

@@ -1,10 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum TransactionType { deposit, transfer }
+<<<<<<< Updated upstream
 
 enum TransactionStatus { pending, completed, failed, canceled }
 
 class TransactionModel {
+=======
+enum TransactionStatus { pending, completed, failed, canceled }
+
+class Transaction {
+>>>>>>> Stashed changes
   final String id;
   final String senderId;
   final String? receiverId;
@@ -15,7 +21,11 @@ class TransactionModel {
   final String? description;
   final DateTime timestamp;
 
+<<<<<<< Updated upstream
   TransactionModel({
+=======
+  Transaction({
+>>>>>>> Stashed changes
     required this.id,
     required this.senderId,
     this.receiverId,
@@ -25,9 +35,15 @@ class TransactionModel {
     List<String>? participants,
     this.description,
     DateTime? timestamp,
+<<<<<<< Updated upstream
   })  : this.participants =
             participants ?? [senderId, if (receiverId != null) receiverId],
         this.timestamp = timestamp ?? DateTime.now();
+=======
+  }) : 
+    this.participants = participants ?? [senderId, if (receiverId != null) receiverId],
+    this.timestamp = timestamp ?? DateTime.now();
+>>>>>>> Stashed changes
 
   Map<String, dynamic> toMap() {
     return {
@@ -42,8 +58,13 @@ class TransactionModel {
     };
   }
 
+<<<<<<< Updated upstream
   factory TransactionModel.fromMap(Map<String, dynamic> map, String id) {
     return TransactionModel(
+=======
+  factory Transaction.fromMap(Map<String, dynamic> map, String id) {
+    return Transaction(
+>>>>>>> Stashed changes
       id: id,
       senderId: map['senderId'] ?? '',
       receiverId: map['receiverId'],
@@ -52,7 +73,11 @@ class TransactionModel {
       status: _parseTransactionStatus(map['status']),
       participants: List<String>.from(map['participants'] ?? []),
       description: map['description'],
+<<<<<<< Updated upstream
       timestamp: (map['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+=======
+      timestamp: (map['timestamp'] as Timestamp?)?.toDate(),
+>>>>>>> Stashed changes
     );
   }
 
@@ -72,4 +97,8 @@ class TransactionModel {
   bool get isTransfer => type == TransactionType.transfer;
   bool get isPending => status == TransactionStatus.pending;
   bool get isCompleted => status == TransactionStatus.completed;
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
