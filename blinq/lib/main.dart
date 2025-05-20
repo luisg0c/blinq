@@ -1,26 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:get/get.dart';
-import 'firebase_options.dart'; // Certifique-se de gerar este arquivo com flutterfire
+// lib/main.dart
 
-import 'lib/core/services/auth_service.dart';
-import '/DisplayProfiles/';
-import 'controllers/transaction_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
+import 'routes/app_pages.dart';
+import 'routes/app_routes.dart';
 
 void main() async {
-  // Garantir que os widgets do Flutter estejam inicializados
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializar Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Configurar injeção de dependências com GetX
-  Get.put(AuthService());
-  Get.put(TransactionService());
-  Get.put(TransactionController());
-
   runApp(const BlinqApp());
 }
 
@@ -30,19 +22,21 @@ class BlinqApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Blinq Bank',
+      title: 'Blinq',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.green,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        primaryColor: const Color(0xFF6EE1C6),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          secondary: const Color(0xFF0D1517),
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Color(0xFFF5F5F5),
+        ),
       ),
-      // Defina suas rotas aqui
-      initialRoute: '/login',
-      getPages: [
-        // Adicione suas rotas aqui quando criar as telas
-        // GetPage(name: '/login', page: () => LoginScreen()),
-        // GetPage(name: '/home', page: () => HomeScreen()),
-      ],
+      initialRoute: AppRoutes.splash,
+      getPages: AppPages.pages,
     );
   }
 }
