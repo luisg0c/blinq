@@ -1,0 +1,50 @@
+name: blinq
+description: Um aplicativo bancário simples e intuitivo.
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path_provider_android: any
+  flutter_animate: any
+
+  # Se você estiver usando go_router (comum com FlutterFlow)
+  # go_router: ^X.Y.Z
+
+    
+  
+  
+  # Firebase
+  firebase_core: ^2.15.0
+  firebase_auth: ^4.7.2
+  cloud_firestore: ^4.8.4
+  
+  # UI/UX
+  google_fonts: ^5.1.0
+  flutter_spinkit: ^5.2.0
+  intl: ^0.18.1
+  
+  # Gerenciamento de estado e navegação
+  provider: ^6.0.5
+  
+  # Utilitários
+  crypto: ^3.0.3         # Para hash de senhas de transação
+  path_provider: ^2.1.0  # Para armazenamento local
+  pdf: ^3.10.4           # Para gerar comprovantes
+  share_plus: ^7.1.0     # Para compartilhar comprovantes
+  
+  # Armazenamento local seguro
+  flutter_secure_storage: ^8.0.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.2
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/

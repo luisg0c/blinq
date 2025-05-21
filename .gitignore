@@ -1,0 +1,122 @@
+# Flutter/Dart specific
+**/build/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec.lock
+/coverage/
+**/doc/api/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+.gitconfig
+*.g.dart
+*.lock
+*.freezed.dart
+/coverage/
+.DS_Store
+.vscode/
+.idea/
+*.iml
+*.log
+*.swp
+*.swo
+.classpath
+.project
+.settings/
+.buildlog/
+.test_coverage.dart
+.test_runner.dart
+*.mocks.dart
+
+# Firebase specific
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+**/firebase_app_id_file.json
+
+# iOS specific
+**/ios/Flutter/.last_build_id
+**/ios/Pods/
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcodeproj/**/xcuserdata
+**/ios/Runner.xcodeproj/**/project.xcworkspace
+**/ios/Runner.xcodeproj/**/xcshareddata
+**/ios/.symlinks/
+**/ios/build/
+**/ios/DerivedData/
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Android specific
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+**/android/.signing/
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+
+# MacOS specific
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/Flutter-Debug.xcconfig
+**/macos/Flutter/Flutter-Release.xcconfig
+**/macos/Flutter/Flutter-Profile.xcconfig
+**/macos/Flutter/ephemeral/
+**/macos/DerivedData/
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/Podfile.lock
+
+# macOS
+.DS_Store
+
+
+# Web specific
+**/web/packages
+**/web/dist/
+**/web/.dart_tool/
+**/web/build/
+**/web/assets/packages/
+
+# Linux specific
+**/linux/.dart_tool/
+**/linux/flutter/ephemeral/
+
+# Windows specific
+**/windows/flutter/ephemeral/
+
+# Environment and secret files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.local
+secrets.json
+key.jks
+keystore.properties
+
+# Test related files
+.test_coverage.dart
+.test_runner.dart
