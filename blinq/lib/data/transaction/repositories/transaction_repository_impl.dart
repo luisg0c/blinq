@@ -26,4 +26,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
     }
     await remoteDataSource.addTransaction(transaction);
   }
+
+  @override
+  Future<List<Transaction>> getTransactionsBetween({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final models =
+        await remoteDataSource.getTransactionsBetween(start: start, end: end);
+    return models;
+  }
 }

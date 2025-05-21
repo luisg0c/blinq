@@ -6,4 +6,10 @@ abstract class TransactionRepository {
 
   /// Cria uma nova transação no sistema.
   Future<void> createTransaction(Transaction transaction);
+
+  /// Retorna as transações dentro de um intervalo de tempo.
+  Future<List<Transaction>> getTransactionsBetween({
+    required DateTime start,
+    required DateTime end,
+  });
 }
