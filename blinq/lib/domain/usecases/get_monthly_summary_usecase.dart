@@ -1,6 +1,5 @@
 import '../repositories/transaction_repository.dart';
 
-/// Resumo de movimentações financeiras no mês.
 class MonthlySummary {
   final double entradas;
   final double saidas;
@@ -12,7 +11,6 @@ class MonthlySummary {
   }) : total = entradas - saidas;
 }
 
-/// Caso de uso para obter um resumo de movimentações no mês atual.
 class GetMonthlySummaryUseCase {
   final TransactionRepository _repository;
 
@@ -25,13 +23,8 @@ class GetMonthlySummaryUseCase {
 
     final all = await _repository.getTransactionsBetween(start: start, end: end);
 
-    final entradas = all
-        .where((t) => t.amount > 0)
-        .fold(0.0, (sum, t) => sum + t.amount);
-
-    final saidas = all
-        .where((t) => t.amount < 0)
-        .fold(0.0, (sum, t) => sum + t.amount.abs());
+    final entradas = all.where((t) => t.amount > 0).fold(0.0, (sum, t) => sum + t.amount);
+    final saidas = all.where((t) => t.amount < 0).fold(0.0, (sum, t) => sum + t.amount.abs());
 
     return MonthlySummary(entradas: entradas, saidas: saidas);
   }

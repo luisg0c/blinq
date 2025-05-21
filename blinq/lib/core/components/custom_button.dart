@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Botão customizado com loading state, cor primária e cantos arredondados.
 class CustomButton extends StatelessWidget {
-  /// Texto exibido no botão.
   final String label;
-
-  /// Callback executado ao pressionar o botão.
-  final VoidCallback? onPressed;
-
-  /// Indica se deve exibir um loading spinner.
+  final VoidCallback onPressed;
   final bool isLoading;
-
-  /// Se deve tornar o botão expanded (preenche largura disponível).
   final bool fullWidth;
 
   const CustomButton({
@@ -24,41 +16,37 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF6EE1C6);
-    final textColor = Colors.white;
-
-    Widget child = isLoading
-        ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation(textColor),
-            ),
-          )
-        : Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.w600,
-            ),
-          );
+    final _primaryColor = const Color(0xFF6EE1C6);
+    final _textColor = Colors.white;
 
     final button = ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        primary: primaryColor,
-        onPrimary: textColor,
+        foregroundColor: _textColor, // ✅ corrigido
+        backgroundColor: _primaryColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
       ),
-      child: child,
+      child: isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(_textColor),
+              ),
+            )
+          : Text(
+              label,
+              style: TextStyle(
+                color: _textColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     );
 
-    return fullWidth
-        ? SizedBox(width: double.infinity, child: button)
-        : button;
+    return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

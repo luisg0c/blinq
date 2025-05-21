@@ -5,9 +5,11 @@ import '../models/transaction_model.dart';
 abstract class TransactionRemoteDataSource {
   Future<double> getBalance();
   Future<List<TransactionModel>> getRecentTransactions({int? limit});
-
-  /// Adiciona uma nova transação no Firestore
   Future<void> addTransaction(TransactionModel transaction);
+  Future<List<TransactionModel>> getTransactionsBetween({
+    required DateTime start,
+    required DateTime end,
+  });
 }
 
 class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
@@ -30,11 +32,13 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         .where('userId', isEqualTo: userId)
         .get();
 
-    return snapshot.docs.fold(0.0, (sum, doc) {
-      return sum + (doc.get('amount') as num).toDouble();
-    });
+    double sum = 0.0;
+    for (var doc in snapshot.docs) {
+      sum += (doc.get('amount') as num).toDouble();
+    }
+    return sum;
   }
-
+  
   @override
   Future<List<TransactionModel>> getRecentTransactions({int? limit}) async {
     final userId = _firebaseAuth.currentUser?.uid;
@@ -72,5 +76,35 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     data['userId'] = userId;
 
     await _firestore.collection('transactions').add(data);
+  }
+
+  @override
+  Future<List<TransactionModel>> getTransactionsBetween({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final userId = _firebaseAuth.currentUser?.uid;
+    if (userId == null) throw Exception('Usuário não autenticado');
+
+    final query = _firestore
+        .collection('transactions')
+        .where('userId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: fs.Timestamp.fromDate(start))
+        .where('date', isLessThanOrEqualTo: fs.Timestamp.fromDate(end));
+
+    final snapshot = await query.get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return TransactionModel(
+        id: doc.id,
+        amount: (data['amount'] as num).toDouble(),
+        date: (data['date'] as fs.Timestamp).toDate(),
+        description: data['description'] as String,
+        type: data['type'] as String,
+        counterparty: data['counterparty'] as String?,
+        status: data['status'] as String? ?? 'completed',
+      );
+    }).toList();
   }
 }

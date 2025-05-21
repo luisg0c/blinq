@@ -22,8 +22,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         password: password,
       );
+
       final fb.User fbUser = credential.user!;
       final token = await fbUser.getIdToken();
+      if (token == null) throw Exception('Token de autenticação inválido');
+
       return UserModel(
         id: fbUser.uid,
         name: fbUser.displayName ?? '',
@@ -36,18 +39,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> register(
-      String name, String email, String password) async {
+  Future<UserModel> register(String name, String email, String password) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       final fb.User fbUser = credential.user!;
       await fbUser.updateDisplayName(name);
       await fbUser.reload();
+
       final updated = _firebaseAuth.currentUser!;
       final token = await updated.getIdToken();
+      if (token == null) throw Exception('Token de autenticação inválido');
+
       return UserModel(
         id: updated.uid,
         name: updated.displayName ?? name,
