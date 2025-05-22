@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/usecases/get_balance_usecase.dart';
 import '../../domain/usecases/get_recent_transactions_usecase.dart';
@@ -15,7 +16,7 @@ class HomeController extends GetxController {
   final RxDouble balance = 0.0.obs;
   final RxList<Transaction> recentTransactions = <Transaction>[].obs;
   final RxBool isLoading = true.obs;
-  final RxString? error = RxString('');
+  final RxnString error = RxnString();
 
   @override
   void onInit() {
@@ -25,18 +26,33 @@ class HomeController extends GetxController {
 
   Future<void> loadDashboard() async {
     isLoading.value = true;
-    error?.value = '';
+    error.value = null;
 
     try {
-      final saldo = await getBalanceUseCase.execute();
-      final txs = await getRecentTxUseCase.execute(limit: 5);
+      // Obter ID do usuário atual
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('Usuário não autenticado');
+      }
 
-      balance.value = saldo;
-      recentTransactions.assignAll(txs);
+      final userId = user.uid;
+
+      // Carregar saldo e transações em paralelo
+      final results = await Future.wait([
+        getBalanceUseCase.execute(userId),
+        getRecentTxUseCase.execute(userId, limit: 5),
+      ]);
+
+      balance.value = results[0] as double;
+      recentTransactions.assignAll(results[1] as List<Transaction>);
     } catch (e) {
-      error?.value = e.toString();
+      error.value = e.toString().replaceAll('Exception: ', '');
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> refreshData() async {
+    await loadDashboard();
   }
 }

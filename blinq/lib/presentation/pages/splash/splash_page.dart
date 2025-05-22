@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_theme.dart';
 
@@ -19,22 +20,28 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<void> _initApp() async {
     await Future.delayed(const Duration(seconds: 2));
+
+    // Verificar se usuário está logado
+    final user = FirebaseAuth.instance.currentUser;
     
-    // TODO: Verificar se o usuário está logado/PIN ativado
-    Get.offAllNamed(AppRoutes.welcome);
+    if (user != null) {
+      // Usuário logado, ir direto para Home
+      Get.offAllNamed(AppRoutes.home);
+    } else {
+      // Usuário não logado, ir para Welcome
+      Get.offAllNamed(AppRoutes.welcome);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.primary,
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'B',
               style: TextStyle(
                 fontSize: 64,
@@ -42,10 +49,13 @@ class _SplashPageState extends State<SplashPage> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Seu dinheiro, simplificado',
-              style: textTheme.bodyLarge?.copyWith(color: Colors.white),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
             ),
           ],
         ),

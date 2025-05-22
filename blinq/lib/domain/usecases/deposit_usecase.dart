@@ -1,27 +1,44 @@
 import 'package:uuid/uuid.dart';
-import '../../../data/transaction/models/transaction_model.dart';
-import 'package:blinq/domain/repositories/transaction_repository.dart';
+import '../entities/transaction.dart';
+import '../repositories/transaction_repository.dart';
+import '../repositories/account_repository.dart';
 
+/// Caso de uso para realizar depósito na conta do usuário.
 class DepositUseCase {
-  final TransactionRepository repository;
+  final TransactionRepository _transactionRepository;
+  final AccountRepository _accountRepository;
 
-  DepositUseCase(this.repository);
+  DepositUseCase({
+    required TransactionRepository transactionRepository,
+    required AccountRepository accountRepository,
+  }) : _transactionRepository = transactionRepository,
+       _accountRepository = accountRepository;
 
   Future<void> execute({
+    required String userId,
     required double amount,
-    required String description,
+    String? description,
   }) async {
-    if (amount <= 0) throw Exception('Valor do depósito inválido');
+    if (amount <= 0) {
+      throw Exception('Valor do depósito deve ser maior que zero');
+    }
 
-    final transaction = TransactionModel(
+    // 1. Obter saldo atual
+    final currentBalance = await _accountRepository.getBalance(userId);
+    
+    // 2. Calcular novo saldo
+    final newBalance = currentBalance + amount;
+    
+    // 3. Atualizar saldo na conta
+    await _accountRepository.updateBalance(userId, newBalance);
+    
+    // 4. Criar registro da transação
+    final transaction = Transaction.deposit(
       id: const Uuid().v4(),
       amount: amount,
-      date: DateTime.now(),
-      description: description,
-      type: 'deposit',
-      counterparty: 'Você',
+      description: description ?? 'Depósito',
     );
-
-    await repository.createTransaction(transaction);
+    
+    await _transactionRepository.createTransaction(userId, transaction);
   }
 }

@@ -25,6 +25,17 @@ class UserModel extends User {
     );
   }
 
+  /// Cria um [UserModel] a partir de dados do Firestore (accounts collection).
+  factory UserModel.fromFirestore(Map<String, dynamic> accountData) {
+    final userData = accountData['user'] as Map<String, dynamic>? ?? {};
+    return UserModel(
+      id: userData['id'] ?? '',
+      name: userData['name'] ?? '',
+      email: userData['email'] ?? '',
+      token: '', // Token será obtido via Firebase Auth
+    );
+  }
+
   /// Converte para Map (útil para salvar no Firestore).
   Map<String, dynamic> toMap() {
     return {
@@ -32,6 +43,15 @@ class UserModel extends User {
       'name': name,
       'email': email,
       'token': token,
+    };
+  }
+
+  /// Converte para estrutura do Firestore (accounts collection).
+  Map<String, dynamic> toFirestoreUser() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
     };
   }
 }

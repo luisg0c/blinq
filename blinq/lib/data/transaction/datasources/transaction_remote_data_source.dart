@@ -1,16 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:blinq/data/transaction/models/transaction_model.dart';
+import '../../../domain/entities/transaction.dart' as domain;
+import '../models/transaction_model.dart';
 
+/// Contrato para operações de transação no Firebase.
 abstract class TransactionRemoteDataSource {
-  Future<void> createTransaction(TransactionModel transaction);
-  Future<List<TransactionModel>> getTransactions();
-  Future<List<TransactionModel>> getTransactionsBetween({
+  Future<void> addTransaction(String userId, TransactionModel transaction);
+  Future<List<domain.Transaction>> getTransactionsByUser(String userId);
+  Future<List<domain.Transaction>> getTransactionsBetween({
+    required String userId,
     required DateTime start,
     required DateTime end,
   });
-  Future<double> getBalance();
+  Stream<List<domain.Transaction>> watchTransactionsByUser(String userId);
 }
 
+/// Implementação usando Firestore seguindo estrutura Blinq.
 class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   final FirebaseFirestore _firestore;
 
@@ -18,57 +22,60 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
-  Future<void> createTransaction(TransactionModel transaction) async {
+  Future<void> addTransaction(String userId, TransactionModel transaction) async {
     await _firestore
+        .collection('accounts')
+        .doc(userId)
         .collection('transactions')
         .doc(transaction.id)
-        .set(transaction.toMap());
+        .set(transaction.toFirestore());
   }
 
   @override
-  Future<List<TransactionModel>> getTransactions() async {
+  Future<List<domain.Transaction>> getTransactionsByUser(String userId) async {
     final snapshot = await _firestore
+        .collection('accounts')
+        .doc(userId)
         .collection('transactions')
         .orderBy('date', descending: true)
         .get();
 
     return snapshot.docs
-        .map((doc) => TransactionModel.fromMap(doc.data()))
+        .map((doc) => TransactionModel.fromFirestore(doc.id, doc.data()))
         .toList();
   }
 
   @override
-  Future<List<TransactionModel>> getTransactionsBetween({
+  Future<List<domain.Transaction>> getTransactionsBetween({
+    required String userId,
     required DateTime start,
     required DateTime end,
   }) async {
     final snapshot = await _firestore
+        .collection('accounts')
+        .doc(userId)
         .collection('transactions')
-        .where('date', isGreaterThanOrEqualTo: start.toIso8601String())
-        .where('date', isLessThanOrEqualTo: end.toIso8601String())
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(end))
+        .orderBy('date', descending: true)
         .get();
 
     return snapshot.docs
-        .map((doc) => TransactionModel.fromMap(doc.data()))
+        .map((doc) => TransactionModel.fromFirestore(doc.id, doc.data()))
         .toList();
   }
 
   @override
-  Future<double> getBalance() async {
-    final snapshot = await _firestore.collection('transactions').get();
-
-    double total = 0;
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final amount = (data['amount'] ?? 0).toDouble();
-      final type = data['type'];
-      if (type == 'deposit') {
-        total += amount;
-      } else if (type == 'withdraw' || type == 'transfer') {
-        total -= amount;
-      }
-    }
-
-    return total;
+  Stream<List<domain.Transaction>> watchTransactionsByUser(String userId) {
+    return _firestore
+        .collection('accounts')
+        .doc(userId)
+        .collection('transactions')
+        .orderBy('date', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => TransactionModel.fromFirestore(doc.id, doc.data()))
+            .toList());
   }
 }

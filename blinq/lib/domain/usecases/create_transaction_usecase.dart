@@ -7,7 +7,7 @@ class CreateTransactionUseCase {
 
   CreateTransactionUseCase(this._repository);
 
-  Future<void> execute(Transaction transaction) {
-    return _repository.createTransaction(transaction);
+  Future<void> execute(String userId, Transaction transaction) {
+    return _repository.createTransaction(userId, transaction);
   }
 }

@@ -1,9 +1,9 @@
 import '../../../domain/entities/user.dart';
-import '../../../domain/entities/transaction.dart';
 import '../../../domain/repositories/user_repository.dart';
 import '../datasources/user_remote_data_source.dart';
-import '../models/user_model.dart';
+import '../../auth/models/user_model.dart'; // ✅ Import correto
 
+/// Implementação do repositório de usuários.
 class UserRepositoryImpl implements UserRepository {
   final UserRemoteDataSource remoteDataSource;
 
@@ -20,20 +20,26 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<User> getCurrentUser() async {
-    return await remoteDataSource.getCurrentUser();
-  }
-
-  @override
-  Future<void> createTransactionForUser(String userId, Transaction tx) async {
-    await remoteDataSource.createTransactionForUser(userId, tx);
-  }
-
-  @override
   Future<void> saveUser(User user) async {
-    if (user is! UserModel) {
-      throw Exception('Usuário inválido (esperado UserModel)');
+    UserModel userModel;
+    
+    if (user is UserModel) {
+      userModel = user;
+    } else {
+      userModel = UserModel(
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        token: user.token,
+      );
     }
-    await remoteDataSource.saveUser(user);
+    
+    await remoteDataSource.saveUser(userModel);
+  }
+
+  @override
+  Future<List<User>> searchUsersByEmail(String emailQuery) async {
+    final users = await remoteDataSource.searchUsersByEmail(emailQuery);
+    return users.cast<User>();
   }
 }

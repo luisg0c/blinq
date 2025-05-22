@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/usecases/transfer_usecase.dart';
 import '../../domain/usecases/validate_pin_usecase.dart';
 
@@ -18,7 +19,7 @@ class TransferController extends GetxController {
 
   /// Executa a transferência após validar o PIN informado.
   Future<void> transfer({
-    required String toEmail,
+    required String receiverEmail,
     required double amount,
     required String description,
     required String pin,
@@ -28,14 +29,25 @@ class TransferController extends GetxController {
     successMessage.value = null;
 
     try {
+      // Obter ID do usuário atual
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('Usuário não autenticado');
+      }
+
+      final senderId = user.uid;
+
+      // Validar PIN
       final isValid = await _validatePinUseCase.execute(pin);
       if (!isValid) {
         errorMessage.value = 'PIN inválido';
         return;
       }
 
+      // Executar transferência
       await _transferUseCase.execute(
-        toEmail: toEmail,
+        senderId: senderId,
+        receiverEmail: receiverEmail,
         amount: amount,
         description: description,
       );

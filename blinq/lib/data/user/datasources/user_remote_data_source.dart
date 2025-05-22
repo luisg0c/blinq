@@ -1,35 +1,35 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
-import '../../../domain/entities/transaction.dart';
-import '../models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../auth/models/user_model.dart'; // ✅ Import correto
 
 /// Contrato da fonte de dados remota para usuários.
 abstract class UserRemoteDataSource {
   Future<UserModel> getUserById(String userId);
   Future<UserModel> getUserByEmail(String email);
-  Future<UserModel> getCurrentUser(); // requer FirebaseAuth se necessário
   Future<void> saveUser(UserModel user);
-  Future<void> createTransactionForUser(String userId, Transaction transaction);
+  Future<List<UserModel>> searchUsersByEmail(String emailQuery);
 }
 
-/// Implementação usando Firebase Firestore.
+/// Implementação usando Firebase Firestore (accounts collection).
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
-  final fs.FirebaseFirestore _firestore;
+  final FirebaseFirestore _firestore;
 
-  UserRemoteDataSourceImpl({fs.FirebaseFirestore? firestore})
-      : _firestore = firestore ?? fs.FirebaseFirestore.instance;
+  UserRemoteDataSourceImpl({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<UserModel> getUserById(String userId) async {
-    final doc = await _firestore.collection('users').doc(userId).get();
+    final doc = await _firestore.collection('accounts').doc(userId).get();
     if (!doc.exists) throw Exception('Usuário não encontrado');
-    return UserModel.fromMap(doc.data()!);
+    
+    final data = doc.data()!;
+    return UserModel.fromFirestore(data);
   }
 
   @override
   Future<UserModel> getUserByEmail(String email) async {
     final snapshot = await _firestore
-        .collection('users')
-        .where('email', isEqualTo: email)
+        .collection('accounts')
+        .where('user.email', isEqualTo: email)
         .limit(1)
         .get();
 
@@ -37,35 +37,31 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       throw Exception('Usuário com email $email não encontrado');
     }
 
-    return UserModel.fromMap(snapshot.docs.first.data());
+    final data = snapshot.docs.first.data();
+    return UserModel.fromFirestore(data);
   }
 
   @override
   Future<void> saveUser(UserModel user) async {
-    await _firestore.collection('users').doc(user.id).set(user.toMap());
-  }
-
-  @override
-  Future<void> createTransactionForUser(
-      String userId, Transaction transaction) async {
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .add({
-      'id': transaction.id,
-      'amount': transaction.amount,
-      'date': transaction.date.toIso8601String(),
-      'description': transaction.description,
-      'type': transaction.type,
-      'counterparty': transaction.counterparty,
-      'status': transaction.status,
+    await _firestore.collection('accounts').doc(user.id).update({
+      'user': user.toFirestoreUser(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
   @override
-  Future<UserModel> getCurrentUser() {
-    throw UnimplementedError(
-        'getCurrentUser requer FirebaseAuth ou contexto externo');
+  Future<List<UserModel>> searchUsersByEmail(String emailQuery) async {
+    if (emailQuery.isEmpty) return [];
+
+    final snapshot = await _firestore
+        .collection('accounts')
+        .where('user.email', isGreaterThanOrEqualTo: emailQuery)
+        .where('user.email', isLessThan: '$emailQuery\uf8ff')
+        .limit(10)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => UserModel.fromFirestore(doc.data()))
+        .toList();
   }
 }

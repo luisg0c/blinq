@@ -1,6 +1,11 @@
 class PinService {
+  static bool _isConfigured = false;
+
   static Future<bool> isPinConfigured() async {
-    // Simulação: em produção, consulte um storage seguro.
-    return Future.value(true);
+    return _isConfigured;
+  }
+
+  static Future<void> setPinConfigured(bool value) async {
+    _isConfigured = value;
   }
 }
