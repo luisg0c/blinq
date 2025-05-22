@@ -1,82 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controllers/home_controller.dart';
-import '../../../core/components/balance_card.dart';
-import '../../../core/components/transaction_card.dart';
-import '../../../core/components/custom_button.dart';
+import '../../../routes/app_routes.dart';
+import '../../../theme/app_theme.dart';
+import 'package:blinq/presentation/pages/pin/pin_verification_page.dart';
 
-/// Tela principal após o login, mostra saldo e ações rápidas.
+
 class HomePage extends StatelessWidget {
-  final HomeController _homeCtrl = Get.find<HomeController>();
-
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    // Mock para valor do saldo
+    final RxBool isBalanceVisible = true.obs;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Blinq'),
-        backgroundColor: const Color(0xFF6EE1C6),
-      ),
-      body: Obx(() {
-        if (_homeCtrl.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Saldo
-              BalanceCard(balance: _homeCtrl.balance.value),
-
-              const SizedBox(height: 24),
-
-              // Ações rápidas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CustomButton(
-                    label: 'Depositar',
-                    onPressed: () => _homeCtrl.goToDeposit(),
-                    fullWidth: false,
-                  ),
-                  CustomButton(
-                    label: 'Transferir',
-                    onPressed: () => _homeCtrl.goToTransfer(),
-                    fullWidth: false,
-                  ),
-                  CustomButton(
-                    label: 'Extrato',
-                    onPressed: () => _homeCtrl.goToHistory(),
-                    fullWidth: false,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Transações recentes
-              const Text(
-                'Transações Recentes',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _homeCtrl.recentTransactions.length,
-                  itemBuilder: (_, i) => TransactionCard(
-                    transaction: _homeCtrl.recentTransactions[i],
-                  ),
-                ),
-              ),
-            ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // futura lógica de logout
+              Get.offAllNamed(AppRoutes.welcome);
+            },
           ),
-        );
-      }),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Obx(() => Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Saldo atual', style: textTheme.bodyLarge),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isBalanceVisible.value ? 'R\$ 5.780,00' : '••••••',
+                            style: textTheme.headlineMedium,
+                          ),
+                          IconButton(
+                            onPressed: () => isBalanceVisible.toggle(),
+                            icon: Icon(
+                              isBalanceVisible.value ? Icons.visibility : Icons.visibility_off,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )),
+            const SizedBox(height: 32),
+
+            // Ações rápidas
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _ActionButton(
+                  icon: Icons.arrow_downward,
+                  label: 'Depositar',
+                  onTap: () => Get.toNamed(AppRoutes.deposit),
+                ),
+                _ActionButton(
+                  icon: Icons.compare_arrows,
+                  label: 'Transferir',
+                  onTap: () => Get.toNamed(AppRoutes.transfer),
+                ),
+                _ActionButton(
+                  icon: Icons.list,
+                  label: 'Extrato',
+                  onTap: () => Get.toNamed(AppRoutes.transactions),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Ink(
+          decoration: const ShapeDecoration(
+            color: AppColors.primary,
+            shape: CircleBorder(),
+          ),
+          child: IconButton(
+            icon: Icon(icon, color: Colors.white),
+            onPressed: onTap,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(label),
+      ],
     );
   }
 }

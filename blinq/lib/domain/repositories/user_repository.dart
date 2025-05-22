@@ -1,14 +1,11 @@
 import '../entities/user.dart';
 import '../entities/transaction.dart';
 
-/// Contrato de repositório para informações e ações sobre usuários.
+/// Contrato da camada de domínio para operações relacionadas ao usuário.
 abstract class UserRepository {
-  /// Retorna os dados do usuário atualmente autenticado.
-  Future<User> getCurrentUser();
-
-  /// Busca um usuário a partir do e-mail.
+  Future<User> getUserById(String userId);
   Future<User> getUserByEmail(String email);
-
-  /// Cria uma transação para outro usuário (usado em transferências).
+  Future<User> getCurrentUser();
   Future<void> createTransactionForUser(String userId, Transaction transaction);
+  Future<void> saveUser(User user);
 }

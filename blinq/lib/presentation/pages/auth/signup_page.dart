@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_routes.dart';
+import '../../../theme/app_theme.dart';
 
-class RegisterPage extends StatelessWidget {
-  const RegisterPage({super.key});
+class SignupPage extends StatelessWidget {
+  const SignupPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
@@ -23,7 +26,7 @@ class RegisterPage extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 24),
-              Text('Crie sua conta no Blinq', style: Theme.of(context).textTheme.headlineMedium),
+              Text('Crie sua conta no Blinq', style: textTheme.headlineMedium),
               const SizedBox(height: 32),
 
               TextField(
@@ -73,13 +76,8 @@ class RegisterPage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (passwordController.text != confirmController.text) {
-                      Get.snackbar('Erro', 'As senhas não coincidem');
-                      return;
-                    }
-
-                    // Lógica futura de criação de usuário
-                    Get.offAllNamed(AppRoutes.setupPin); // após registro
+                    // futura lógica de cadastro
+                    Get.toNamed(AppRoutes.home);
                   },
                   child: const Text('Criar conta'),
                 ),

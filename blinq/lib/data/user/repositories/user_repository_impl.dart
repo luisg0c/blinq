@@ -1,38 +1,39 @@
 import '../../../domain/entities/user.dart';
-import '../../../domain/repositories/auth_repository.dart';
-import 'package:blinq/data/auth/datasources/auth_remote_data_source.dart';
-import 'package:blinq/data/auth/models/user_model.dart';
+import '../../../domain/entities/transaction.dart';
+import '../../../domain/repositories/user_repository.dart';
+import '../datasources/user_remote_data_source.dart';
+import '../models/user_model.dart';
 
-/// Implementação da interface [AuthRepository] usando [AuthRemoteDataSource].
-class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource remoteDataSource;
+class UserRepositoryImpl implements UserRepository {
+  final UserRemoteDataSource remoteDataSource;
 
-  AuthRepositoryImpl({required this.remoteDataSource});
+  UserRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<User> login({
-    required String email,
-    required String password,
-  }) async {
-    final UserModel userModel = await remoteDataSource.login(email, password);
-    return userModel;
+  Future<User> getUserById(String userId) async {
+    return await remoteDataSource.getUserById(userId);
   }
 
   @override
-  Future<User> register({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
-    final UserModel userModel =
-        await remoteDataSource.register(name, email, password);
-    return userModel;
+  Future<User> getUserByEmail(String email) async {
+    return await remoteDataSource.getUserByEmail(email);
   }
 
   @override
-  Future<void> resetPassword({
-    required String email,
-  }) async {
-    await remoteDataSource.resetPassword(email);
+  Future<User> getCurrentUser() async {
+    return await remoteDataSource.getCurrentUser();
+  }
+
+  @override
+  Future<void> createTransactionForUser(String userId, Transaction tx) async {
+    await remoteDataSource.createTransactionForUser(userId, tx);
+  }
+
+  @override
+  Future<void> saveUser(User user) async {
+    if (user is! UserModel) {
+      throw Exception('Usuário inválido (esperado UserModel)');
+    }
+    await remoteDataSource.saveUser(user);
   }
 }

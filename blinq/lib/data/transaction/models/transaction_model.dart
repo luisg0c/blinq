@@ -1,8 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import '../../../domain/entities/transaction.dart';
 
-/// Modelo de dados que representa uma transação no Data layer,
-/// estendendo a entidade de domínio.
 class TransactionModel extends Transaction {
   const TransactionModel({
     required String id,
@@ -11,32 +8,30 @@ class TransactionModel extends Transaction {
     required String description,
     required String type,
     String? counterparty,
-    String status = 'completed',
+    String? status,
   }) : super(
           id: id,
           amount: amount,
           date: date,
           description: description,
           type: type,
-          counterparty: counterparty,
-          status: status,
+          counterparty: counterparty ?? '',
+          status: status ?? '',
         );
 
-  /// Constrói um modelo a partir de um Map (ex.: JSON ou Firestore).
-  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+  factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      id: json['id'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      date: DateTime.parse(json['date'] as String),
-      description: json['description'] as String,
-      type: json['type'] as String,
-      counterparty: json['counterparty'] as String?,
-      status: json['status'] as String? ?? 'completed',
+      id: map['id'] as String? ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+      description: map['description'] as String? ?? '',
+      type: map['type'] as String? ?? '',
+      counterparty: map['counterparty'] as String?,
+      status: map['status'] as String?,
     );
   }
 
-  /// Converte o modelo em Map (ex.: para JSON).
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'amount': amount,
@@ -48,29 +43,15 @@ class TransactionModel extends Transaction {
     };
   }
 
-  /// Constrói um modelo a partir de um DocumentSnapshot do Firestore.
-  factory TransactionModel.fromDocument(fs.DocumentSnapshot doc) {
-    final data = doc.data()! as Map<String, dynamic>;
+  factory TransactionModel.fromEntity(Transaction transaction) {
     return TransactionModel(
-      id: doc.id,
-      amount: (data['amount'] as num).toDouble(),
-      date: (data['date'] as fs.Timestamp).toDate(),
-      description: data['description'] as String,
-      type: data['type'] as String,
-      counterparty: data['counterparty'] as String?,
-      status: data['status'] as String? ?? 'completed',
+      id: transaction.id,
+      amount: transaction.amount,
+      date: transaction.date,
+      description: transaction.description,
+      type: transaction.type,
+      counterparty: transaction.counterparty,
+      status: transaction.status,
     );
-  }
-
-  /// Converte o modelo em Map para salvar no Firestore.
-  Map<String, dynamic> toDocument() {
-    return {
-      'amount': amount,
-      'date': fs.Timestamp.fromDate(date),
-      'description': description,
-      'type': type,
-      'counterparty': counterparty,
-      'status': status,
-    };
   }
 }

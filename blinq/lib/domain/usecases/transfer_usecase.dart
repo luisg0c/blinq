@@ -1,9 +1,9 @@
 import 'package:uuid/uuid.dart';
+import '../../data/transaction/models/transaction_model.dart';
 import '../entities/transaction.dart';
 import '../repositories/transaction_repository.dart';
 import '../repositories/user_repository.dart';
 
-/// Caso de uso para transferência entre usuários do sistema.
 class TransferUseCase {
   final TransactionRepository transactionRepo;
   final UserRepository userRepo;
@@ -33,7 +33,7 @@ class TransferUseCase {
     final timestamp = DateTime.now();
     final txId = const Uuid().v4();
 
-    final outgoing = Transaction(
+    final outgoing = TransactionModel(
       id: txId,
       amount: -amount,
       date: timestamp,
@@ -42,7 +42,7 @@ class TransferUseCase {
       counterparty: receiver.name,
     );
 
-    final incoming = Transaction(
+    final incoming = TransactionModel(
       id: const Uuid().v4(),
       amount: amount,
       date: timestamp,
