@@ -1,3 +1,4 @@
+// blinq/lib/routes/app_pages.dart
 import 'package:get/get.dart';
 
 // Pages
@@ -21,6 +22,7 @@ import '../presentation/bindings/auth_binding.dart';
 import '../presentation/bindings/home_binding.dart';
 import '../presentation/bindings/pin_binding.dart';
 import '../presentation/bindings/transfer_binding.dart';
+import '../presentation/bindings/deposit_binding.dart';
 import '../presentation/bindings/splash_binding.dart';
 
 // Routes
@@ -66,7 +68,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.verifyPin,
       page: () => const PinVerificationPage(),
-      binding: PinBinding(),
+      bindings: [
+        PinBinding(),
+        DepositBinding(), // ✅ Adicionado para garantir DepositController
+        TransferBinding(),
+      ],
     ),
     GetPage(
       name: AppRoutes.home,
@@ -77,7 +83,8 @@ class AppPages {
       name: AppRoutes.deposit,
       page: () => const DepositPage(),
       bindings: [
-        PinBinding(),
+        DepositBinding(), // ✅ Binding principal do depósito
+        PinBinding(),     // ✅ Para verificação de PIN
       ],
     ),
     GetPage(
@@ -91,7 +98,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.transactions,
       page: () => const TransactionsPage(),
-      binding: HomeBinding(),
+      binding: HomeBinding(), // Usa as mesmas dependências do Home
     ),
     GetPage(
       name: AppRoutes.profile,

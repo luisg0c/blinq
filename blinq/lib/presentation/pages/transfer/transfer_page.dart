@@ -373,33 +373,37 @@ class _TransferPageState extends State<TransferPage> {
   }
 
   Widget _buildContinueButton(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return GestureDetector(
-      onTap: () {
-        if (_formKey.currentState!.validate()) {
-          if (amountCtrl.text.isEmpty) {
-            Get.snackbar(
-              'Atenção',
-              'Informe o valor da transferência',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: AppColors.error.withOpacity(0.1),
-              colorText: AppColors.error,
-            );
-            return;
-          }
-          
-          Get.toNamed(
-            AppRoutes.verifyPin,
-            arguments: {
-              'flow': 'transfer',
-              'recipient': recipientCtrl.text,
-              'amountText': amountCtrl.text,
-              'description': descriptionCtrl.text,
-            },
-          );
+  final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  
+  return GestureDetector(
+    onTap: () {
+      if (_formKey.currentState!.validate()) {
+        if (amountCtrl.text.isEmpty) {
+          Get.snackbar('Atenção', 'Informe o valor da transferência');
+          return;
         }
-      },
+        
+        // ✅ CORRIGIDO: Converter valor corretamente
+        final amountText = amountCtrl.text.replaceAll(RegExp(r'[^\d,]'), '');
+        final amount = double.tryParse(amountText.replaceAll(',', '.')) ?? 0.0;
+        
+        if (amount <= 0) {
+          Get.snackbar('Erro', 'Valor inválido');
+          return;
+        }
+        
+        Get.toNamed(
+          AppRoutes.verifyPin,
+          arguments: {
+            'flow': 'transfer',
+            'recipient': recipientCtrl.text,
+            'amount': amount, // ✅ Enviar valor numérico
+            'description': descriptionCtrl.text,
+          },
+        );
+      }
+    },
+    
       child: Container(
         width: double.infinity,
         height: 56,

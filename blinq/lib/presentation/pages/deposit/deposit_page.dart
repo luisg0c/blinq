@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import '../../../core/components/custom_money_field.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../theme/app_theme.dart';
+import '../../../core/utils/money_input_formatter.dart';
 
 class DepositPage extends StatefulWidget {
   const DepositPage({super.key});
@@ -16,6 +17,7 @@ class _DepositPageState extends State<DepositPage> {
   final amountController = TextEditingController();
   final descriptionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -50,12 +52,12 @@ class _DepositPageState extends State<DepositPage> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+                color: neomorphTheme.highlightColor.withOpacity(0.7),
                 offset: const Offset(-2, -2),
                 blurRadius: 6,
               ),
               BoxShadow(
-                color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+                color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
                 offset: const Offset(2, 2),
                 blurRadius: 6,
               ),
@@ -95,12 +97,12 @@ class _DepositPageState extends State<DepositPage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+                    color: neomorphTheme.highlightColor.withOpacity(0.7),
                     offset: const Offset(-2, -2),
                     blurRadius: 6,
                   ),
                   BoxShadow(
-                    color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+                    color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
                     offset: const Offset(2, 2),
                     blurRadius: 6,
                   ),
@@ -139,20 +141,14 @@ class _DepositPageState extends State<DepositPage> {
             // Campo de valor
             _buildSectionTitle(context, 'Valor do Depósito'),
             const SizedBox(height: 12),
-            _buildNeomorphMoneyField(context),
+            _buildMoneyField(context),
             
             const SizedBox(height: 24),
             
             // Campo de descrição
             _buildSectionTitle(context, 'Descrição (opcional)'),
             const SizedBox(height: 12),
-            _buildNeomorphTextField(
-              context,
-              controller: descriptionController,
-              hintText: 'Motivo do depósito',
-              icon: Icons.description_outlined,
-              maxLines: 2,
-            ),
+            _buildDescriptionField(context),
             
             const SizedBox(height: 40),
             
@@ -177,12 +173,12 @@ class _DepositPageState extends State<DepositPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+            color: neomorphTheme.highlightColor.withOpacity(0.7),
             offset: const Offset(-6, -6),
             blurRadius: 12,
           ),
           BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
             offset: const Offset(6, 6),
             blurRadius: 12,
           ),
@@ -198,12 +194,12 @@ class _DepositPageState extends State<DepositPage> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+                  color: neomorphTheme.highlightColor.withOpacity(0.7),
                   offset: const Offset(-3, -3),
                   blurRadius: 6,
                 ),
                 BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
                   offset: const Offset(3, 3),
                   blurRadius: 6,
                 ),
@@ -306,29 +302,29 @@ class _DepositPageState extends State<DepositPage> {
             : null,
           boxShadow: isSelected ? [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.primary.withOpacity(0.2),
               offset: const Offset(0, 0),
               blurRadius: 8,
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+              color: neomorphTheme.highlightColor.withOpacity(0.7),
               offset: const Offset(-3, -3),
               blurRadius: 6,
             ),
             BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+              color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
               offset: const Offset(3, 3),
               blurRadius: 6,
             ),
           ] : [
             BoxShadow(
-              color: neomorphTheme.highlightColor.withValues(alpha: 0.5),
+              color: neomorphTheme.highlightColor.withOpacity(0.5),
               offset: const Offset(-2, -2),
               blurRadius: 4,
             ),
             BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.3),
+              color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
               offset: const Offset(2, 2),
               blurRadius: 4,
             ),
@@ -340,7 +336,7 @@ class _DepositPageState extends State<DepositPage> {
               icon,
               color: isEnabled 
                 ? (isSelected ? AppColors.primary : neomorphTheme.textSecondaryColor)
-                : neomorphTheme.textSecondaryColor.withValues(alpha: 0.5),
+                : neomorphTheme.textSecondaryColor.withOpacity(0.5),
               size: 24,
             ),
             const SizedBox(height: 8),
@@ -351,7 +347,7 @@ class _DepositPageState extends State<DepositPage> {
                 fontWeight: FontWeight.w600,
                 color: isEnabled 
                   ? (isSelected ? AppColors.primary : neomorphTheme.textPrimaryColor)
-                  : neomorphTheme.textSecondaryColor.withValues(alpha: 0.5),
+                  : neomorphTheme.textSecondaryColor.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 4),
@@ -361,7 +357,7 @@ class _DepositPageState extends State<DepositPage> {
                 fontSize: 12,
                 color: isEnabled 
                   ? neomorphTheme.textSecondaryColor
-                  : neomorphTheme.textSecondaryColor.withValues(alpha: 0.5),
+                  : neomorphTheme.textSecondaryColor.withOpacity(0.5),
               ),
             ),
           ],
@@ -383,80 +379,30 @@ class _DepositPageState extends State<DepositPage> {
     );
   }
 
-  Widget _buildNeomorphTextField(
-    BuildContext context, {
-    required TextEditingController controller,
-    required String hintText,
-    required IconData icon,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
+  Widget _buildMoneyField(BuildContext context) {
     final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
     
     return Container(
       decoration: BoxDecoration(
         color: neomorphTheme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: TextFormField(
-        controller: controller,
-        maxLines: maxLines,
-        validator: validator,
-        style: TextStyle(
-          color: neomorphTheme.textPrimaryColor,
-          fontSize: 16,
-        ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: neomorphTheme.textSecondaryColor,
-            fontSize: 16,
+        boxShadow: [
+          BoxShadow(
+            color: neomorphTheme.highlightColor.withOpacity(0.5),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
           ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: neomorphTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
-                  offset: const Offset(-2, -2),
-                  blurRadius: 4,
-                ),
-                BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
-                  offset: const Offset(2, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 20,
-            ),
+          BoxShadow(
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+            offset: const Offset(2, 2),
+            blurRadius: 6,
           ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNeomorphMoneyField(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        ],
       ),
       child: TextFormField(
         controller: amountController,
         keyboardType: TextInputType.number,
+        inputFormatters: [MoneyInputFormatter()],
         style: TextStyle(
           color: neomorphTheme.textPrimaryColor,
           fontSize: 24,
@@ -476,12 +422,12 @@ class _DepositPageState extends State<DepositPage> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+                  color: neomorphTheme.highlightColor.withOpacity(0.7),
                   offset: const Offset(-2, -2),
                   blurRadius: 4,
                 ),
                 BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
                   offset: const Offset(2, 2),
                   blurRadius: 4,
                 ),
@@ -499,6 +445,97 @@ class _DepositPageState extends State<DepositPage> {
             vertical: 24,
           ),
         ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Informe o valor do depósito';
+          }
+          
+          // Extrair valor numérico do texto formatado
+          final cleanValue = value
+              .replaceAll('R\$', '')
+              .replaceAll(' ', '')
+              .replaceAll('.', '')
+              .replaceAll(',', '.');
+          
+          final amount = double.tryParse(cleanValue);
+          
+          if (amount == null || amount <= 0) {
+            return 'Valor deve ser maior que zero';
+          }
+          
+          if (amount > 50000) {
+            return 'Valor máximo: R\$ 50.000,00';
+          }
+          
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField(BuildContext context) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: neomorphTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: neomorphTheme.highlightColor.withOpacity(0.5),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+            offset: const Offset(2, 2),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: descriptionController,
+        maxLines: 2,
+        style: TextStyle(
+          color: neomorphTheme.textPrimaryColor,
+          fontSize: 16,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Motivo do depósito',
+          hintStyle: TextStyle(
+            color: neomorphTheme.textSecondaryColor,
+            fontSize: 16,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: neomorphTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: neomorphTheme.highlightColor.withOpacity(0.7),
+                  offset: const Offset(-2, -2),
+                  blurRadius: 4,
+                ),
+                BoxShadow(
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  offset: const Offset(2, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.description_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
       ),
     );
   }
@@ -507,33 +544,13 @@ class _DepositPageState extends State<DepositPage> {
     final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
     
     return GestureDetector(
-      onTap: () {
-        if (amountController.text.isEmpty) {
-          Get.snackbar(
-            'Atenção',
-            'Informe o valor do depósito',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppColors.error.withValues(alpha: 0.1),
-            colorText: AppColors.error,
-          );
-          return;
-        }
-        
-        Get.toNamed(
-          AppRoutes.verifyPin,
-          arguments: {
-            'flow': 'deposit',
-            'amountText': amountController.text,
-            'description': descriptionController.text,
-          },
-        );
-      },
+      onTap: _isLoading ? null : _onContinuePressed,
       child: Container(
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
+          gradient: _isLoading ? null : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
@@ -541,35 +558,78 @@ class _DepositPageState extends State<DepositPage> {
               Color(0xFF5BC4A8),
             ],
           ),
-          boxShadow: [
+          color: _isLoading ? Colors.grey : null,
+          boxShadow: _isLoading ? [] : [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: AppColors.primary.withOpacity(0.3),
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
             BoxShadow(
-              color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+              color: neomorphTheme.highlightColor.withOpacity(0.7),
               offset: const Offset(-2, -2),
               blurRadius: 6,
             ),
             BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withValues(alpha: 0.5),
+              color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
               offset: const Offset(2, 2),
               blurRadius: 6,
             ),
           ],
         ),
-        child: const Center(
-          child: Text(
-            'Continuar',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        child: Center(
+          child: _isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text(
+                  'Continuar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );
+  }
+
+  void _onContinuePressed() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Simular delay de processamento
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Navegar para verificação de PIN
+      Get.toNamed(
+        AppRoutes.verifyPin,
+        arguments: {
+          'flow': 'deposit',
+          'amountText': amountController.text,
+          'description': descriptionController.text,
+        },
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Erro',
+        'Não foi possível continuar: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error.withOpacity(0.1),
+        colorText: AppColors.error,
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }

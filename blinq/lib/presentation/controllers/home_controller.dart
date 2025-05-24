@@ -1,11 +1,11 @@
+// blinq/lib/presentation/controllers/home_controller.dart
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/transaction.dart' as domain;
 import '../../domain/repositories/account_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
-import 'dart:async'; // ← ADICIONAR ESTA LINHA
-
+import 'dart:async';
 
 class HomeController extends GetxController {
   final AccountRepository _accountRepository;
@@ -23,7 +23,7 @@ class HomeController extends GetxController {
   final RxDouble balance = 0.0.obs;
   final RxList<domain.Transaction> recentTransactions = <domain.Transaction>[].obs;
 
-  // ✅ Stream subscriptions para dados em tempo real
+  // Stream subscriptions para dados em tempo real
   StreamSubscription<double>? _balanceSubscription;
   StreamSubscription<List<domain.Transaction>>? _transactionsSubscription;
 
@@ -35,7 +35,7 @@ class HomeController extends GetxController {
 
   @override
   void onClose() {
-    //  Cancelar subscriptions ao fechar
+    // Cancelar subscriptions ao fechar
     _balanceSubscription?.cancel();
     _transactionsSubscription?.cancel();
     super.onClose();
@@ -54,10 +54,10 @@ class HomeController extends GetxController {
 
       print('🔥 Configurando streams em tempo real para: ${currentUser.email}');
 
-      //  Garantir que a conta existe
-      await _ensureAccountExists(currentUser.uid, currentUser.email!);
+      // Garantir que a conta existe
+      await _ensureAccountExists(currentUser.uid, currentUser.email!, currentUser.displayName);
 
-      //  STREAM DO SALDO EM TEMPO REAL
+      // STREAM DO SALDO EM TEMPO REAL
       _balanceSubscription?.cancel();
       _balanceSubscription = _accountRepository.watchBalance(currentUser.uid).listen(
         (newBalance) {
@@ -65,33 +65,40 @@ class HomeController extends GetxController {
           print('💰 Saldo atualizado em tempo real: R\$ $newBalance');
         },
         onError: (e) {
-          print(' Erro no stream do saldo: $e');
+          print('❌ Erro no stream do saldo: $e');
+          error.value = 'Erro ao carregar saldo';
         },
       );
 
-      //  STREAM DAS TRANSAÇÕES EM TEMPO REAL
+      // STREAM DAS TRANSAÇÕES EM TEMPO REAL
       _transactionsSubscription?.cancel();
       _transactionsSubscription = _transactionRepository.watchTransactionsByUser(currentUser.uid).listen(
         (transactions) {
           recentTransactions.value = transactions.take(5).toList();
           print('📋 ${transactions.length} transações carregadas em tempo real');
+          
+          // Log das transações para debug
+          for (var tx in transactions.take(3)) {
+            print('  📄 ${tx.type}: R\$ ${tx.amount} - ${tx.description}');
+          }
         },
         onError: (e) {
-          print(' Erro no stream das transações: $e');
+          print('❌ Erro no stream das transações: $e');
           recentTransactions.value = [];
+          error.value = 'Erro ao carregar transações';
         },
       );
 
     } catch (e) {
       error.value = 'Erro ao carregar dados: $e';
-      print(' Erro geral: $e');
+      print('❌ Erro geral: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  ///  Garantir que a conta existe no Firebase
-  Future<void> _ensureAccountExists(String userId, String email) async {
+  /// Garantir que a conta existe no Firebase
+  Future<void> _ensureAccountExists(String userId, String email, String? displayName) async {
     try {
       final firestore = FirebaseFirestore.instance;
       final accountDoc = await firestore.collection('accounts').doc(userId).get();
@@ -99,25 +106,28 @@ class HomeController extends GetxController {
       if (!accountDoc.exists) {
         print('🆕 Criando conta nova no Firebase para: $email');
         
-        // Criar conta com saldo inicial
+        // Criar conta com estrutura corrigida
         await firestore.collection('accounts').doc(userId).set({
-          'balance': 1000.0, //  Saldo inicial de R$ 1.000
+          'balance': 1000.0, // Saldo inicial de R$ 1.000
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
           'user': {
             'id': userId,
             'email': email,
-            'name': FirebaseAuth.instance.currentUser?.displayName ?? 'Usuário Blinq',
+            'name': displayName ?? 'Usuário Blinq',
           },
         });
         
-        //  Criar transação inicial de bônus
+        // Criar transação inicial de bônus
         await _createWelcomeTransaction(userId);
         
-        print(' Conta criada com saldo inicial de R\$ 1.000');
+        print('✅ Conta criada com saldo inicial de R\$ 1.000');
+      } else {
+        print('✅ Conta já existe para: $email');
       }
     } catch (e) {
-      print('Erro ao criar conta: $e');
+      print('❌ Erro ao criar/verificar conta: $e');
+      throw e;
     }
   }
 
@@ -135,9 +145,9 @@ class HomeController extends GetxController {
       );
 
       await _transactionRepository.createTransaction(userId, welcomeTransaction);
-      print(' Transação de boas-vindas criada');
+      print('✅ Transação de boas-vindas criada');
     } catch (e) {
-      print(' Erro ao criar transação de boas-vindas: $e');
+      print('❌ Erro ao criar transação de boas-vindas: $e');
     }
   }
 

@@ -542,97 +542,168 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionsList(BuildContext context, HomeController controller, bool isDark) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-    final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    
-    if (controller.recentTransactions.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: highlightColor.withOpacity(0.5),
-              offset: const Offset(-4, -4),
-              blurRadius: 8,
-            ),
-            BoxShadow(
-              color: shadowColor.withOpacity(0.3),
-              offset: const Offset(4, 4),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.receipt_outlined,
-              size: 48,
-              color: secondaryTextColor.withOpacity(0.5),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Nenhuma transação ainda',
-              style: TextStyle(
-                fontSize: 16,
-                color: secondaryTextColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Suas transações aparecerão aqui',
-              style: TextStyle(
-                fontSize: 14,
-                color: secondaryTextColor,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildTransactionsList(
+    BuildContext context, HomeController controller, bool isDark) {
+  final surfaceColor =
+      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+  final highlightColor =
+      isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+  final shadowColor =
+      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+  final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
-    return Column(
-      children: controller.recentTransactions.take(3).map((transaction) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: highlightColor.withOpacity(0.5),
-                  offset: const Offset(-3, -3),
-                  blurRadius: 6,
-                ),
-                BoxShadow(
-                  color: shadowColor.withOpacity(0.3),
-                  offset: const Offset(3, 3),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: TransactionCard(transaction: transaction),
+  if (controller.recentTransactions.isEmpty) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: highlightColor.withOpacity(0.5),
+            offset: const Offset(-4, -4),
+            blurRadius: 8,
           ),
-        );
-      }).toList(),
+          BoxShadow(
+            color: shadowColor.withOpacity(0.3),
+            offset: const Offset(4, 4),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.receipt_outlined,
+            size: 48,
+            color: secondaryTextColor.withOpacity(0.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Nenhuma transação ainda',
+            style: TextStyle(
+              fontSize: 16,
+              color: secondaryTextColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Suas transações aparecerão aqui',
+            style: TextStyle(
+              fontSize: 14,
+              color: secondaryTextColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildNeomorphBottomBar(BuildContext context, bool isDark) {
-    final backgroundColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-    
-    return Container(
+  return Column(
+    children: controller.recentTransactions.take(3).map((transaction) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TransactionCard(
+          transaction: transaction,
+          onTap: () {
+            // Navegar para detalhes da transação
+            Get.dialog(
+              AlertDialog(
+                backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Text(
+                  'Detalhes da Transação',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow('Tipo:', transaction.type, isDark),
+                    _buildDetailRow('Valor:', 'R\$ ${transaction.amount.abs().toStringAsFixed(2)}', isDark),
+                    _buildDetailRow('Data:', _formatDate(transaction.date), isDark),
+                    _buildDetailRow('Descrição:', transaction.description, isDark),
+                    if (transaction.counterparty.isNotEmpty)
+                      _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
+                    _buildDetailRow('Status:', transaction.status, isDark),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text(
+                      'Fechar',
+                      style: TextStyle(color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }).toList(),
+  );
+}
+
+Widget _buildDetailRow(String label, String value, bool isDark) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+String _formatDate(DateTime date) {
+  return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+}
+
+Widget _buildNeomorphBottomBar(BuildContext context, bool isDark) {
+  final backgroundColor =
+      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+  final surfaceColor =
+      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+  final highlightColor =
+      isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+  final shadowColor =
+      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+
+  return SafeArea(
+    child: Container(
       height: 90,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom > 0
+            ? 16  
+            : 24, 
+        top: 8,     
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         boxShadow: [
@@ -668,7 +739,6 @@ class HomePage extends StatelessWidget {
                   offset: const Offset(6, 6),
                   blurRadius: 12,
                 ),
-                // Inner glow para o botão principal
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.2),
                   offset: const Offset(0, 0),
@@ -703,8 +773,9 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNeomorphButton(
     BuildContext context,

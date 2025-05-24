@@ -9,19 +9,19 @@ class CustomButton extends StatelessWidget {
   final bool isPrimary;
 
   const CustomButton({
-    Key? key,
+    super.key, // ✅ Corrigido: usar super parameter
     required this.label,
     required this.onPressed,
     this.isLoading = false,
     this.fullWidth = true,
     this.icon,
     this.isPrimary = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF6EE1C6);
-    const secondaryColor = Color(0xFF0D1517);
+    // ✅ Removido: variável secondaryColor não usada
 
     final button = Container(
       height: 50,
@@ -34,7 +34,7 @@ class CustomButton extends StatelessWidget {
         ),
         boxShadow: isPrimary && !isLoading ? [
           BoxShadow(
-            color: primaryColor.withOpacity(0.2),
+            color: primaryColor.withValues(alpha: 0.2), // ✅ Corrigido: withValues
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

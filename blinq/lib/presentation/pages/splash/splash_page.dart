@@ -1,8 +1,11 @@
+// lib/presentation/pages/splash/splash_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/app_initializer.dart'; // ✅ Importar o AppInitializer
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -28,7 +31,7 @@ class _SplashPageState extends State<SplashPage>
     super.initState();
     _initAnimations();
     _startAnimations();
-    _initApp();
+    _initApp(); // ✅ Método atualizado
   }
 
   void _initAnimations() {
@@ -99,18 +102,29 @@ class _SplashPageState extends State<SplashPage>
     });
   }
 
+  // ✅ MÉTODO ATUALIZADO - Aqui é onde você adiciona o código
   Future<void> _initApp() async {
     await Future.delayed(const Duration(milliseconds: 3500));
 
-    // Verificar se usuário está logado
-    final user = FirebaseAuth.instance.currentUser;
-    
-    if (user != null) {
-      // Usuário logado, ir direto para Home
-      Get.offAllNamed(AppRoutes.home);
-    } else {
-      // Usuário não logado, ir para Welcome
-      Get.offAllNamed(AppRoutes.welcome);
+    try {
+      print('🚀 Iniciando inicialização do app...');
+      
+      // ✅ Usar o AppInitializer para navegação segura
+      await AppInitializer.initializeAndNavigate();
+      
+    } catch (e) {
+      print('❌ Erro na inicialização do app: $e');
+      
+      // ✅ Fallback para navegação manual
+      final user = FirebaseAuth.instance.currentUser;
+      
+      if (user != null) {
+        print('👤 Usuário logado, indo para home');
+        Get.offAllNamed(AppRoutes.home);
+      } else {
+        print('👤 Usuário não logado, indo para welcome');
+        Get.offAllNamed(AppRoutes.welcome);
+      }
     }
   }
 
