@@ -1,111 +1,119 @@
+// lib/presentation/pages/confirm_transaction_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../../domain/repositories/transaction_repository.dart';
-import '../../../domain/repositories/account_repository.dart';
-import '../../../domain/repositories/user_repository.dart';
-import '../../../domain/usecases/deposit_usecase.dart';
-import '../../../domain/usecases/transfer_usecase.dart';
+import '../../controllers/transfer_controller.dart';
+import '../../../core/exceptions/app_exception.dart';
+import '../../../core/theme/app_colors.dart';
 import '../pin/pin_verification_page.dart';
 import '../../../routes/app_routes.dart';
 
 class ConfirmTransactionPage extends StatelessWidget {
   const ConfirmTransactionPage({Key? key}) : super(key: key);
 
-  double _parseAmount(String text) {
-    final digits = text.replaceAll(RegExp(r'[^\d]'), '');
-    return digits.isEmpty ? 0.0 : double.parse(digits) / 100;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final args = Get.arguments as Map<String, dynamic>;
-    final flow = args['flow'] as String;
-    final amountText = args['amountText'] as String;
-    final description = args['description'] as String? ?? '';
-    final recipient = args['recipient'] as String? ?? '';
-
-    final amount = _parseAmount(amountText);
-    final formattedAmount = NumberFormat.currency(
-      locale: 'pt_BR',
-      symbol: 'R\$',
-    ).format(amount);
-
-    // resumo do fluxo
-    final title = flow == 'deposit'
-        ? 'Confirmar Depósito'
-        : 'Confirmar Transferência';
-    final subtitle = flow == 'deposit'
-        ? 'Você vai depositar $formattedAmount'
-        : 'Você vai transferir $formattedAmount para $recipient';
+    final TransferController controller = Get.find<TransferController>();
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 16),
-            if (description.isNotEmpty)
-              Text('Descrição: $description',
-                  style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Confirmar Transferência'),
+        centerTitle: true,
       ),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.errorMessage.value != null) {
+          return Center(
+            child: Text(
+              controller.errorMessage.value!,
+              style: TextStyle(color: AppColors.error, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Destinatário:',
+                style: textTheme.titleMedium, // antes: subtitle1
+              ),
+              const SizedBox(height: 4),
+              Text(
+                controller.recipientEmail.value,
+                style: textTheme.bodyLarge, // antes: bodyText1
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Valor:',
+                style: textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'R\$ ${controller.amount.value.toStringAsFixed(2)}',
+                style: textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        );
+      }),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(24),
-        child: ElevatedButton(
-          onPressed: () {
-            Get.to(() => PinVerificationPage(onSuccess: () async {
-              try {
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser == null) {
-                  Get.snackbar('Erro', 'Usuário não autenticado');
-                  return;
-                }
-
-                if (flow == 'deposit') {
-                  // ✅ Corrigir - usar repositórios corretos
-                  final depositUC = DepositUseCase(
-                    transactionRepository: Get.find<TransactionRepository>(),
-                    accountRepository: Get.find<AccountRepository>(),
-                  );
-                  
-                  await depositUC.execute(
-                    userId: currentUser.uid,
-                    amount: amount,
-                    description: description,
-                  );
-                  Get.snackbar('Sucesso', 'Depósito realizado');
-                } else {
-                  // ✅ Corrigir - usar parâmetros corretos
-                  final transferUC = TransferUseCase(
-                    transactionRepository: Get.find<TransactionRepository>(),
-                    accountRepository: Get.find<AccountRepository>(),
-                    userRepository: Get.find<UserRepository>(),
-                  );
-                  
-                  await transferUC.execute(
-                    senderId: currentUser.uid,
-                    receiverEmail: recipient,
-                    amount: amount,
-                    description: description,
-                  );
-                  Get.snackbar('Sucesso', 'Transferência enviada');
-                }
-                
-                // volta para a Home após a operação
-                Get.offAllNamed(AppRoutes.home);
-              } catch (e) {
-                Get.snackbar('Erro', 'Falha na operação: $e');
-              }
-            }));
-          },
-          child: const Text('Confirmar'),
+        child: SizedBox(
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              Get.to(() => PinVerificationPage(onSuccess: () async {
+                    try {
+                      await controller.executeTransfer();
+                      Get.offAllNamed(AppRoutes.transactions);
+                      Get.snackbar(
+                        'Sucesso',
+                        'Transferência realizada com sucesso!',
+                        backgroundColor: AppColors.success,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    } on AppException catch (e) {
+                      Get.back();
+                      Get.snackbar(
+                        'Erro',
+                        e.message,
+                        backgroundColor: AppColors.error,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    } catch (_) {
+                      Get.back();
+                      Get.snackbar(
+                        'Erro',
+                        'Não foi possível completar a transferência.',
+                        backgroundColor: AppColors.error,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    }
+                  }));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Confirmar Transferência',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
       ),
     );
