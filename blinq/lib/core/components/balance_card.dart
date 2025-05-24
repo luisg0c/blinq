@@ -7,12 +7,12 @@ class BalanceCard extends StatefulWidget {
   final VoidCallback? onPix;
 
   const BalanceCard({
-    Key? key, 
+    super.key, // ✅ Corrigido: usar super parameter
     required this.balance,
     this.onDeposit,
     this.onTransfer,
     this.onPix,
-  }) : super(key: key);
+  });
 
   @override
   State<BalanceCard> createState() => _BalanceCardState();
@@ -34,7 +34,7 @@ class _BalanceCardState extends State<BalanceCard> {
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF6EE1C6);
-    const secondaryColor = Color(0xFF0D1517);
+    // ✅ Removido: variável secondaryColor não usada
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -51,7 +51,7 @@ class _BalanceCardState extends State<BalanceCard> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.3),
+            color: primaryColor.withValues(alpha: 0.3), // ✅ Corrigido: withValues
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -77,7 +77,7 @@ class _BalanceCardState extends State<BalanceCard> {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2), // ✅ Corrigido: withValues
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(
@@ -153,10 +153,10 @@ class _BalanceCardState extends State<BalanceCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15), // ✅ Corrigido: withValues
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3), // ✅ Corrigido: withValues
             width: 1,
           ),
         ),

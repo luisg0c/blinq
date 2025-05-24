@@ -8,10 +8,10 @@ class TransactionCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const TransactionCard({
-    Key? key, 
+    super.key, // ✅ Corrigido: usar super parameter
     required this.transaction,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class TransactionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03), // ✅ Corrigido: withValues
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -119,12 +119,12 @@ class TransactionCard extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
+                        color: primaryColor.withValues(alpha: 0.1), // ✅ Corrigido: withValues
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
+                      child: const Text( // ✅ Corrigido: usar const
                         'Concluído',
-                        style: TextStyle(
+                        style: TextStyle( // ✅ Corrigido: usar const
                           fontSize: 9,
                           fontWeight: FontWeight.w500,
                           color: primaryColor,
@@ -158,15 +158,15 @@ class TransactionCard extends StatelessWidget {
   Color _getP2PIconBackground(String type, bool isReceived) {
     switch (type.toLowerCase()) {
       case 'deposit':
-        return const Color(0xFF6EE1C6).withOpacity(0.15);
+        return const Color(0xFF6EE1C6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
       case 'transfer':
         return isReceived 
-            ? const Color(0xFF10B981).withOpacity(0.15)
-            : const Color(0xFF3B82F6).withOpacity(0.15);
+            ? const Color(0xFF10B981).withValues(alpha: 0.15) // ✅ Corrigido: withValues
+            : const Color(0xFF3B82F6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
       case 'pix':
-        return const Color(0xFF8B5CF6).withOpacity(0.15);
+        return const Color(0xFF8B5CF6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
       default:
-        return const Color(0xFF6EE1C6).withOpacity(0.15);
+        return const Color(0xFF6EE1C6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
     }
   }
 

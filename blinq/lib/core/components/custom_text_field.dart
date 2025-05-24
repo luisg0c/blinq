@@ -18,17 +18,17 @@ class CustomTextField extends StatelessWidget {
   final bool obscureText;
 
   const CustomTextField({
-    Key? key,
+    super.key, // ✅ Corrigido: usar super parameter
     required this.controller,
     required this.labelText,
     this.validator,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF6EE1C6);
+    const primaryColor = Color(0xFF6EE1C6); // ✅ Corrigido: usar const
     final borderRadius = BorderRadius.circular(8);
 
     return TextFormField(
@@ -43,11 +43,11 @@ class CustomTextField extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: primaryColor),
+          borderSide: const BorderSide(color: primaryColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
       ),
     );

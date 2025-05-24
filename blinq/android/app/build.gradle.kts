@@ -1,56 +1,65 @@
-// android/app/build.gradle.kts
+import java.util.Properties
+import java.io.FileInputStream
 
-import org.gradle.api.JavaVersion
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+val flutterRoot = localProperties.getProperty("flutter.sdk")
+    ?: throw GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
-    id("org.jetbrains.kotlin.android")
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    // Nome do pacote deve corresponder ao `package_name` em google-services.json
     namespace = "com.example.blinq"
-    compileSdk = flutter.compileSdkVersion
-
-    defaultConfig {
-        applicationId = "com.example.blinq"
-        // Aumentado para atender ao requisito do Firebase Auth (minSdkVersion 23)
-        minSdk = 23
-        targetSdk = flutter.targetSdkVersion
-
-        versionCode = 1  // ajuste conforme seu pubspec.yaml
-        versionName = "1.0.0"
-    }
+    compileSdk = 34
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "1.8"
+    }
+
+    sourceSets {
+        getByName("main").java.srcDirs("src/main/kotlin")
+    }
+
+    defaultConfig {
+        applicationId = "com.example.blinq"
+        minSdk = 21
+        targetSdk = 34
+        versionCode = flutterVersionCode.toInt()
+        versionName = flutterVersionName
+        isMultiDexEnabled = true
     }
 
     buildTypes {
-        getByName("debug") {
-            isMinifyEnabled = false
-            isDebuggable = true
-        }
         getByName("release") {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    implementation("androidx.multidex:multidex:2.0.1")
 }
