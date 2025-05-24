@@ -12,9 +12,10 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final HomeController controller = Get.find<HomeController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5),
+      backgroundColor:
+          isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5),
       appBar: _buildNeomorphAppBar(context, isDark),
       body: Obx(() => _buildBody(context, controller, isDark)),
       bottomNavigationBar: _buildNeomorphBottomBar(context, isDark),
@@ -22,10 +23,11 @@ class HomePage extends StatelessWidget {
   }
 
   PreferredSizeWidget _buildNeomorphAppBar(BuildContext context, bool isDark) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white60 : Colors.black45;
-    
+
     return AppBar(
       backgroundColor: surfaceColor,
       elevation: 0,
@@ -71,9 +73,9 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(width: 12),
-            
+
             // Saudação e nome
             Expanded(
               child: Column(
@@ -125,7 +127,9 @@ class HomePage extends StatelessWidget {
                 color: surfaceColor,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -156,7 +160,7 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Toggle tema
         Padding(
           padding: const EdgeInsets.only(right: 16),
@@ -173,7 +177,9 @@ class HomePage extends StatelessWidget {
                 color: surfaceColor,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -200,7 +206,8 @@ class HomePage extends StatelessWidget {
     }
   }
 
-  Widget _buildBody(BuildContext context, HomeController controller, bool isDark) {
+  Widget _buildBody(
+      BuildContext context, HomeController controller, bool isDark) {
     if (controller.isLoading.value) {
       return const Center(
         child: CircularProgressIndicator(
@@ -259,20 +266,22 @@ class HomePage extends StatelessWidget {
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20), // Reduzido padding superior
+        padding: const EdgeInsets.fromLTRB(
+            20, 8, 20, 20), // Reduzido padding superior
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Card de saldo neomorfo
-            _buildNeomorphBalanceCard(context, controller.balance.value, isDark),
-            
+            _buildNeomorphBalanceCard(
+                context, controller.balance.value, isDark),
+
             const SizedBox(height: 24), // Reduzido de 32 para 24
-            
+
             // Ações rápidas
             _buildQuickActions(context, isDark),
-            
+
             const SizedBox(height: 24), // Reduzido de 32 para 24
-            
+
             // Título das transações
             Text(
               'Transações Recentes',
@@ -282,12 +291,12 @@ class HomePage extends StatelessWidget {
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            
+
             const SizedBox(height: 16), // Voltou para 16px (era 12)
-            
+
             // Lista de transações
             _buildTransactionsList(context, controller, isDark),
-            
+
             // Espaço extra no final para compensar bottom bar
             const SizedBox(height: 100),
           ],
@@ -296,13 +305,17 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNeomorphBalanceCard(BuildContext context, double balance, bool isDark) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+  Widget _buildNeomorphBalanceCard(
+      BuildContext context, double balance, bool isDark) {
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor =
+        isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowColor =
+        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20), // Reduzido de 24 para 20
@@ -312,7 +325,8 @@ class HomePage extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: highlightColor.withOpacity(0.7),
-            offset: const Offset(-6, -6), // Sombras menores para dispositivos pequenos
+            offset: const Offset(
+                -6, -6), // Sombras menores para dispositivos pequenos
             blurRadius: 12,
           ),
           BoxShadow(
@@ -340,7 +354,8 @@ class HomePage extends StatelessWidget {
                 padding: const EdgeInsets.all(6), // Reduzido de 8 para 6
                 decoration: BoxDecoration(
                   color: surfaceColor,
-                  borderRadius: BorderRadius.circular(10), // Reduzido de 12 para 10
+                  borderRadius:
+                      BorderRadius.circular(10), // Reduzido de 12 para 10
                   boxShadow: [
                     BoxShadow(
                       color: highlightColor.withOpacity(0.7),
@@ -362,9 +377,9 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 10), // Reduzido de 12 para 10
-          
+
           Text(
             'R\$ ${balance.toStringAsFixed(2).replaceAll('.', ',')}',
             style: TextStyle(
@@ -373,14 +388,15 @@ class HomePage extends StatelessWidget {
               color: textColor,
             ),
           ),
-          
+
           const SizedBox(height: 16), // Reduzido de 20 para 16
-          
+
           // Indicador de crescimento
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Menor
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 3), // Menor
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6), // Menor
@@ -422,7 +438,7 @@ class HomePage extends StatelessWidget {
 
   Widget _buildQuickActions(BuildContext context, bool isDark) {
     final textColor = isDark ? Colors.white : Colors.black87;
-    
+
     final actions = [
       {
         'icon': Icons.add_circle_outline,
@@ -494,11 +510,14 @@ class HomePage extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor =
+        isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowColor =
+        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -542,12 +561,16 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionsList(BuildContext context, HomeController controller, bool isDark) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+  Widget _buildTransactionsList(
+      BuildContext context, HomeController controller, bool isDark) {
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor =
+        isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowColor =
+        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    
+
     if (controller.recentTransactions.isEmpty) {
       return Container(
         width: double.infinity,
@@ -626,76 +649,87 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildNeomorphBottomBar(BuildContext context, bool isDark) {
-    final backgroundColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-    
-    return Container(
-      height: 90,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3),
-            offset: const Offset(0, -4),
-            blurRadius: 12,
-          ),
-          BoxShadow(
-            color: highlightColor.withOpacity(0.7),
-            offset: const Offset(0, -1),
-            blurRadius: 6,
-          ),
-        ],
-      ),
-      child: Center(
-        child: GestureDetector(
-          onTap: () => Get.toNamed(AppRoutes.transfer),
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: highlightColor.withOpacity(0.9),
-                  offset: const Offset(-6, -6),
-                  blurRadius: 12,
-                ),
-                BoxShadow(
-                  color: shadowColor.withOpacity(0.5),
-                  offset: const Offset(6, 6),
-                  blurRadius: 12,
-                ),
-                // Inner glow para o botão principal
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
-                  offset: const Offset(0, 0),
-                  blurRadius: 8,
-                  spreadRadius: -2,
-                ),
-              ],
+    final backgroundColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor =
+        isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowColor =
+        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+
+    return SafeArea(
+      // ✅ Adicionado SafeArea
+      child: Container(
+        height: 90,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom > 0
+              ? 8
+              : 16, // ✅ Padding dinâmico
+        ),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor.withOpacity(0.3),
+              offset: const Offset(0, -4),
+              blurRadius: 12,
             ),
+            BoxShadow(
+              color: highlightColor.withOpacity(0.7),
+              offset: const Offset(0, -1),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: Center(
+          child: GestureDetector(
+            onTap: () => Get.toNamed(AppRoutes.transfer),
             child: Container(
-              decoration: const BoxDecoration(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: surfaceColor,
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    Color(0xFF5BC4A8),
-                  ],
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: highlightColor.withOpacity(0.9),
+                    offset: const Offset(-6, -6),
+                    blurRadius: 12,
+                  ),
+                  BoxShadow(
+                    color: shadowColor.withOpacity(0.5),
+                    offset: const Offset(6, 6),
+                    blurRadius: 12,
+                  ),
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    offset: const Offset(0, 0),
+                    blurRadius: 8,
+                    spreadRadius: -2,
+                  ),
+                ],
               ),
-              child: const Center(
-                child: Text(
-                  'B',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      Color(0xFF5BC4A8),
+                    ],
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    'B',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -712,10 +746,13 @@ class HomePage extends StatelessWidget {
     required Widget child,
     required VoidCallback onTap,
   }) {
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-    final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-    
+    final surfaceColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor =
+        isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowColor =
+        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(

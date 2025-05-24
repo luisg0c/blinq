@@ -693,6 +693,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.error,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+
                 ),
               ),
             ],
