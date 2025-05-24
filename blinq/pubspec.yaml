@@ -1,42 +1,58 @@
 name: blinq
 description: Um aplicativo bancário simples e intuitivo.
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Firebase
-  firebase_core: ^2.15.0
-  firebase_auth: ^4.7.2
-  cloud_firestore: ^4.8.4
-  
-  # UI/UX
-  google_fonts: ^5.1.0
+
+  # Ícones do Material/Cupertino
+  cupertino_icons: ^1.0.6
+
+  # Firebase (versões atualizadas)
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.8
+
+  # UI / UX
+  google_fonts: ^6.1.0
   flutter_spinkit: ^5.2.0
-  intl: ^0.18.1
-  
+  intl: ^0.19.0
+
   # Gerenciamento de estado e navegação
-  provider: ^6.0.5
-  
+  get: ^4.6.6
+
   # Utilitários
-  crypto: ^3.0.3         # Para hash de senhas de transação
-  path_provider: ^2.1.0  # Para armazenamento local
-  pdf: ^3.10.4           # Para gerar comprovantes
-  share_plus: ^7.1.0     # Para compartilhar comprovantes
-  
+  crypto: ^3.0.3
+  path_provider: ^2.1.2
+  pdf: ^3.10.7
+  share_plus: ^7.2.2
+  uuid: ^4.2.1  # ⚠️ Versão atualizada importante
+
   # Armazenamento local seguro
-  flutter_secure_storage: ^8.0.0
-  
+  flutter_secure_storage: ^9.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.2
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/images/
     - assets/icons/
+    - assets/
+
+  # Exemplo de configuração de fontes (opcional)
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
