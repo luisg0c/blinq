@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 class SplashBinding extends Bindings {
   @override
   void dependencies() {
-    // Nenhuma dependência por enquanto
+    print('🔧 Inicializando SplashBinding...');
+    print('✅ SplashBinding inicializado');
   }
 }

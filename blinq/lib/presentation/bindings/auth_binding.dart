@@ -9,10 +9,11 @@ import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/reset_password_usecase.dart';
 
-/// Binding para autenticação.
 class AuthBinding extends Bindings {
   @override
   void dependencies() {
+    print('🔧 Inicializando AuthBinding...');
+
     // Firebase
     Get.lazyPut<FirebaseAuth>(() => FirebaseAuth.instance);
     Get.lazyPut<FirebaseFirestore>(() => FirebaseFirestore.instance);
@@ -48,5 +49,7 @@ class AuthBinding extends Bindings {
         resetPasswordUseCase: Get.find<ResetPasswordUseCase>(),
       ),
     );
+
+    print('✅ AuthBinding inicializado');
   }
 }

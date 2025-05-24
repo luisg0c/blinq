@@ -1,5 +1,7 @@
+// lib/presentation/pages/home/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/home_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,27 +17,28 @@ class HomePage extends StatelessWidget {
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5),
-      appBar: _buildNeomorphAppBar(context, isDark),
+      appBar: _buildAppBar(context, isDark),
       body: Obx(() => _buildBody(context, controller, isDark)),
-      bottomNavigationBar: _buildNeomorphBottomBar(context, isDark),
+      bottomNavigationBar: _buildBottomBar(context, isDark),
     );
   }
 
-  PreferredSizeWidget _buildNeomorphAppBar(BuildContext context, bool isDark) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, bool isDark) {
     final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white60 : Colors.black45;
+    final user = FirebaseAuth.instance.currentUser;
     
     return AppBar(
       backgroundColor: surfaceColor,
       elevation: 0,
-      toolbarHeight: 70, // Altura customizada
-      automaticallyImplyLeading: false, // Remove botão de voltar
+      toolbarHeight: 70,
+      automaticallyImplyLeading: false,
       title: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
-            // Avatar/Foto do usuário
+            // Avatar do usuário
             GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.profile),
               child: Container(
@@ -46,10 +49,7 @@ class HomePage extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary,
-                      Color(0xFF5BC4A8),
-                    ],
+                    colors: [AppColors.primary, Color(0xFF5BC4A8)],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -59,10 +59,10 @@ class HomePage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'U', // Inicial do usuário
-                    style: TextStyle(
+                    user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -74,7 +74,7 @@ class HomePage extends StatelessWidget {
             
             const SizedBox(width: 12),
             
-            // Saudação e nome
+            // Saudação
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +90,7 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Usuário Blinq', // Nome do usuário
+                    user?.displayName?.split(' ').first ?? 'Usuário',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -108,16 +108,7 @@ class HomePage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
-            onTap: () {
-              Get.snackbar(
-                'Notificações',
-                'Você não tem notificações pendentes',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                colorText: textColor,
-                duration: const Duration(seconds: 2),
-              );
-            },
+            onTap: () => _showNotifications(context),
             child: Container(
               width: 40,
               height: 40,
@@ -138,7 +129,7 @@ class HomePage extends StatelessWidget {
                       size: 20,
                     ),
                   ),
-                  // Badge de notificação (opcional)
+                  // Badge (opcional)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -146,7 +137,7 @@ class HomePage extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                        color: Colors.red,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -189,17 +180,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Bom dia! 👋';
-    } else if (hour < 18) {
-      return 'Boa tarde! 👋';
-    } else {
-      return 'Boa noite! 👋';
-    }
-  }
-
   Widget _buildBody(BuildContext context, HomeController controller, bool isDark) {
     if (controller.isLoading.value) {
       return const Center(
@@ -211,7 +191,40 @@ class HomePage extends StatelessWidget {
     }
 
     if (controller.error.value.isNotEmpty) {
-      return Center(
+      return _buildErrorState(context, controller, isDark);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => controller.refreshData(),
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Card de saldo
+            _buildBalanceCard(context, controller.balance.value, isDark),
+            
+            const SizedBox(height: 24),
+            
+            // Ações rápidas
+            _buildQuickActions(context, isDark),
+            
+            const SizedBox(height: 24),
+            
+            // Transações recentes
+            _buildRecentTransactions(context, controller, isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, HomeController controller, bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -222,81 +235,42 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              controller.error.value,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            _buildNeomorphButton(
-              context,
-              isDark,
-              onTap: () => controller.refreshData(),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.refresh, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text(
-                    'Tentar novamente',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => controller.refreshData(),
-      color: AppColors.primary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20), // Reduzido padding superior
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Card de saldo neomorfo
-            _buildNeomorphBalanceCard(context, controller.balance.value, isDark),
-            
-            const SizedBox(height: 24), // Reduzido de 32 para 24
-            
-            // Ações rápidas
-            _buildQuickActions(context, isDark),
-            
-            const SizedBox(height: 24), // Reduzido de 32 para 24
-            
-            // Título das transações
-            Text(
-              'Transações Recentes',
+              'Ops! Algo deu errado',
               style: TextStyle(
-                fontSize: 18, // Reduzido de 20 para 18
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            
-            const SizedBox(height: 16), // Voltou para 16px (era 12)
-            
-            // Lista de transações
-            _buildTransactionsList(context, controller, isDark),
-            
-            // Espaço extra no final para compensar bottom bar
-            const SizedBox(height: 100),
+            const SizedBox(height: 8),
+            Text(
+              controller.error.value,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => controller.refreshData(),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text(
+                'Tentar novamente',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNeomorphBalanceCard(BuildContext context, double balance, bool isDark) {
+  Widget _buildBalanceCard(BuildContext context, double balance, bool isDark) {
     final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
     final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
@@ -305,14 +279,14 @@ class HomePage extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20), // Reduzido de 24 para 20
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(18), // Ligeiramente menor
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: highlightColor.withOpacity(0.7),
-            offset: const Offset(-6, -6), // Sombras menores para dispositivos pequenos
+            offset: const Offset(-6, -6),
             blurRadius: 12,
           ),
           BoxShadow(
@@ -331,20 +305,20 @@ class HomePage extends StatelessWidget {
               Text(
                 'Saldo Disponível',
                 style: TextStyle(
-                  fontSize: 15, // Reduzido de 16 para 15
+                  fontSize: 15,
                   color: secondaryTextColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(6), // Reduzido de 8 para 6
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: surfaceColor,
-                  borderRadius: BorderRadius.circular(10), // Reduzido de 12 para 10
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
                       color: highlightColor.withOpacity(0.7),
-                      offset: const Offset(-2, -2), // Sombras menores
+                      offset: const Offset(-2, -2),
                       blurRadius: 4,
                     ),
                     BoxShadow(
@@ -356,48 +330,48 @@ class HomePage extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.visibility_outlined,
-                  size: 16, // Reduzido de 18 para 16
+                  size: 16,
                   color: secondaryTextColor,
                 ),
               ),
             ],
           ),
           
-          const SizedBox(height: 10), // Reduzido de 12 para 10
+          const SizedBox(height: 10),
           
           Text(
             'R\$ ${balance.toStringAsFixed(2).replaceAll('.', ',')}',
             style: TextStyle(
-              fontSize: 28, // Reduzido de 32 para 28
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
           ),
           
-          const SizedBox(height: 16), // Reduzido de 20 para 16
+          const SizedBox(height: 16),
           
           // Indicador de crescimento
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Menor
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6), // Menor
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.trending_up,
-                      size: 12, // Reduzido de 14 para 12
+                      size: 12,
                       color: AppColors.success,
                     ),
-                    SizedBox(width: 3), // Reduzido
+                    SizedBox(width: 3),
                     Text(
                       '+2.5%',
                       style: TextStyle(
-                        fontSize: 11, // Reduzido de 12 para 11
+                        fontSize: 11,
                         color: AppColors.success,
                         fontWeight: FontWeight.w600,
                       ),
@@ -405,11 +379,11 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 6), // Reduzido de 8 para 6
+              const SizedBox(width: 6),
               Text(
                 'vs. mês anterior',
                 style: TextStyle(
-                  fontSize: 11, // Reduzido de 12 para 11
+                  fontSize: 11,
                   color: secondaryTextColor,
                 ),
               ),
@@ -427,22 +401,22 @@ class HomePage extends StatelessWidget {
       {
         'icon': Icons.add_circle_outline,
         'label': 'Depositar',
-        'route': AppRoutes.deposit,
+        'onTap': () => Get.toNamed(AppRoutes.deposit),
       },
       {
         'icon': Icons.receipt_long_outlined,
         'label': 'Extrato',
-        'route': AppRoutes.transactions,
+        'onTap': () => Get.toNamed(AppRoutes.transactions),
       },
       {
         'icon': Icons.currency_exchange,
         'label': 'Cotações',
-        'route': AppRoutes.exchangeRates,
+        'onTap': () => Get.toNamed(AppRoutes.exchangeRates),
       },
       {
         'icon': Icons.qr_code_scanner,
         'label': 'QR Code',
-        'route': null, // Funcionalidade futura
+        'onTap': () => _showComingSoon(),
       },
     ];
 
@@ -452,34 +426,21 @@ class HomePage extends StatelessWidget {
         Text(
           'Ações Rápidas',
           style: TextStyle(
-            fontSize: 16, // Reduzido de 18 para 16
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
-        const SizedBox(height: 12), // Reduzido de 16 para 12
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: actions.map((action) {
-            return _buildNeomorphActionButton(
+            return _buildActionButton(
               context,
               isDark,
               icon: action['icon'] as IconData,
               label: action['label'] as String,
-              onTap: () {
-                final route = action['route'] as String?;
-                if (route != null) {
-                  Get.toNamed(route);
-                } else {
-                  Get.snackbar(
-                    'Em breve',
-                    'Funcionalidade em desenvolvimento',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    colorText: textColor,
-                  );
-                }
-              },
+              onTap: action['onTap'] as VoidCallback,
             );
           }).toList(),
         ),
@@ -487,7 +448,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNeomorphActionButton(
+  Widget _buildActionButton(
     BuildContext context,
     bool isDark, {
     required IconData icon,
@@ -504,15 +465,15 @@ class HomePage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 52, // Reduzido de 60 para 52
-            height: 52, // Reduzido de 60 para 52
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: surfaceColor,
-              borderRadius: BorderRadius.circular(14), // Reduzido de 16 para 14
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
                   color: highlightColor.withOpacity(0.7),
-                  offset: const Offset(-3, -3), // Sombras menores
+                  offset: const Offset(-3, -3),
                   blurRadius: 6,
                 ),
                 BoxShadow(
@@ -525,14 +486,14 @@ class HomePage extends StatelessWidget {
             child: Icon(
               icon,
               color: AppColors.primary,
-              size: 22, // Reduzido de 24 para 22
+              size: 22,
             ),
           ),
-          const SizedBox(height: 8), // Voltou para 8px (era 6)
+          const SizedBox(height: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11, // Reduzido de 12 para 11
+              fontSize: 11,
               color: secondaryTextColor,
               fontWeight: FontWeight.w500,
             ),
@@ -542,35 +503,65 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionsList(
-    BuildContext context, HomeController controller, bool isDark) {
-  final surfaceColor =
-      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-  final highlightColor =
-      isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-  final shadowColor =
-      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-  final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
+  Widget _buildRecentTransactions(BuildContext context, HomeController controller, bool isDark) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Transações Recentes',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            if (controller.recentTransactions.isNotEmpty)
+              TextButton(
+                onPressed: () => Get.toNamed(AppRoutes.transactions),
+                child: const Text(
+                  'Ver todas',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        if (controller.recentTransactions.isEmpty)
+          _buildEmptyTransactions(context, isDark)
+        else
+          ...controller.recentTransactions.take(3).map((transaction) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TransactionCard(
+                transaction: transaction,
+                onTap: () => _showTransactionDetails(context, transaction, isDark),
+              ),
+            );
+          }).toList(),
+      ],
+    );
+  }
 
-  if (controller.recentTransactions.isEmpty) {
+  Widget _buildEmptyTransactions(BuildContext context, bool isDark) {
+    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: highlightColor.withOpacity(0.5),
-            offset: const Offset(-4, -4),
-            blurRadius: 8,
-          ),
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3),
-            offset: const Offset(4, 4),
-            blurRadius: 8,
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -601,214 +592,167 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  return Column(
-    children: controller.recentTransactions.take(3).map((transaction) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: TransactionCard(
-          transaction: transaction,
-          onTap: () {
-            // Navegar para detalhes da transação
-            Get.dialog(
-              AlertDialog(
-                backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                title: Text(
-                  'Detalhes da Transação',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailRow('Tipo:', transaction.type, isDark),
-                    _buildDetailRow('Valor:', 'R\$ ${transaction.amount.abs().toStringAsFixed(2)}', isDark),
-                    _buildDetailRow('Data:', _formatDate(transaction.date), isDark),
-                    _buildDetailRow('Descrição:', transaction.description, isDark),
-                    if (transaction.counterparty.isNotEmpty)
-                      _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
-                    _buildDetailRow('Status:', transaction.status, isDark),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text(
-                      'Fechar',
-                      style: TextStyle(color: AppColors.primary),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }).toList(),
-  );
-}
-
-Widget _buildDetailRow(String label, String value, bool isDark) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white70 : Colors.black54,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-String _formatDate(DateTime date) {
-  return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-}
-
-Widget _buildNeomorphBottomBar(BuildContext context, bool isDark) {
-  final backgroundColor =
-      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-  final surfaceColor =
-      isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
-  final highlightColor =
-      isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
-  final shadowColor =
-      isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-
-  return SafeArea(
-    child: Container(
-      height: 90,
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).padding.bottom > 0
-            ? 16  
-            : 24, 
-        top: 8,     
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3),
-            offset: const Offset(0, -4),
-            blurRadius: 12,
-          ),
-          BoxShadow(
-            color: highlightColor.withOpacity(0.7),
-            offset: const Offset(0, -1),
-            blurRadius: 6,
-          ),
-        ],
-      ),
-      child: Center(
-        child: GestureDetector(
-          onTap: () => Get.toNamed(AppRoutes.transfer),
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: highlightColor.withOpacity(0.9),
-                  offset: const Offset(-6, -6),
-                  blurRadius: 12,
-                ),
-                BoxShadow(
-                  color: shadowColor.withOpacity(0.5),
-                  offset: const Offset(6, 6),
-                  blurRadius: 12,
-                ),
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
-                  offset: const Offset(0, 0),
-                  blurRadius: 8,
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: Container(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    Color(0xFF5BC4A8),
-                  ],
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'B',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _buildNeomorphButton(
-    BuildContext context,
-    bool isDark, {
-    required Widget child,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildBottomBar(BuildContext context, bool isDark) {
+    final backgroundColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
     final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
-    
-    return GestureDetector(
-      onTap: onTap,
+
+    return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        height: 90,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom > 0 ? 16 : 24,
+          top: 8,
+        ),
         decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(12),
+          color: backgroundColor,
           boxShadow: [
             BoxShadow(
-              color: highlightColor.withOpacity(0.7),
-              offset: const Offset(-3, -3),
-              blurRadius: 6,
-            ),
-            BoxShadow(
-              color: shadowColor.withOpacity(0.5),
-              offset: const Offset(3, 3),
-              blurRadius: 6,
+              color: shadowColor.withOpacity(0.3),
+              offset: const Offset(0, -4),
+              blurRadius: 12,
             ),
           ],
         ),
-        child: child,
+        child: Center(
+          child: GestureDetector(
+            onTap: () => Get.toNamed(AppRoutes.transfer),
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: highlightColor.withOpacity(0.9),
+                    offset: const Offset(-6, -6),
+                    blurRadius: 12,
+                  ),
+                  BoxShadow(
+                    color: shadowColor.withOpacity(0.5),
+                    offset: const Offset(6, 6),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, Color(0xFF5BC4A8)],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Bom dia! 👋';
+    } else if (hour < 18) {
+      return 'Boa tarde! 👋';
+    } else {
+      return 'Boa noite! 👋';
+    }
+  }
+
+  void _showNotifications(BuildContext context) {
+    Get.snackbar(
+      '🔔 Notificações',
+      'Você não tem notificações pendentes',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: AppColors.primary.withOpacity(0.1),
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  void _showComingSoon() {
+    Get.snackbar(
+      '🚧 Em breve',
+      'Funcionalidade em desenvolvimento',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.warning.withOpacity(0.1),
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  void _showTransactionDetails(BuildContext context, transaction, bool isDark) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Detalhes da Transação',
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('Tipo:', transaction.type, isDark),
+            _buildDetailRow('Valor:', 'R\$ ${transaction.amount.abs().toStringAsFixed(2)}', isDark),
+            _buildDetailRow('Data:', _formatDate(transaction.date), isDark),
+            _buildDetailRow('Descrição:', transaction.description, isDark),
+            if (transaction.counterparty.isNotEmpty)
+              _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

@@ -1,4 +1,4 @@
-// blinq/lib/routes/app_pages.dart
+// lib/routes/app_pages.dart
 import 'package:get/get.dart';
 
 // Pages
@@ -32,61 +32,76 @@ class AppPages {
   static const initial = AppRoutes.splash;
 
   static final routes = [
+    // Splash & Onboarding
     GetPage(
       name: AppRoutes.splash,
       page: () => const SplashPage(),
       binding: SplashBinding(),
     ),
+    
     GetPage(
       name: AppRoutes.onboarding,
       page: () => const OnboardingPage(),
     ),
+    
     GetPage(
       name: AppRoutes.welcome,
       page: () => const WelcomePage(),
     ),
+
+    // Authentication
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginPage(),
       binding: AuthBinding(),
     ),
+    
     GetPage(
       name: AppRoutes.signup,
       page: () => const RegisterPage(),
       binding: AuthBinding(),
     ),
+    
     GetPage(
       name: AppRoutes.resetPassword,
       page: () => const ResetPasswordPage(),
       binding: AuthBinding(),
     ),
+
+    // PIN Security
     GetPage(
       name: AppRoutes.setupPin,
       page: () => const PinSetupPage(),
       binding: PinBinding(),
     ),
+    
     GetPage(
       name: AppRoutes.verifyPin,
       page: () => const PinVerificationPage(),
       bindings: [
         PinBinding(),
-        DepositBinding(), // ✅ Adicionado para garantir DepositController
+        DepositBinding(),
         TransferBinding(),
       ],
     ),
+
+    // Main App
     GetPage(
       name: AppRoutes.home,
       page: () => const HomePage(),
       binding: HomeBinding(),
     ),
+
+    // Transactions
     GetPage(
       name: AppRoutes.deposit,
       page: () => const DepositPage(),
       bindings: [
-        DepositBinding(), // ✅ Binding principal do depósito
-        PinBinding(),     // ✅ Para verificação de PIN
+        DepositBinding(),
+        PinBinding(),
       ],
     ),
+    
     GetPage(
       name: AppRoutes.transfer,
       page: () => const TransferPage(),
@@ -95,15 +110,19 @@ class AppPages {
         PinBinding(),
       ],
     ),
+    
     GetPage(
       name: AppRoutes.transactions,
       page: () => const TransactionsPage(),
-      binding: HomeBinding(), // Usa as mesmas dependências do Home
+      binding: HomeBinding(),
     ),
+
+    // Profile & Settings
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
     ),
+    
     GetPage(
       name: AppRoutes.exchangeRates,
       page: () => const ExchangeRatesPage(),

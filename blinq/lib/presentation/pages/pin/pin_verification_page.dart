@@ -63,6 +63,12 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     setState(() => _isLoading = true);
     
     try {
+      // ✅ VERIFICAÇÃO: Se o PinController existe
+      if (!Get.isRegistered<PinController>()) {
+        print('❌ PinController não registrado');
+        throw Exception('PinController não está disponível');
+      }
+
       final pinController = Get.find<PinController>();
       pinController.clearMessages();
 
@@ -98,21 +104,26 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
           await _executeTransfer();
           break;
         default:
-          // Apenas validação de PIN
+          // ✅ CORREÇÃO: Navegação mais clara para PIN padrão
+          print('✅ PIN validado - voltando para tela anterior');
           Get.back(result: true);
-          Get.snackbar(
-            'Sucesso',
-            'PIN validado com sucesso!',
-            backgroundColor: AppColors.success,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          
+          // Mostrar sucesso após voltar
+          Future.delayed(const Duration(milliseconds: 300), () {
+            Get.snackbar(
+              'Sucesso! 🔒',
+              'PIN validado com sucesso',
+              backgroundColor: AppColors.success,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          });
       }
     } catch (e) {
       print('❌ Erro na execução do fluxo: $e');
       
-      // Fechar a tela de PIN
-      Get.back();
+      // ✅ CORREÇÃO: Sempre voltar para uma tela conhecida em caso de erro
+      Get.offAllNamed(AppRoutes.home);
       
       // Mostrar erro
       Get.snackbar(
@@ -130,10 +141,22 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     print('💰 Executando depósito...');
     
     try {
-      // Verificar se DepositController existe
+      // ✅ VERIFICAÇÃO: Se DepositController existe
       if (!Get.isRegistered<DepositController>()) {
-        print('❌ DepositController não encontrado');
-        throw Exception('DepositController não está registrado');
+        print('❌ DepositController não encontrado - tentando registrar...');
+        
+        // Tentar navegar para deposit novamente para registrar dependências
+        Get.offAllNamed(AppRoutes.home);
+        
+        Future.delayed(const Duration(milliseconds: 500), () {
+          Get.snackbar(
+            'Aviso',
+            'Tente fazer o depósito novamente',
+            backgroundColor: AppColors.warning,
+            colorText: Colors.white,
+          );
+        });
+        return;
       }
       
       final depositController = Get.find<DepositController>();
@@ -160,12 +183,13 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       );
 
       print('💰 Executando depósito via controller...');
+      
+      // ✅ CORREÇÃO: Fechar PIN antes de executar
+      Get.back();
+      
       await depositController.executeDeposit();
       
-      print('✅ Depósito concluído! Fechando tela de PIN...');
-      
-      // Fechar tela de PIN após sucesso
-      Get.back();
+      print('✅ Depósito concluído!');
       
     } catch (e) {
       print('❌ Erro no depósito: $e');
@@ -177,44 +201,64 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     print('💸 Executando transferência...');
     
     try {
+      // ✅ VERIFICAÇÃO: Se TransferController existe
       if (!Get.isRegistered<TransferController>()) {
-        throw Exception('TransferController não está registrado');
+        print('❌ TransferController não encontrado');
+        
+        Get.offAllNamed(AppRoutes.home);
+        
+        Future.delayed(const Duration(milliseconds: 500), () {
+          Get.snackbar(
+            'Aviso',
+            'Tente fazer a transferência novamente',
+            backgroundColor: AppColors.warning,
+            colorText: Colors.white,
+          );
+        });
+        return;
       }
       
       final transferController = Get.find<TransferController>();
       
       // Configurar dados da transferência
       final recipient = args['recipient'] as String? ?? '';
-      final amountText = args['amountText'] as String? ?? '0';
+      final amount = args['amount'] as double? ?? 0.0;
       final description = args['description'] as String? ?? '';
       
-      final amount = _parseAmount(amountText);
+      print('💸 Dados da transferência:');
+      print('   Destinatário: $recipient');
+      print('   Valor: R\$ $amount');
+      print('   Descrição: $description');
+      
+      if (amount <= 0) {
+        throw Exception('Valor inválido para transferência');
+      }
+      
+      if (recipient.isEmpty) {
+        throw Exception('Destinatário não informado');
+      }
       
       transferController.setTransferData(
         email: recipient,
         value: amount,
       );
 
+      print('💸 Executando transferência via controller...');
+      
+      // ✅ CORREÇÃO: Fechar PIN antes de executar
+      Get.back();
+      
       await transferController.executeTransfer();
       
-      // Voltar para home após sucesso
+      print('✅ Transferência concluída!');
+      
+      // Navegar para home após sucesso
       Get.offAllNamed(AppRoutes.home);
       
     } catch (e) {
       print('❌ Erro na transferência: $e');
       rethrow;
     }
-  }
-
-  double _parseAmount(String amountText) {
-    // Remove formatação brasileira: "R$ 1.234,56" -> 1234.56
-    final cleanText = amountText
-        .replaceAll('R\$', '')
-        .replaceAll(' ', '')
-        .replaceAll('.', '')
-        .replaceAll(',', '.');
-    
-    return double.tryParse(cleanText) ?? 0.0;
   }
 
   @override
@@ -425,6 +469,8 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
           const SizedBox(height: 8),
           if (args['amountText'] != null)
             Text('Valor: ${args['amountText']}'),
+          if (args['amount'] != null)
+            Text('Valor: R\$ ${(args['amount'] as double).toStringAsFixed(2)}'),
           if (args['recipient'] != null)
             Text('Destinatário: ${args['recipient']}'),
           if (args['description'] != null && 
