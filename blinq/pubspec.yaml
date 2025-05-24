@@ -32,6 +32,8 @@ dependencies:
   pdf: ^3.10.7
   share_plus: ^7.2.2
   uuid: ^4.2.1  # ⚠️ Versão atualizada importante
+  http: ^1.1.0  # ← ADICIONAR ESTA LINHA
+
 
   # Armazenamento local seguro
   flutter_secure_storage: ^9.0.0

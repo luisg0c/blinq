@@ -1,11 +1,9 @@
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
-import '../../domain/usecases/get_balance_usecase.dart';
-import '../../domain/usecases/get_recent_transactions_usecase.dart';
 import 'account_binding.dart';
 import 'transaction_binding.dart';
 
-/// Binding para a tela Home.
+/// Binding para a tela Home (sem use cases desnecessários).
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
@@ -13,10 +11,10 @@ class HomeBinding extends Bindings {
     AccountBinding().dependencies();
     TransactionBinding().dependencies();
 
-    // Controller
+    // Controller simplificado (sem use cases de passthrough)
     Get.lazyPut(() => HomeController(
-      getBalanceUseCase: Get.find<GetBalanceUseCase>(),
-      getRecentTxUseCase: Get.find<GetRecentTransactionsUseCase>(),
+      accountRepository: Get.find(),
+      transactionRepository: Get.find(),
     ));
   }
 }

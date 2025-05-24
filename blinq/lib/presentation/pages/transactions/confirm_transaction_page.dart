@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../domain/repositories/transaction_repository.dart';
+import '../../../domain/repositories/account_repository.dart';
 import '../../../domain/repositories/user_repository.dart';
 import '../../../domain/usecases/deposit_usecase.dart';
 import '../../../domain/usecases/transfer_usecase.dart';
+import '../pin/pin_verification_page.dart';
 import '../../../routes/app_routes.dart';
 
 class ConfirmTransactionPage extends StatelessWidget {
@@ -20,10 +22,10 @@ class ConfirmTransactionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = Get.arguments as Map<String, dynamic>;
-    final flow        = args['flow'] as String;
-    final amountText  = args['amountText'] as String;
+    final flow = args['flow'] as String;
+    final amountText = args['amountText'] as String;
     final description = args['description'] as String? ?? '';
-    final recipient   = args['recipient'] as String? ?? '';
+    final recipient = args['recipient'] as String? ?? '';
 
     final amount = _parseAmount(amountText);
     final formattedAmount = NumberFormat.currency(
@@ -38,12 +40,6 @@ class ConfirmTransactionPage extends StatelessWidget {
     final subtitle = flow == 'deposit'
         ? 'Você vai depositar $formattedAmount'
         : 'Você vai transferir $formattedAmount para $recipient';
-
-    // instanciar use cases
-    final txRepo   = Get.find<TransactionRepository>();
-    final userRepo = Get.find<UserRepository>();
-    final depositUC  = DepositUseCase(txRepo);
-    final transferUC = TransferUseCase(txRepo, userRepo);
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
@@ -65,22 +61,48 @@ class ConfirmTransactionPage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () {
             Get.to(() => PinVerificationPage(onSuccess: () async {
-              if (flow == 'deposit') {
-                await depositUC.execute(
-                  amount: amount,
-                  description: description,
-                );
-                Get.snackbar('Sucesso', 'Depósito realizado');
-              } else {
-                await transferUC.execute(
-                  toEmail: recipient,
-                  amount: amount,
-                  description: description,
-                );
-                Get.snackbar('Sucesso', 'Transferência enviada');
+              try {
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser == null) {
+                  Get.snackbar('Erro', 'Usuário não autenticado');
+                  return;
+                }
+
+                if (flow == 'deposit') {
+                  // ✅ Corrigir - usar repositórios corretos
+                  final depositUC = DepositUseCase(
+                    transactionRepository: Get.find<TransactionRepository>(),
+                    accountRepository: Get.find<AccountRepository>(),
+                  );
+                  
+                  await depositUC.execute(
+                    userId: currentUser.uid,
+                    amount: amount,
+                    description: description,
+                  );
+                  Get.snackbar('Sucesso', 'Depósito realizado');
+                } else {
+                  // ✅ Corrigir - usar parâmetros corretos
+                  final transferUC = TransferUseCase(
+                    transactionRepository: Get.find<TransactionRepository>(),
+                    accountRepository: Get.find<AccountRepository>(),
+                    userRepository: Get.find<UserRepository>(),
+                  );
+                  
+                  await transferUC.execute(
+                    senderId: currentUser.uid,
+                    receiverEmail: recipient,
+                    amount: amount,
+                    description: description,
+                  );
+                  Get.snackbar('Sucesso', 'Transferência enviada');
+                }
+                
+                // volta para a Home após a operação
+                Get.offAllNamed(AppRoutes.home);
+              } catch (e) {
+                Get.snackbar('Erro', 'Falha na operação: $e');
               }
-              // volta para a Home após a operação
-              Get.offAllNamed(AppRoutes.home);
             }));
           },
           child: const Text('Confirmar'),

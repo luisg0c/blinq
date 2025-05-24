@@ -13,6 +13,7 @@ import '../presentation/pages/home/home_page.dart';
 import '../presentation/pages/deposit/deposit_page.dart';
 import '../presentation/pages/transfer/transfer_page.dart';
 import '../presentation/pages/transactions/transactions_page.dart';
+import '../presentation/pages/profile/profile_page.dart';
 import '../presentation/pages/exchange/exchange_rates_page.dart';
 
 // Bindings
@@ -77,7 +78,6 @@ class AppPages {
       page: () => const DepositPage(),
       bindings: [
         PinBinding(),
-        // DepositBinding será criado
       ],
     ),
     GetPage(
@@ -91,13 +91,15 @@ class AppPages {
     GetPage(
       name: AppRoutes.transactions,
       page: () => const TransactionsPage(),
-      binding: HomeBinding(), // Reutiliza o mesmo binding
-
-      GetPage(
-        name: AppRoutes.exchangeRates,
-        page: () => const ExchangeRatesPage(),
-      ),
+      binding: HomeBinding(),
     ),
-  
+    GetPage(
+      name: AppRoutes.profile,
+      page: () => const ProfilePage(),
+    ),
+    GetPage(
+      name: AppRoutes.exchangeRates,
+      page: () => const ExchangeRatesPage(),
+    ),
   ];
 }

@@ -1,17 +1,18 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/transaction.dart';
-import '../../domain/usecases/get_balance_usecase.dart';
-import '../../domain/usecases/get_recent_transactions_usecase.dart';
+import '../../domain/repositories/account_repository.dart';
+import '../../domain/repositories/transaction_repository.dart';
 
 class HomeController extends GetxController {
-  final GetBalanceUseCase getBalanceUseCase;
-  final GetRecentTransactionsUseCase getRecentTxUseCase;
+  final AccountRepository _accountRepository;
+  final TransactionRepository _transactionRepository;
 
   HomeController({
-    required this.getBalanceUseCase,
-    required this.getRecentTxUseCase,
-  });
+    required AccountRepository accountRepository,
+    required TransactionRepository transactionRepository,
+  }) : _accountRepository = accountRepository,
+       _transactionRepository = transactionRepository;
 
   // Observables
   final RxBool isLoading = false.obs;
@@ -36,20 +37,22 @@ class HomeController extends GetxController {
         return;
       }
 
-      // Carregar saldo
+      // Carregar saldo (direto do repository - sem use case desnecessário)
       try {
-        final balanceValue = await getBalanceUseCase.execute(currentUser.uid);
+        final balanceValue = await _accountRepository.getBalance(currentUser.uid);
         balance.value = balanceValue;
       } catch (e) {
-        error.value = 'Erro ao carregar saldo: $e';
+        print('Erro ao carregar saldo: $e');
+        // Continuar mesmo com erro no saldo
       }
 
-      // Carregar transações recentes
+      // Carregar transações recentes (direto do repository)
       try {
-        final transactions = await getRecentTxUseCase.execute(currentUser.uid, limit: 5);
+        final transactions = await _transactionRepository.getRecentTransactions(currentUser.uid, limit: 5);
         recentTransactions.value = transactions;
       } catch (e) {
-        error.value = 'Erro ao carregar transações: $e';
+        print('Erro ao carregar transações: $e');
+        // Continuar mesmo com erro nas transações
       }
     } catch (e) {
       error.value = 'Erro inesperado: $e';
