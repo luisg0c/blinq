@@ -6,7 +6,7 @@ import '../../../domain/repositories/transaction_repository.dart';
 import '../../../domain/repositories/user_repository.dart';
 import '../../../domain/usecases/deposit_usecase.dart';
 import '../../../domain/usecases/transfer_usecase.dart';
-import 'package:blinq/presentation/pages/pin/pin_verification_page.dart'
+import '/presen'
 import '../../../routes/app_routes.dart';
 
 class ConfirmTransactionPage extends StatelessWidget {
