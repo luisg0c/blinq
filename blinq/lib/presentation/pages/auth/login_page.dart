@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../theme/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,59 +27,31 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: neomorphTheme.backgroundColor,
-      appBar: _buildNeomorphAppBar(context),
-      body: _buildBody(context, authController),
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+      appBar: _buildFlatAppBar(context, isDark),
+      body: _buildBody(context, authController, isDark),
     );
   }
 
-  PreferredSizeWidget _buildNeomorphAppBar(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  PreferredSizeWidget _buildFlatAppBar(BuildContext context, bool isDark) {
+    final textColor = isDark ? Colors.white : Colors.black87;
     
     return AppBar(
-      backgroundColor: neomorphTheme.backgroundColor,
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: GestureDetector(
-        onTap: () => Get.back(),
-        child: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: neomorphTheme.surfaceColor,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: neomorphTheme.highlightColor.withOpacity(0.7),
-                offset: const Offset(-2, -2),
-                blurRadius: 6,
-              ),
-              BoxShadow(
-                color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-                offset: const Offset(2, 2),
-                blurRadius: 6,
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.arrow_back,
-            color: neomorphTheme.textPrimaryColor,
-            size: 20,
-          ),
+      leading: IconButton(
+        onPressed: () => Get.back(),
+        icon: Icon(
+          Icons.arrow_back_ios,
+          color: textColor,
+          size: 20,
         ),
       ),
-      title: Text(
-        'Entrar',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: neomorphTheme.textPrimaryColor,
-        ),
-      ),
-      centerTitle: true,
       actions: [
-        // Toggle tema
+        // Toggle tema - único elemento neomorfo na AppBar
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: GestureDetector(
@@ -93,24 +64,28 @@ class _LoginPageState extends State<LoginPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: neomorphTheme.surfaceColor,
+                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: neomorphTheme.highlightColor.withOpacity(0.7),
-                    offset: const Offset(-2, -2),
+                    color: isDark 
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+                    offset: const Offset(2, 2),
                     blurRadius: 6,
                   ),
                   BoxShadow(
-                    color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-                    offset: const Offset(2, 2),
+                    color: isDark 
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.white,
+                    offset: const Offset(-2, -2),
                     blurRadius: 6,
                   ),
                 ],
               ),
               child: Icon(
                 Get.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                color: neomorphTheme.textSecondaryColor,
+                color: isDark ? Colors.white70 : Colors.black54,
                 size: 18,
               ),
             ),
@@ -120,33 +95,54 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, AuthController authController) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  Widget _buildBody(BuildContext context, AuthController authController, bool isDark) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
     
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Form(
         key: formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
             
-            // Logo principal
-            _buildLogo(context),
+            // Logo principal - NEOMORFO
+            _buildNeomorphLogo(context, isDark),
+            
+            const SizedBox(height: 48),
+            
+            // Título - FLAT
+            Text(
+              'Bem-vindo de volta!',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 8),
+            
+            Text(
+              'Entre na sua conta para continuar',
+              style: TextStyle(
+                fontSize: 16,
+                color: secondaryTextColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
             
             const SizedBox(height: 40),
             
-            // Título de boas-vindas
-            _buildWelcomeCard(context),
-            
-            const SizedBox(height: 32),
-            
-            // Campo de email
-            _buildNeomorphTextField(
+            // Campos - FLAT com bordas simples
+            _buildFlatTextField(
               context,
+              isDark,
               controller: emailController,
-              hintText: 'Seu email',
+              hintText: 'Email',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
@@ -162,58 +158,94 @@ class _LoginPageState extends State<LoginPage> {
             
             const SizedBox(height: 20),
             
-            // Campo de senha
-            _buildPasswordField(context),
-            
-            const SizedBox(height: 24),
-            
-            // Botão de login
-            Obx(() => _buildLoginButton(context, authController)),
-            
-            const SizedBox(height: 20),
-            
-            // Link esqueci a senha
-            _buildForgotPasswordLink(context),
+            _buildFlatPasswordField(context, isDark),
             
             const SizedBox(height: 32),
             
-            // Divider
-            _buildDivider(context),
+            // Botão principal - NEOMORFO
+            Obx(() => _buildNeomorphButton(context, authController, isDark)),
+            
+            const SizedBox(height: 24),
+            
+            // Link - FLAT
+            TextButton(
+              onPressed: () => Get.toNamed(AppRoutes.resetPassword),
+              child: Text(
+                'Esqueci minha senha',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // Divider - FLAT
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    thickness: 1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'ou',
+                    style: TextStyle(
+                      color: secondaryTextColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    thickness: 1,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Botão secundário - FLAT
+            _buildFlatOutlineButton(context, isDark),
             
             const SizedBox(height: 20),
             
-            // Link para criar conta
-            _buildSignupLink(context),
-            
-            const SizedBox(height: 20),
-            
-            // Mostrar erro se houver
-            Obx(() => _buildErrorMessage(context, authController)),
+            // Mensagem de erro - FLAT
+            Obx(() => _buildErrorMessage(context, authController, isDark)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLogo(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildNeomorphLogo(BuildContext context, bool isDark) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 90,
+      height: 90,
       decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
+        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: neomorphTheme.highlightColor.withOpacity(0.7),
-            offset: const Offset(-6, -6),
-            blurRadius: 12,
+            color: isDark 
+                ? Colors.black.withOpacity(0.4)
+                : Colors.black.withOpacity(0.1),
+            offset: const Offset(6, 6),
+            blurRadius: 15,
           ),
           BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-            offset: const Offset(6, 6),
-            blurRadius: 12,
+            color: isDark 
+                ? Colors.white.withOpacity(0.05)
+                : Colors.white,
+            offset: const Offset(-6, -6),
+            blurRadius: 15,
           ),
         ],
       ),
@@ -221,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Text(
           'B',
           style: TextStyle(
-            fontSize: 36,
+            fontSize: 40,
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
           ),
@@ -230,56 +262,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: neomorphTheme.highlightColor.withOpacity(0.7),
-            offset: const Offset(-6, -6),
-            blurRadius: 12,
-          ),
-          BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-            offset: const Offset(6, 6),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Bem-vindo de volta!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: neomorphTheme.textPrimaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Entre na sua conta Blinq\npara continuar',
-            style: TextStyle(
-              fontSize: 16,
-              color: neomorphTheme.textSecondaryColor,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNeomorphTextField(
-    BuildContext context, {
+  Widget _buildFlatTextField(
+    BuildContext context,
+    bool isDark, {
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
@@ -288,85 +273,63 @@ class _LoginPageState extends State<LoginPage> {
     String? Function(String?)? validator,
     Widget? suffixIcon,
   }) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final hintColor = isDark ? Colors.white54 : Colors.black54;
+    final borderColor = isDark ? Colors.white24 : Colors.black12;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          // Inner shadow effect
-          BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
-            offset: const Offset(2, 2),
-            blurRadius: 4,
-            inset: true,
-          ),
-          BoxShadow(
-            color: neomorphTheme.highlightColor.withOpacity(0.7),
-            offset: const Offset(-2, -2),
-            blurRadius: 4,
-            inset: true,
-          ),
-        ],
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      validator: validator,
+      style: TextStyle(
+        color: textColor,
+        fontSize: 16,
       ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        obscureText: obscureText,
-        validator: validator,
-        style: TextStyle(
-          color: neomorphTheme.textPrimaryColor,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: hintColor,
           fontSize: 16,
         ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: neomorphTheme.textSecondaryColor,
-            fontSize: 16,
-          ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: neomorphTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: neomorphTheme.highlightColor.withOpacity(0.7),
-                  offset: const Offset(-2, -2),
-                  blurRadius: 4,
-                ),
-                BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-                  offset: const Offset(2, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+        prefixIcon: Icon(
+          icon,
+          color: AppColors.primary,
+          size: 20,
+        ),
+        suffixIcon: suffixIcon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
         ),
       ),
     );
   }
 
-  Widget _buildPasswordField(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  Widget _buildFlatPasswordField(BuildContext context, bool isDark) {
+    final iconColor = isDark ? Colors.white54 : Colors.black54;
     
-    return _buildNeomorphTextField(
+    return _buildFlatTextField(
       context,
+      isDark,
       controller: passwordController,
-      hintText: 'Sua senha',
+      hintText: 'Senha',
       icon: Icons.lock_outline,
       obscureText: !_isPasswordVisible,
       validator: (value) {
@@ -378,43 +341,22 @@ class _LoginPageState extends State<LoginPage> {
         }
         return null;
       },
-      suffixIcon: GestureDetector(
-        onTap: () {
+      suffixIcon: IconButton(
+        onPressed: () {
           setState(() {
             _isPasswordVisible = !_isPasswordVisible;
           });
         },
-        child: Container(
-          margin: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: neomorphTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: neomorphTheme.highlightColor.withOpacity(0.7),
-                offset: const Offset(-2, -2),
-                blurRadius: 4,
-              ),
-              BoxShadow(
-                color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-                offset: const Offset(2, 2),
-                blurRadius: 4,
-              ),
-            ],
-          ),
-          child: Icon(
-            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-            color: neomorphTheme.textSecondaryColor,
-            size: 20,
-          ),
+        icon: Icon(
+          _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+          color: iconColor,
+          size: 20,
         ),
       ),
     );
   }
 
-  Widget _buildLoginButton(BuildContext context, AuthController authController) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildNeomorphButton(BuildContext context, AuthController authController, bool isDark) {
     return GestureDetector(
       onTap: authController.isLoading.value
           ? null
@@ -451,18 +393,15 @@ class _LoginPageState extends State<LoginPage> {
               : [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.3),
+                    offset: const Offset(0, 6),
+                    blurRadius: 20,
+                  ),
+                  BoxShadow(
+                    color: isDark 
+                        ? Colors.black.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.1),
                     offset: const Offset(0, 4),
                     blurRadius: 12,
-                  ),
-                  BoxShadow(
-                    color: neomorphTheme.highlightColor.withOpacity(0.7),
-                    offset: const Offset(-2, -2),
-                    blurRadius: 6,
-                  ),
-                  BoxShadow(
-                    color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
-                    offset: const Offset(2, 2),
-                    blurRadius: 6,
                   ),
                 ],
         ),
@@ -489,121 +428,26 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildForgotPasswordLink(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  Widget _buildFlatOutlineButton(BuildContext context, bool isDark) {
+    final borderColor = isDark ? Colors.white24 : Colors.black12;
+    final textColor = isDark ? Colors.white70 : Colors.black87;
     
-    return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.resetPassword),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: neomorphTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: neomorphTheme.highlightColor.withOpacity(0.5),
-              offset: const Offset(-2, -2),
-              blurRadius: 4,
-            ),
-            BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
-              offset: const Offset(2, 2),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Text(
-          'Esqueci minha senha',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: () => Get.toNamed(AppRoutes.signup),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: borderColor, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  neomorphTheme.shadowDarkColor.withOpacity(0.3),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ou',
-            style: TextStyle(
-              color: neomorphTheme.textSecondaryColor,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  neomorphTheme.shadowDarkColor.withOpacity(0.3),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSignupLink(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.signup),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: neomorphTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primary.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: neomorphTheme.highlightColor.withOpacity(0.5),
-              offset: const Offset(-3, -3),
-              blurRadius: 6,
-            ),
-            BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
-              offset: const Offset(3, 3),
-              blurRadius: 6,
-            ),
-          ],
+          backgroundColor: Colors.transparent,
         ),
         child: Text(
           'Criar conta',
-          textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.primary,
+            color: textColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -612,12 +456,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildErrorMessage(BuildContext context, AuthController authController) {
+  Widget _buildErrorMessage(BuildContext context, AuthController authController, bool isDark) {
     if (authController.errorMessage.value == null) {
       return const SizedBox.shrink();
     }
-    
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
     
     return Container(
       width: double.infinity,
@@ -632,7 +474,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: AppColors.error,
             size: 20,

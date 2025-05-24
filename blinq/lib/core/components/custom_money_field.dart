@@ -7,11 +7,11 @@ class CustomMoneyField extends StatelessWidget {
   final void Function(String)? onChanged;
 
   const CustomMoneyField({
-    Key? key,
+    super.key,
     required this.controller,
     this.label = 'Valor (R\$)',
     this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
