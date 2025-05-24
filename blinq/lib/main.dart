@@ -17,16 +17,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // ✅ Inicializar Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // ✅ Configurar handler de background
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  
-  // ✅ Inicializar notificações
-  await NotificationService.initialize();
+  try {
+    // ✅ Inicializar Firebase primeiro
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('🔥 Firebase inicializado');
+    
+    // ✅ Configurar handler de background
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    
+    // ✅ Inicializar notificações
+    await NotificationService.initialize();
+    
+  } catch (e) {
+    print('❌ Erro na inicialização: $e');
+  }
   
   runApp(const BlinqApp());
 }
@@ -44,6 +50,18 @@ class BlinqApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
+      // ✅ Callback quando o app estiver completamente inicializado
+      onInit: () {
+        print('🚀 GetMaterialApp inicializado');
+        // Verificar mensagem inicial após um pequeno delay
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          NotificationService.checkForInitialMessage();
+        });
+      },
+      // ✅ Callback para mudanças de rota
+      routingCallback: (routing) {
+        print('🧭 Navegação: ${routing?.current}');
+      },
     );
   }
 }
