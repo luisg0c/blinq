@@ -13,46 +13,52 @@ class HomeController extends GetxController {
     required this.getRecentTxUseCase,
   });
 
+  // Observables
+  final RxBool isLoading = false.obs;
+  final RxString error = ''.obs;
   final RxDouble balance = 0.0.obs;
   final RxList<Transaction> recentTransactions = <Transaction>[].obs;
-  final RxBool isLoading = true.obs;
-  final RxnString error = RxnString();
 
   @override
   void onInit() {
     super.onInit();
-    loadDashboard();
+    loadData();
   }
 
-  Future<void> loadDashboard() async {
-    isLoading.value = true;
-    error.value = null;
-
+  Future<void> loadData() async {
     try {
-      // Obter ID do usuário atual
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('Usuário não autenticado');
+      isLoading.value = true;
+      error.value = '';
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        error.value = 'Usuário não autenticado';
+        return;
       }
 
-      final userId = user.uid;
+      // Carregar saldo
+      try {
+        final balanceValue = await getBalanceUseCase.execute(currentUser.uid);
+        balance.value = balanceValue;
+      } catch (e) {
+        error.value = 'Erro ao carregar saldo: $e';
+      }
 
-      // Carregar saldo e transações em paralelo
-      final results = await Future.wait([
-        getBalanceUseCase.execute(userId),
-        getRecentTxUseCase.execute(userId, limit: 5),
-      ]);
-
-      balance.value = results[0] as double;
-      recentTransactions.assignAll(results[1] as List<Transaction>);
+      // Carregar transações recentes
+      try {
+        final transactions = await getRecentTxUseCase.execute(currentUser.uid, limit: 5);
+        recentTransactions.value = transactions;
+      } catch (e) {
+        error.value = 'Erro ao carregar transações: $e';
+      }
     } catch (e) {
-      error.value = e.toString().replaceAll('Exception: ', '');
+      error.value = 'Erro inesperado: $e';
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> refreshData() async {
-    await loadDashboard();
+    await loadData();
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -39,7 +40,7 @@ class WelcomePage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Get.toNamed('/login'),
+                    onPressed: () => Get.toNamed(AppRoutes.login),
                     child: const Text('Entrar'),
                   ),
                 ),
@@ -47,7 +48,7 @@ class WelcomePage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => Get.toNamed('/signup'),
+                    onPressed: () => Get.toNamed(AppRoutes.signup),
                     child: const Text('Criar conta'),
                   ),
                 ),

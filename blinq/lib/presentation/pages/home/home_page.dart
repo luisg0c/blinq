@@ -1,98 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../controllers/home_controller.dart';
 import '../../../routes/app_routes.dart';
-import '../../../theme/app_theme.dart';
-import 'package:blinq/presentation/pages/pin/pin_verification_page.dart';
-
+import '../../../core/theme/app_colors.dart';
+import '../../../core/components/transaction_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final HomeController controller = Get.find<HomeController>();
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Obx(() => _buildBody(context, controller)),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text('Blinq'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () => Get.offAllNamed(AppRoutes.welcome),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(BuildContext context, HomeController controller) {
+    if (controller.isLoading.value) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (controller.error.value.isNotEmpty) {
+      return Center(
+        child: Text(
+          controller.error.value,
+          style: const TextStyle(color: AppColors.error),
+        ),
+      );
+    }
+
     final textTheme = Theme.of(context).textTheme;
 
-    // Mock para valor do saldo
-    final RxBool isBalanceVisible = true.obs;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildBalanceCard(context, controller.balance.value),
+        const SizedBox(height: 32),
+        _buildQuickActions(),
+        const SizedBox(height: 32),
+        Text('Transações Recentes', style: textTheme.headlineMedium),
+        const SizedBox(height: 16),
+        _buildTransactionList(controller),
+      ],
+    );
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Blinq'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // futura lógica de logout
-              Get.offAllNamed(AppRoutes.welcome);
-            },
+  Widget _buildBalanceCard(BuildContext context, double balance) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Saldo atual', style: textTheme.bodyLarge),
+          const SizedBox(height: 8),
+          Text(
+            'R\$ ${balance.toStringAsFixed(2)}',
+            style: textTheme.headlineMedium,
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Obx(() => Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Saldo atual', style: textTheme.bodyLarge),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isBalanceVisible.value ? 'R\$ 5.780,00' : '••••••',
-                            style: textTheme.headlineMedium,
-                          ),
-                          IconButton(
-                            onPressed: () => isBalanceVisible.toggle(),
-                            icon: Icon(
-                              isBalanceVisible.value ? Icons.visibility : Icons.visibility_off,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: 32),
+    );
+  }
 
-            // Ações rápidas
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _ActionButton(
-                  icon: Icons.arrow_downward,
-                  label: 'Depositar',
-                  onTap: () => Get.toNamed(AppRoutes.deposit),
-                ),
-                _ActionButton(
-                  icon: Icons.compare_arrows,
-                  label: 'Transferir',
-                  onTap: () => Get.toNamed(AppRoutes.transfer),
-                ),
-                _ActionButton(
-                  icon: Icons.list,
-                  label: 'Extrato',
-                  onTap: () => Get.toNamed(AppRoutes.transactions),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildQuickActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _ActionButton(
+          icon: Icons.arrow_downward,
+          label: 'Depositar',
+          onTap: () => Get.toNamed(AppRoutes.deposit),
+        ),
+        _ActionButton(
+          icon: Icons.compare_arrows,
+          label: 'Transferir',
+          onTap: () => Get.toNamed(AppRoutes.transfer),
+        ),
+        _ActionButton(
+          icon: Icons.list,
+          label: 'Extrato',
+          onTap: () => Get.toNamed(AppRoutes.transactions),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransactionList(HomeController controller) {
+    return Expanded(
+      child: ListView.separated(
+        itemCount: controller.recentTransactions.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, i) => TransactionCard(
+          transaction: controller.recentTransactions[i],
         ),
       ),
     );
@@ -124,8 +151,8 @@ class _ActionButton extends StatelessWidget {
             onPressed: onTap,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(label),
+        const SizedBox(height: 4),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

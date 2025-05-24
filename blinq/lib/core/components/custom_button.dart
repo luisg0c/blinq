@@ -5,6 +5,8 @@ class CustomButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
   final bool fullWidth;
+  final IconData? icon;
+  final bool isPrimary;
 
   const CustomButton({
     Key? key,
@@ -12,41 +14,98 @@ class CustomButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.fullWidth = true,
+    this.icon,
+    this.isPrimary = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final _primaryColor = const Color(0xFF6EE1C6);
-    final _textColor = Colors.white;
+    const primaryColor = Color(0xFF6EE1C6);
+    const secondaryColor = Color(0xFF0D1517);
 
-    final button = ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: _textColor, // ✅ corrigido
-        backgroundColor: _primaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    final button = Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: isPrimary ? primaryColor : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: isPrimary ? null : Border.all(
+          color: primaryColor,
+          width: 1.5,
         ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+        boxShadow: isPrimary && !isLoading ? [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ] : null,
       ),
-      child: isLoading
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(_textColor),
-              ),
-            )
-          : Text(
-              label,
-              style: TextStyle(
-                color: _textColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildContent(),
+          ),
+        ),
+      ),
     );
 
-    return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
+    return fullWidth 
+        ? SizedBox(width: double.infinity, child: button) 
+        : button;
+  }
+
+  Widget _buildContent() {
+    const primaryColor = Color(0xFF6EE1C6);
+    final textColor = isPrimary ? Colors.white : primaryColor;
+
+    if (isLoading) {
+      return Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation(textColor),
+          ),
+        ),
+      );
+    }
+
+    if (icon != null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: textColor,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Center(
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 }
