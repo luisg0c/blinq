@@ -7,8 +7,8 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String setupPin = '/setup-pin';
   static const String verifyPin = '/verify-pin';
-  static const String pinSetup = '/setup-pin'; // Alias para compatibilidade
-  static const String pinVerification = '/verify-pin'; // Alias para compatibilidade
+  static const String pinSetup = '/setup-pin';
+  static const String pinVerification = '/verify-pin';
   static const String home = '/home';
   static const String deposit = '/deposit';
   static const String transfer = '/transfer';

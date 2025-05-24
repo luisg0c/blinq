@@ -37,4 +37,10 @@ class AppColors {
   static const Color grayLight = surface;
   static const Color red = error;
   static const Color greenPositive = success;
+  
+  // Helpers para transparência (compatibilidade com Flutter 3.x)
+  static Color primaryWithAlpha(double alpha) => primary.withValues(alpha: alpha);
+  static Color surfaceWithAlpha(double alpha) => surface.withValues(alpha: alpha);
+  static Color errorWithAlpha(double alpha) => error.withValues(alpha: alpha);
+  static Color successWithAlpha(double alpha) => success.withValues(alpha: alpha);
 }

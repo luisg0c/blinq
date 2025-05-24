@@ -4,6 +4,7 @@ import '../../controllers/home_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/components/transaction_card.dart';
+import '../../../theme/app_theme.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -11,120 +12,253 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final HomeController controller = Get.find<HomeController>();
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
     return Scaffold(
-      appBar: _buildAppBar(),
-      body: RefreshIndicator(
-        onRefresh: controller.refreshData,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Obx(() => _buildBody(context, controller)),
-        ),
-      ),
+      backgroundColor: neomorphTheme.backgroundColor,
+      appBar: _buildNeomorphAppBar(context),
+      body: Obx(() => _buildBody(context, controller)),
+      bottomNavigationBar: _buildNeomorphBottomBar(context),
     );
   }
 
-  AppBar _buildAppBar() {
+  PreferredSizeWidget _buildNeomorphAppBar(BuildContext context) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
     return AppBar(
-      title: const Text('Blinq'),
+      backgroundColor: neomorphTheme.backgroundColor,
+      elevation: 0,
+      title: Row(
+        children: [
+          // Logo neomorfo
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: neomorphTheme.surfaceColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: neomorphTheme.highlightColor.withValues(alpha: 0.7),
+                  offset: const Offset(-4, -4),
+                  blurRadius: 8,
+                ),
+                BoxShadow(
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  offset: const Offset(4, 4),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text(
+                'B',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Blinq',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: neomorphTheme.textPrimaryColor,
+            ),
+          ),
+        ],
+      ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.person),
-          onPressed: () => Get.toNamed(AppRoutes.profile),
+        // Botão de tema (toggle dark/light)
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: GestureDetector(
+            onTap: () {
+              // Toggle tema
+              Get.changeThemeMode(
+                Get.isDarkMode ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: neomorphTheme.surfaceColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: neomorphTheme.highlightColor.withOpacity(0.7),
+                    offset: const Offset(-2, -2),
+                    blurRadius: 6,
+                  ),
+                  BoxShadow(
+                    color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                    offset: const Offset(2, 2),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Get.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                color: neomorphTheme.textSecondaryColor,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+        // Botão de perfil neomorfo
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Get.toNamed(AppRoutes.profile),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: neomorphTheme.surfaceColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: neomorphTheme.highlightColor.withOpacity(0.7),
+                    offset: const Offset(-2, -2),
+                    blurRadius: 6,
+                  ),
+                  BoxShadow(
+                    color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                    offset: const Offset(2, 2),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.person_outline,
+                color: neomorphTheme.textSecondaryColor,
+                size: 20,
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildBody(BuildContext context, HomeController controller) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
     if (controller.isLoading.value) {
       return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: 16),
-            Text('Carregando dados do Firebase...'),
-          ],
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+          strokeWidth: 3,
         ),
       );
     }
-    
+
     if (controller.error.value.isNotEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             Text(
-              'Erro ao carregar dados',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
               controller.error.value,
-              style: TextStyle(color: Colors.grey[600]),
+              style: const TextStyle(
+                color: AppColors.error,
+                fontSize: 16,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: controller.refreshData,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tentar novamente'),
+            _buildNeomorphButton(
+              context,
+              onTap: () => controller.refreshData(),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text(
+                    'Tentar novamente',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       );
     }
 
-    final textTheme = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ✅ Card de saldo limpo (sem botão de teste)
-        _buildBalanceCard(context, controller.balance.value),
-        const SizedBox(height: 32),
-        _buildQuickActions(),
-        const SizedBox(height: 32),
-        
-        // Header das transações
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return RefreshIndicator(
+      onRefresh: () => controller.refreshData(),
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Transações Recentes', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            TextButton(
-              onPressed: () => Get.toNamed(AppRoutes.transactions),
-              child: const Text('Ver todas'),
+            // Card de saldo neomorfo
+            _buildNeomorphBalanceCard(context, controller.balance.value),
+            
+            const SizedBox(height: 32),
+            
+            // Ações rápidas
+            _buildQuickActions(context),
+            
+            const SizedBox(height: 32),
+            
+            // Título das transações
+            Text(
+              'Transações Recentes',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: neomorphTheme.textPrimaryColor,
+              ),
             ),
+            
+            const SizedBox(height: 16),
+            
+            // Lista de transações
+            _buildTransactionsList(context, controller),
           ],
         ),
-        const SizedBox(height: 16),
-        
-        // ✅ Lista de transações em tempo real
-        _buildTransactionList(controller),
-      ],
+      ),
     );
   }
 
-  // ✅ Card de saldo sem gambiarra
-  Widget _buildBalanceCard(BuildContext context, double balance) {
-    final textTheme = Theme.of(context).textTheme;
+  Widget _buildNeomorphBalanceCard(BuildContext context, double balance) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
     
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, Color(0xFF5BC4A8)],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: neomorphTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: neomorphTheme.highlightColor.withOpacity(0.7),
+            offset: const Offset(-8, -8),
+            blurRadius: 16,
+          ),
+          BoxShadow(
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+            offset: const Offset(8, 8),
+            blurRadius: 16,
           ),
         ],
       ),
@@ -134,52 +268,208 @@ class HomePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Saldo disponível',
+              Text(
+                'Saldo Disponível',
                 style: TextStyle(
-                  color: Colors.white,
                   fontSize: 16,
+                  color: neomorphTheme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: neomorphTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: neomorphTheme.highlightColor.withOpacity(0.7),
+                      offset: const Offset(-3, -3),
+                      blurRadius: 6,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Tempo real',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    BoxShadow(
+                      color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                      offset: const Offset(3, 3),
+                      blurRadius: 6,
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Icon(
+                  Icons.visibility_outlined,
+                  size: 18,
+                  color: neomorphTheme.textSecondaryColor,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          
+          const SizedBox(height: 12),
+          
           Text(
-            'R\$ ${balance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Colors.white,
+            'R\$ ${balance.toStringAsFixed(2).replaceAll('.', ',')}',
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
+              color: neomorphTheme.textPrimaryColor,
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Indicador de crescimento
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.trending_up,
+                      size: 14,
+                      color: AppColors.success,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      '+2.5%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'vs. mês anterior',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: neomorphTheme.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
+    final actions = [
+      {
+        'icon': Icons.add_circle_outline,
+        'label': 'Depositar',
+        'route': AppRoutes.deposit,
+      },
+      {
+        'icon': Icons.receipt_long_outlined,
+        'label': 'Extrato',
+        'route': AppRoutes.transactions,
+      },
+      {
+        'icon': Icons.currency_exchange,
+        'label': 'Cotações',
+        'route': AppRoutes.exchangeRates,
+      },
+      {
+        'icon': Icons.qr_code_scanner,
+        'label': 'QR Code',
+        'route': null, // Funcionalidade futura
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ações Rápidas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: neomorphTheme.textPrimaryColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: actions.map((action) {
+            return _buildNeomorphActionButton(
+              context,
+              icon: action['icon'] as IconData,
+              label: action['label'] as String,
+              onTap: () {
+                final route = action['route'] as String?;
+                if (route != null) {
+                  Get.toNamed(route);
+                } else {
+                  Get.snackbar(
+                    'Em breve',
+                    'Funcionalidade em desenvolvimento',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    colorText: neomorphTheme.textPrimaryColor,
+                  );
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNeomorphActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: neomorphTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: neomorphTheme.highlightColor.withOpacity(0.7),
+                  offset: const Offset(-4, -4),
+                  blurRadius: 8,
+                ),
+                BoxShadow(
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  offset: const Offset(4, 4),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+              size: 24,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Dados sincronizados com Firebase',
+          Text(
+            label,
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
+              fontSize: 12,
+              color: neomorphTheme.textSecondaryColor,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -187,154 +477,192 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions() {
-    return Column(
-      children: [
-        // Primeira linha de ações
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _ActionButton(
-              icon: Icons.add_circle_outline,
-              label: 'Depositar',
-              onTap: () => Get.toNamed(AppRoutes.deposit),
-            ),
-            _ActionButton(
-              icon: Icons.send,
-              label: 'Transferir',
-              onTap: () => Get.toNamed(AppRoutes.transfer),
-            ),
-            _ActionButton(
-              icon: Icons.receipt_long,
-              label: 'Extrato',
-              onTap: () => Get.toNamed(AppRoutes.transactions),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Segunda linha com cotações
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _ActionButton(
-              icon: Icons.currency_exchange,
-              label: 'Cotações',
-              onTap: () => Get.toNamed(AppRoutes.exchangeRates),
-            ),
-            _ActionButton(
-              icon: Icons.qr_code_scanner,
-              label: 'QR Code',
-              onTap: () => Get.snackbar('Em breve', 'Funcionalidade em desenvolvimento'),
-            ),
-            _ActionButton(
-              icon: Icons.settings,
-              label: 'Configurar',
-              onTap: () => Get.toNamed(AppRoutes.profile),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionList(HomeController controller) {
+  Widget _buildTransactionsList(BuildContext context, HomeController controller) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
     if (controller.recentTransactions.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.receipt_long_outlined,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Nenhuma transação ainda',
-                style: Theme.of(Get.context!).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Faça um depósito ou transferência para começar',
-                style: Theme.of(Get.context!).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Expanded(
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: controller.recentTransactions.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (_, i) => TransactionCard(
-          transaction: controller.recentTransactions[i],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: neomorphTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: neomorphTheme.highlightColor.withOpacity(0.5),
+              offset: const Offset(-4, -4),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+              offset: const Offset(4, 4),
+              blurRadius: 8,
             ),
           ],
         ),
         child: Column(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 24,
+            Icon(
+              Icons.receipt_outlined,
+              size: 48,
+              color: neomorphTheme.textSecondaryColor.withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Nenhuma transação ainda',
+              style: TextStyle(
+                fontSize: 16,
+                color: neomorphTheme.textSecondaryColor,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
+              'Suas transações aparecerão aqui',
+              style: TextStyle(
+                fontSize: 14,
+                color: neomorphTheme.textSecondaryColor,
               ),
             ),
           ],
         ),
+      );
+    }
+
+    return Column(
+      children: controller.recentTransactions.take(3).map((transaction) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: neomorphTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: neomorphTheme.highlightColor.withOpacity(0.5),
+                  offset: const Offset(-3, -3),
+                  blurRadius: 6,
+                ),
+                BoxShadow(
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+                  offset: const Offset(3, 3),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: TransactionCard(transaction: transaction),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildNeomorphBottomBar(BuildContext context) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: neomorphTheme.backgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+            offset: const Offset(0, -4),
+            blurRadius: 12,
+          ),
+          BoxShadow(
+            color: neomorphTheme.highlightColor.withOpacity(0.7),
+            offset: const Offset(0, -1),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => Get.toNamed(AppRoutes.transfer),
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: neomorphTheme.surfaceColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: neomorphTheme.highlightColor.withOpacity(0.9),
+                  offset: const Offset(-6, -6),
+                  blurRadius: 12,
+                ),
+                BoxShadow(
+                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  offset: const Offset(6, 6),
+                  blurRadius: 12,
+                ),
+                // Inner glow para o botão principal
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.2),
+                  offset: const Offset(0, 0),
+                  blurRadius: 8,
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    Color(0xFF5BC4A8),
+                  ],
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  'B',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNeomorphButton(
+    BuildContext context, {
+    required Widget child,
+    required VoidCallback onTap,
+  }) {
+    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: neomorphTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: neomorphTheme.highlightColor.withOpacity(0.7),
+              offset: const Offset(-3, -3),
+              blurRadius: 6,
+            ),
+            BoxShadow(
+              color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+              offset: const Offset(3, 3),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: child,
       ),
     );
   }

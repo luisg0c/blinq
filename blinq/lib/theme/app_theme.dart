@@ -89,18 +89,32 @@ class AppTheme {
     ),
   );
 
+  // Cores específicas para modo claro
+  static const Color _lightBackground = Color(0xFFE5E5E5);
+  static const Color _lightSurface = Color(0xFFE5E5E5);
+  static const Color _lightHighlight = Color(0xFFFFFFFF);
+  static const Color _lightShadowDark = Color(0xFFBEBEBE);
+  
+  // Cores específicas para modo escuro
+  static const Color _darkBackground = Color(0xFF2C2C2C);
+  static const Color _darkSurface = Color(0xFF2C2C2C);
+  static const Color _darkHighlight = Color(0xFF3A3A3A);
+  static const Color _darkShadowDark = Color(0xFF1A1A1A);
+
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
       fontFamily: _fontFamily,
+      brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.light,
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        surface: AppColors.surface,
+        surface: _lightSurface,
         error: AppColors.error,
       ),
+      scaffoldBackgroundColor: _lightBackground,
       textTheme: _textTheme.copyWith(
         displayLarge: _textTheme.displayLarge?.copyWith(color: AppColors.textPrimary),
         displayMedium: _textTheme.displayMedium?.copyWith(color: AppColors.textPrimary),
@@ -132,8 +146,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          elevation: 2,
-          shadowColor: AppColors.primary.withOpacity(0.3),
+          elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -143,65 +156,10 @@ class AppTheme {
           ),
         ),
       ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: _textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: _textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        labelStyle: _textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        hintStyle: _textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-      ),
-      cardTheme: CardTheme(
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        color: AppColors.surface,
-      ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.border,
-        thickness: 1,
-        space: 1,
-      ),
-      scaffoldBackgroundColor: AppColors.background,
+      // Extensões customizadas para neomorfo
+      extensions: <ThemeExtension<dynamic>>[
+        NeomorphTheme.light(),
+      ],
     );
   }
 
@@ -209,14 +167,16 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       fontFamily: _fontFamily,
+      brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        surface: AppColors.darkSurface,
+        surface: _darkSurface,
         error: AppColors.error,
       ),
+      scaffoldBackgroundColor: _darkBackground,
       textTheme: _textTheme.copyWith(
         displayLarge: _textTheme.displayLarge?.copyWith(color: AppColors.darkTextPrimary),
         displayMedium: _textTheme.displayMedium?.copyWith(color: AppColors.darkTextPrimary),
@@ -234,7 +194,109 @@ class AppTheme {
         labelMedium: _textTheme.labelMedium?.copyWith(color: AppColors.darkTextSecondary),
         labelSmall: _textTheme.labelSmall?.copyWith(color: AppColors.darkTextSecondary),
       ),
-      scaffoldBackgroundColor: AppColors.darkBackground,
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.darkTextPrimary,
+        titleTextStyle: _textTheme.titleLarge?.copyWith(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: const IconThemeData(color: AppColors.darkTextPrimary),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: _textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      // Extensões customizadas para neomorfo
+      extensions: <ThemeExtension<dynamic>>[
+        NeomorphTheme.dark(),
+      ],
+    );
+  }
+}
+
+// Extensão de tema customizada para estilos neomorfo
+class NeomorphTheme extends ThemeExtension<NeomorphTheme> {
+  final Color backgroundColor;
+  final Color surfaceColor;
+  final Color highlightColor;
+  final Color shadowDarkColor;
+  final Color textPrimaryColor;
+  final Color textSecondaryColor;
+
+  const NeomorphTheme({
+    required this.backgroundColor,
+    required this.surfaceColor,
+    required this.highlightColor,
+    required this.shadowDarkColor,
+    required this.textPrimaryColor,
+    required this.textSecondaryColor,
+  });
+
+  factory NeomorphTheme.light() {
+    return const NeomorphTheme(
+      backgroundColor: Color(0xFFE5E5E5),
+      surfaceColor: Color(0xFFE5E5E5),
+      highlightColor: Color(0xFFFFFFFF),
+      shadowDarkColor: Color(0xFFBEBEBE),
+      textPrimaryColor: AppColors.textPrimary,
+      textSecondaryColor: AppColors.textSecondary,
+    );
+  }
+
+  factory NeomorphTheme.dark() {
+    return const NeomorphTheme(
+      backgroundColor: Color(0xFF2C2C2C),
+      surfaceColor: Color(0xFF2C2C2C),
+      highlightColor: Color(0xFF3A3A3A),
+      shadowDarkColor: Color(0xFF1A1A1A),
+      textPrimaryColor: AppColors.darkTextPrimary,
+      textSecondaryColor: AppColors.darkTextSecondary,
+    );
+  }
+
+  @override
+  NeomorphTheme copyWith({
+    Color? backgroundColor,
+    Color? surfaceColor,
+    Color? highlightColor,
+    Color? shadowDarkColor,
+    Color? textPrimaryColor,
+    Color? textSecondaryColor,
+  }) {
+    return NeomorphTheme(
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      surfaceColor: surfaceColor ?? this.surfaceColor,
+      highlightColor: highlightColor ?? this.highlightColor,
+      shadowDarkColor: shadowDarkColor ?? this.shadowDarkColor,
+      textPrimaryColor: textPrimaryColor ?? this.textPrimaryColor,
+      textSecondaryColor: textSecondaryColor ?? this.textSecondaryColor,
+    );
+  }
+
+  @override
+  NeomorphTheme lerp(ThemeExtension<NeomorphTheme>? other, double t) {
+    if (other is! NeomorphTheme) {
+      return this;
+    }
+    return NeomorphTheme(
+      backgroundColor: Color.lerp(backgroundColor, other.backgroundColor, t)!,
+      surfaceColor: Color.lerp(surfaceColor, other.surfaceColor, t)!,
+      highlightColor: Color.lerp(highlightColor, other.highlightColor, t)!,
+      shadowDarkColor: Color.lerp(shadowDarkColor, other.shadowDarkColor, t)!,
+      textPrimaryColor: Color.lerp(textPrimaryColor, other.textPrimaryColor, t)!,
+      textSecondaryColor: Color.lerp(textSecondaryColor, other.textSecondaryColor, t)!,
     );
   }
 }
