@@ -280,12 +280,30 @@ class _TransferPageState extends State<TransferPage> {
     String? Function(String?)? validator,
   }) {
     final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       decoration: BoxDecoration(
         color: neomorphTheme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        // Removed inner shadow effects due to Flutter limitations
+        border: Border.all(
+          color: isDark 
+              ? Colors.white.withOpacity(0.1) 
+              : Colors.black.withOpacity(0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: neomorphTheme.highlightColor.withOpacity(0.5),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+            offset: const Offset(2, 2),
+            blurRadius: 6,
+          ),
+        ],
       ),
       child: TextFormField(
         controller: controller,

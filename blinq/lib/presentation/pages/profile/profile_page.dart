@@ -18,7 +18,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool darkModeEnabled = false;
   double dailyLimit = 1000.0;
   double transferLimit = 500.0;
-  double riskTolerance = 3.0;
   
   @override
   Widget build(BuildContext context) {
@@ -205,27 +204,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 subtitle: 'Modificar PIN de transações',
                 icon: Icons.security,
                 onTap: () => Get.toNamed(AppRoutes.setupPin),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 24),
-          
-          _buildFlatSection(
-            context,
-            isDark,
-            title: 'Preferências',
-            children: [
-              _buildSliderTile(
-                context,
-                isDark,
-                title: 'Perfil de risco',
-                value: riskTolerance,
-                min: 1,
-                max: 5,
-                divisions: 4,
-                format: (value) => _getRiskLabel(value),
-                onChanged: (value) => setState(() => riskTolerance = value),
               ),
             ],
           ),
@@ -722,16 +700,5 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
-  }
-
-  String _getRiskLabel(double value) {
-    switch (value.round()) {
-      case 1: return 'Muito Conservador';
-      case 2: return 'Conservador';
-      case 3: return 'Moderado';
-      case 4: return 'Arrojado';
-      case 5: return 'Muito Arrojado';
-      default: return 'Moderado';
-    }
   }
 }
