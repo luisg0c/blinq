@@ -1,5 +1,3 @@
-// lib/presentation/bindings/transfer_controller_binding.dart
-
 import 'package:get/get.dart';
 
 // Transaction
