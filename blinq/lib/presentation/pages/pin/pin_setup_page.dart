@@ -17,7 +17,6 @@ class _PinSetupPageState extends State<PinSetupPage> {
   
   bool _isLoading = false;
   String? _errorMessage;
-  String? _successMessage;
 
   @override
   void dispose() {
@@ -32,113 +31,263 @@ class _PinSetupPageState extends State<PinSetupPage> {
 
     setState(() {
       _errorMessage = null;
-      _successMessage = null;
     });
 
-    // Validações básicas
+    // Validações
     if (pin.isEmpty) {
-      setState(() {
-        _errorMessage = 'Digite um PIN';
-      });
+      setState(() => _errorMessage = 'Digite um PIN');
       return;
     }
 
     if (pin.length < 4 || pin.length > 6) {
-      setState(() {
-        _errorMessage = 'O PIN deve ter entre 4 e 6 dígitos';
-      });
+      setState(() => _errorMessage = 'O PIN deve ter entre 4 e 6 dígitos');
       return;
     }
 
-    if (!RegExp(r'^\d+$').hasMatch(pin)) {
-      setState(() {
-        _errorMessage = 'O PIN deve conter apenas números';
-      });
+    if (!RegExp(r'^\d+
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Configurar PIN'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            
+            // Ícone
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+              ),
+              child: const Icon(
+                Icons.security,
+                size: 40,
+                color: AppColors.primary,
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            const Text(
+              'Crie seu PIN de segurança',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 8),
+            
+            Text(
+              'PIN de 4 a 6 dígitos para autorizar transações',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // Campo PIN
+            TextField(
+              controller: _pinController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              decoration: const InputDecoration(
+                labelText: 'PIN (4-6 dígitos)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+                counterText: '',
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Campo confirmar
+            TextField(
+              controller: _confirmController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              decoration: const InputDecoration(
+                labelText: 'Confirme o PIN',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_outline),
+                counterText: '',
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Botão salvar
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _savePin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Salvar PIN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Mensagem de erro
+            if (_errorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
+            const Spacer(),
+            
+            // Info de segurança
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.grey, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Seu PIN é armazenado de forma criptografada no dispositivo',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}).hasMatch(pin)) {
+      setState(() => _errorMessage = 'O PIN deve conter apenas números');
       return;
     }
 
     if (pin != confirm) {
-      setState(() {
-        _errorMessage = 'Os PINs não coincidem';
-      });
+      setState(() => _errorMessage = 'Os PINs não coincidem');
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Tentar buscar PinController ou criar um local
-      PinController? pinController;
+      print('🔧 Tentando encontrar PinController...');
       
+      // Verificar se PinController existe
+      PinController? pinController;
       try {
         pinController = Get.find<PinController>();
+        print('✅ PinController encontrado');
       } catch (e) {
-        print('⚠️ PinController não encontrado, criando um local');
-        // Se não encontrar, usar secure storage diretamente
-        await _savePinDirectly(pin);
+        print('❌ PinController não encontrado: $e');
+        setState(() => _errorMessage = 'Configuração do PIN não disponível');
+        return;
+      }
+      
+      print('🔧 Executando setPin...');
+      await pinController.setPin(pin);
+      
+      print('🔧 Verificando resultado...');
+      print('Success: ${pinController.successMessage.value}');
+      print('Error: ${pinController.errorMessage.value}');
+      
+      final error = pinController.errorMessage.value;
+      if (error != null && error.isNotEmpty) {
+        print('❌ Erro do controller: $error');
+        setState(() => _errorMessage = error);
         return;
       }
 
-      await pinController.setPin(pin);
-      
-      if (pinController.successMessage.value != null) {
-        setState(() {
-          _successMessage = 'PIN configurado com sucesso! 🔒';
-        });
+      final success = pinController.successMessage.value;
+      if (success != null && success.isNotEmpty) {
+        print('✅ Sucesso: $success');
+        // Sucesso
+        Get.snackbar(
+          'Sucesso',
+          'PIN configurado com segurança! 🔒',
+          backgroundColor: AppColors.success,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
         
-        _showSuccessAndNavigate();
-      } else if (pinController.errorMessage.value != null) {
-        setState(() {
-          _errorMessage = pinController.errorMessage.value;
+        Future.delayed(const Duration(seconds: 1), () {
+          Get.offAllNamed(AppRoutes.home);
         });
+      } else {
+        print('⚠️ Sem sucesso nem erro definido');
+        setState(() => _errorMessage = 'PIN salvo, mas sem confirmação');
       }
+      
     } catch (e) {
-      print('❌ Erro ao salvar PIN: $e');
-      setState(() {
-        _errorMessage = 'Erro ao salvar PIN: $e';
-      });
+      print('❌ Exceção ao salvar PIN: $e');
+      setState(() => _errorMessage = 'Erro técnico: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
-  }
-
-  // Fallback para salvar PIN diretamente
-  Future<void> _savePinDirectly(String pin) async {
-    try {
-      // Simular salvamento bem-sucedido
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      setState(() {
-        _successMessage = 'PIN configurado com sucesso! 🔒';
-      });
-      
-      _showSuccessAndNavigate();
-      
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Erro ao configurar PIN';
-      });
-    }
-  }
-
-  void _showSuccessAndNavigate() {
-    Get.snackbar(
-      'Sucesso',
-      'PIN configurado com segurança! 🔒',
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
-      snackPosition: SnackPosition.BOTTOM,
-    );
-    
-    // Navegar para Home após delay
-    Future.delayed(const Duration(seconds: 1), () {
-      Get.offAllNamed(AppRoutes.home);
-    });
   }
 
   @override
@@ -147,410 +296,173 @@ class _PinSetupPageState extends State<PinSetupPage> {
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-      appBar: _buildAppBar(context, isDark),
-      body: _buildBody(context, isDark),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, bool isDark) {
-    final textColor = isDark ? Colors.white : Colors.black87;
-    
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Text(
-        'Configurar PIN de Segurança',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: textColor,
-        ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Configurar PIN'),
+        centerTitle: true,
       ),
-      centerTitle: true,
-      leading: IconButton(
-        onPressed: () => Get.back(),
-        icon: Icon(
-          Icons.arrow_back_ios,
-          color: textColor,
-          size: 20,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, bool isDark) {
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subtitleColor = isDark ? Colors.white70 : Colors.black54;
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          const SizedBox(height: 32),
-          
-          // Ícone de segurança - NEOMORFO
-          _buildSecurityIcon(context, isDark),
-          
-          const SizedBox(height: 32),
-          
-          // Textos explicativos - FLAT
-          Text(
-            'Proteja suas transações',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: textColor,
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            
+            // Ícone
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+              ),
+              child: const Icon(
+                Icons.security,
+                size: 40,
+                color: AppColors.primary,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          Text(
-            'Crie um PIN de 4 a 6 dígitos para autorizar transferências e depósitos de forma segura.',
-            style: TextStyle(
-              fontSize: 16,
-              color: subtitleColor,
-              height: 1.5,
+            
+            const SizedBox(height: 32),
+            
+            const Text(
+              'Crie seu PIN de segurança',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 40),
-          
-          // Campo PIN - HÍBRIDO
-          _buildPinField(
-            context,
-            isDark,
-            controller: _pinController,
-            hintText: 'Digite seu PIN (4-6 dígitos)',
-            icon: Icons.lock,
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Campo confirmar PIN - HÍBRIDO
-          _buildPinField(
-            context,
-            isDark,
-            controller: _confirmController,
-            hintText: 'Confirme seu PIN',
-            icon: Icons.lock_outline,
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Botão salvar - NEOMORFO
-          _buildSaveButton(context, isDark),
-          
-          const SizedBox(height: 20),
-          
-          // Mensagens de erro/sucesso - FLAT
-          _buildMessages(context, isDark),
-          
-          const SizedBox(height: 20),
-          
-          // Informações de segurança - FLAT
-          _buildSecurityInfo(context, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSecurityIcon(BuildContext context, bool isDark) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
-        boxShadow: [
-          BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.1),
-            offset: const Offset(4, 4),
-            blurRadius: 12,
-          ),
-          BoxShadow(
-            color: isDark 
-                ? Colors.white.withOpacity(0.05)
-                : Colors.white,
-            offset: const Offset(-4, -4),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary.withOpacity(0.1),
-              AppColors.primary.withOpacity(0.05),
-            ],
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.security,
-            size: 45,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPinField(
-    BuildContext context,
-    bool isDark, {
-    required TextEditingController controller,
-    required String hintText,
-    required IconData icon,
-  }) {
-    final borderColor = isDark ? Colors.white24 : Colors.black12;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final hintColor = isDark ? Colors.white54 : Colors.black54;
-    
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      obscureText: true,
-      maxLength: 6,
-      style: TextStyle(
-        color: textColor,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 2,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(
-          color: hintColor,
-          fontSize: 16,
-          letterSpacing: 0,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: AppColors.primary,
-          size: 22,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 18,
-        ),
-        counterText: '',
-      ),
-    );
-  }
-
-  Widget _buildSaveButton(BuildContext context, bool isDark) {
-    return GestureDetector(
-      onTap: _isLoading ? null : _savePin,
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: _isLoading
-              ? LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.5),
-                    const Color(0xFF5BC4A8).withOpacity(0.5),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    Color(0xFF5BC4A8),
-                  ],
+            
+            const SizedBox(height: 8),
+            
+            Text(
+              'PIN de 4 a 6 dígitos para autorizar transações',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // Campo PIN
+            TextField(
+              controller: _pinController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              decoration: const InputDecoration(
+                labelText: 'PIN (4-6 dígitos)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+                counterText: '',
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Campo confirmar
+            TextField(
+              controller: _confirmController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              decoration: const InputDecoration(
+                labelText: 'Confirme o PIN',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_outline),
+                counterText: '',
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Botão salvar
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _savePin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-          boxShadow: _isLoading
-              ? []
-              : [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    offset: const Offset(0, 6),
-                    blurRadius: 20,
-                  ),
-                ],
-        ),
-        child: Center(
-          child: _isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                  ),
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Salvar PIN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Mensagem de erro
+            if (_errorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.save,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Salvar PIN',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: AppColors.error),
                       ),
                     ),
                   ],
                 ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMessages(BuildContext context, bool isDark) {
-    if (_errorMessage != null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.error.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: AppColors.error,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 14,
-                ),
+              ),
+            
+            const Spacer(),
+            
+            // Info de segurança
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.grey, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Seu PIN é armazenado de forma criptografada no dispositivo',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ],
               ),
             ),
+            
+            const SizedBox(height: 20),
           ],
         ),
-      );
-    }
-
-    if (_successMessage != null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.success.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_outline,
-              color: AppColors.success,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _successMessage!,
-                style: const TextStyle(
-                  color: AppColors.success,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildSecurityInfo(BuildContext context, bool isDark) {
-    final textColor = isDark ? Colors.white60 : Colors.black54;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark 
-            ? const Color(0xFF252525) 
-            : const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark 
-              ? Colors.white.withOpacity(0.1) 
-              : Colors.black.withOpacity(0.05),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: textColor,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Informações importantes',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '• Seu PIN é armazenado de forma criptografada\n'
-            '• Use um PIN que só você saiba\n'
-            '• O PIN será solicitado para transferências\n'
-            '• Você pode alterar seu PIN a qualquer momento',
-            style: TextStyle(
-              fontSize: 13,
-              color: textColor,
-              height: 1.4,
-            ),
-          ),
-        ],
       ),
     );
   }

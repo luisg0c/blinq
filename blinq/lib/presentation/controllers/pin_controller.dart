@@ -18,17 +18,25 @@ class PinController extends GetxController {
 
   /// Define ou atualiza o PIN.
   Future<void> setPin(String pin) async {
+    print('🔧 PinController: Iniciando setPin...');
     isLoading.value = true;
     errorMessage.value = null;
     successMessage.value = null;
 
     try {
+      print('🔧 Chamando use case...');
       await _setPinUseCase.execute(pin);
+      print('✅ Use case executado com sucesso');
       successMessage.value = 'PIN salvo com sucesso';
     } catch (e) {
-      errorMessage.value = e.toString().replaceAll('Exception: ', '');
+      print('❌ Erro no use case: $e');
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      errorMessage.value = errorMsg;
     } finally {
       isLoading.value = false;
+      print('🔧 PinController: Finalizando setPin');
+      print('🔧 Success: ${successMessage.value}');
+      print('🔧 Error: ${errorMessage.value}');
     }
   }
 
@@ -36,8 +44,15 @@ class PinController extends GetxController {
   Future<bool> validatePin(String pin) async {
     try {
       return await _validatePinUseCase.execute(pin);
-    } catch (_) {
+    } catch (e) {
+      errorMessage.value = 'Erro ao validar PIN: ${e.toString()}';
       return false;
     }
+  }
+
+  /// Limpa mensagens de erro e sucesso
+  void clearMessages() {
+    errorMessage.value = null;
+    successMessage.value = null;
   }
 }
