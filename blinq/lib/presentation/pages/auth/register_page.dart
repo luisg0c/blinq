@@ -31,6 +31,14 @@ class RegisterPage extends StatelessWidget {
                   'Crie sua conta no Blinq',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sua conta será criada no Firebase com saldo inicial de R\$ 1.000,00',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 32),
 
                 TextFormField(
@@ -38,6 +46,7 @@ class RegisterPage extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Nome completo',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -57,6 +66,7 @@ class RegisterPage extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
@@ -78,6 +88,7 @@ class RegisterPage extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Senha',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -98,6 +109,7 @@ class RegisterPage extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Confirmar senha',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -117,9 +129,10 @@ class RegisterPage extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: authController.isLoading.value
                         ? null
-                        : () {
+                        : () async {
                             if (formKey.currentState!.validate()) {
-                              authController.register(
+                              // ✅ REGISTRO REAL que cria conta no Firebase
+                              await authController.register(
                                 name: nameController.text.trim(),
                                 email: emailController.text.trim(),
                                 password: passwordController.text.trim(),
@@ -127,23 +140,50 @@ class RegisterPage extends StatelessWidget {
                             }
                           },
                     child: authController.isLoading.value
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              SizedBox(width: 12),
+                              Text('Criando conta no Firebase...'),
+                            ],
                           )
                         : const Text('Criar conta'),
                   ),
                 )),
 
-                // Mostrar erro se houver
+                const SizedBox(height: 16),
+
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text('Já tenho conta'),
+                ),
+
+                // ✅ Mostrar erro se houver
                 Obx(() => authController.errorMessage.value != null
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text(
-                          authController.errorMessage.value!,
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
+                    ? Container(
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error, color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                authController.errorMessage.value!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : const SizedBox.shrink()),
