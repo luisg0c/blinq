@@ -1,11 +1,10 @@
+// blinq/lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'routes/app_pages.dart';
 import 'theme/app_theme.dart';
-<<<<<<< Updated upstream
-import 'firebase_options.dart'; 
-=======
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
 
@@ -15,16 +14,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('🔔 Mensagem em background: ${message.notification?.title}');
 }
->>>>>>> Stashed changes
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-<<<<<<< Updated upstream
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-=======
   try {
     // ✅ Inicializar Firebase primeiro
     await Firebase.initializeApp(
@@ -41,7 +34,6 @@ void main() async {
   } catch (e) {
     debugPrint('❌ Erro na inicialização: $e');
   }
->>>>>>> Stashed changes
   
   runApp(const BlinqApp());
 }

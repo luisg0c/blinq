@@ -1,5 +1,4 @@
-// lib/presentation/controllers/deposit_controller.dart
-
+// blinq/lib/presentation/controllers/deposit_controller.dart
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/usecases/deposit_usecase.dart';
@@ -21,7 +20,6 @@ class DepositController extends GetxController {
 
   void setDepositData({required double value, String? desc}) {
     amount.value = value;
-<<<<<<< Updated upstream
     description.value = desc ?? 'Depósito PIX';
     print('💰 DepositController - Dados configurados:');
     print('   Valor: R\$ $value');
@@ -38,14 +36,6 @@ class DepositController extends GetxController {
       throw const AppException('Valor deve ser maior que zero');
     }
     
-=======
-    description.value = desc ?? 'Depósito';
-    print('💰 Dados do depósito configurados: R\$ $value');
-  }
-
-  Future<void> executeDeposit() async {
-    print('🔄 Iniciando execução do depósito...');
->>>>>>> Stashed changes
     isLoading.value = true;
     errorMessage.value = null;
 
@@ -55,16 +45,8 @@ class DepositController extends GetxController {
         throw const AppException('Usuário não autenticado');
       }
 
-<<<<<<< Updated upstream
       print('💰 Executando depósito de R\$ ${amount.value} para ${user.uid}');
       print('   Email: ${user.email}');
-=======
-      if (amount.value <= 0) {
-        throw const AppException('Valor deve ser maior que zero');
-      }
->>>>>>> Stashed changes
-
-      print('💰 Executando depósito de R\$ ${amount.value} para ${user.uid}');
 
       await _depositUseCase.execute(
         userId: user.uid,
@@ -81,7 +63,6 @@ class DepositController extends GetxController {
         backgroundColor: AppColors.success,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
-<<<<<<< Updated upstream
         duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
       );
@@ -91,12 +72,6 @@ class DepositController extends GetxController {
 
       // Aguardar um pouco para mostrar o snackbar, depois voltar para home
       await Future.delayed(const Duration(milliseconds: 500));
-=======
-        duration: const Duration(seconds: 3),
-      );
-
-      // Voltar para home após sucesso
->>>>>>> Stashed changes
       Get.offAllNamed(AppRoutes.home);
 
     } on AppException catch (e) {
@@ -109,21 +84,14 @@ class DepositController extends GetxController {
         backgroundColor: AppColors.error,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
-<<<<<<< Updated upstream
         duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
-=======
->>>>>>> Stashed changes
       );
       
       rethrow;
     } catch (e) {
       print('❌ Erro técnico: $e');
-<<<<<<< Updated upstream
       final errorMsg = 'Não foi possível realizar o depósito: $e';
-=======
-      final errorMsg = 'Não foi possível realizar o depósito';
->>>>>>> Stashed changes
       errorMessage.value = errorMsg;
       
       Get.snackbar(
@@ -132,11 +100,8 @@ class DepositController extends GetxController {
         backgroundColor: AppColors.error,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
-<<<<<<< Updated upstream
         duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
-=======
->>>>>>> Stashed changes
       );
       
       rethrow;
@@ -146,15 +111,10 @@ class DepositController extends GetxController {
     }
   }
 
-<<<<<<< Updated upstream
-=======
-  /// Limpar dados do depósito
->>>>>>> Stashed changes
   void clearData() {
     amount.value = 0.0;
     description.value = '';
     errorMessage.value = null;
-<<<<<<< Updated upstream
     print('🧹 Dados do depósito limpos');
   }
 
@@ -165,20 +125,11 @@ class DepositController extends GetxController {
     if (amount.value <= 0) {
       errorMessage.value = 'Informe um valor maior que zero';
       print('❌ Valor inválido: ${amount.value}');
-=======
-  }
-
-  /// Validar dados antes de prosseguir
-  bool validateData() {
-    if (amount.value <= 0) {
-      errorMessage.value = 'Informe um valor maior que zero';
->>>>>>> Stashed changes
       return false;
     }
 
     if (amount.value > 50000) {
       errorMessage.value = 'Valor máximo por depósito: R\$ 50.000,00';
-<<<<<<< Updated upstream
       print('❌ Valor muito alto: ${amount.value}');
       return false;
     }
@@ -202,11 +153,4 @@ class DepositController extends GetxController {
     print('💰 Valor convertido: R\$ $amount');
     return amount;
   }
-=======
-      return false;
-    }
-
-    return true;
-  }
->>>>>>> Stashed changes
 }

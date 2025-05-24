@@ -9,11 +9,7 @@ class TransactionCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const TransactionCard({
-<<<<<<< Updated upstream
     super.key,
-=======
-    super.key, // ✅ Corrigido: usar super parameter
->>>>>>> Stashed changes
     required this.transaction,
     this.onTap,
   });
@@ -49,7 +45,6 @@ class TransactionCard extends StatelessWidget {
         ) : null,
         boxShadow: isDark ? [
           BoxShadow(
-<<<<<<< Updated upstream
             color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -57,9 +52,6 @@ class TransactionCard extends StatelessWidget {
         ] : [
           BoxShadow(
             color: shadowColor,
-=======
-            color: Colors.black.withValues(alpha: 0.03), // ✅ Corrigido: withValues
->>>>>>> Stashed changes
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -144,16 +136,12 @@ class TransactionCard extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-<<<<<<< Updated upstream
                         color: primaryColor.withOpacity(isDark ? 0.2 : 0.1),
-=======
-                        color: primaryColor.withValues(alpha: 0.1), // ✅ Corrigido: withValues
->>>>>>> Stashed changes
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text( // ✅ Corrigido: usar const
+                      child: Text(
                         'Concluído',
-                        style: TextStyle( // ✅ Corrigido: usar const
+                        style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w500,
                           color: primaryColor,
@@ -190,7 +178,6 @@ class TransactionCard extends StatelessWidget {
     
     switch (type.toLowerCase()) {
       case 'deposit':
-<<<<<<< Updated upstream
       case 'bonus':
         return const Color(0xFF6EE1C6).withOpacity(opacity);
       case 'transfer':
@@ -201,17 +188,6 @@ class TransactionCard extends StatelessWidget {
         return const Color(0xFF8B5CF6).withOpacity(opacity);
       default:
         return const Color(0xFF6EE1C6).withOpacity(opacity);
-=======
-        return const Color(0xFF6EE1C6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
-      case 'transfer':
-        return isReceived 
-            ? const Color(0xFF10B981).withValues(alpha: 0.15) // ✅ Corrigido: withValues
-            : const Color(0xFF3B82F6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
-      case 'pix':
-        return const Color(0xFF8B5CF6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
-      default:
-        return const Color(0xFF6EE1C6).withValues(alpha: 0.15); // ✅ Corrigido: withValues
->>>>>>> Stashed changes
     }
   }
 

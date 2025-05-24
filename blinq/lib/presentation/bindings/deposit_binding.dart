@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
 // blinq/lib/presentation/bindings/deposit_binding.dart
-=======
->>>>>>> Stashed changes
 import 'package:get/get.dart';
 import '../../data/account/datasources/account_remote_data_source.dart';
 import '../../data/account/repositories/account_repository_impl.dart';
@@ -16,7 +13,6 @@ import '../controllers/deposit_controller.dart';
 class DepositBinding extends Bindings {
   @override
   void dependencies() {
-<<<<<<< Updated upstream
     print('🔧 Inicializando DepositBinding...');
 
     // Data Sources (se ainda não existirem)
@@ -96,43 +92,5 @@ class DepositBinding extends Bindings {
     print('   - TransactionRepository: ${Get.isRegistered<TransactionRepository>()}');
     print('   - DepositUseCase: ${Get.isRegistered<DepositUseCase>()}');
     print('   - DepositController: ${Get.isRegistered<DepositController>()}');
-=======
-    // Data Sources
-    Get.lazyPut<AccountRemoteDataSource>(
-      () => AccountRemoteDataSourceImpl(),
-    );
-    
-    Get.lazyPut<TransactionRemoteDataSource>(
-      () => TransactionRemoteDataSourceImpl(),
-    );
-
-    // Repositories
-    Get.lazyPut<AccountRepository>(
-      () => AccountRepositoryImpl(
-        remoteDataSource: Get.find<AccountRemoteDataSource>(),
-      ),
-    );
-    
-    Get.lazyPut<TransactionRepository>(
-      () => TransactionRepositoryImpl(
-        remoteDataSource: Get.find<TransactionRemoteDataSource>(),
-      ),
-    );
-
-    // Use Case
-    Get.lazyPut<DepositUseCase>(
-      () => DepositUseCase(
-        transactionRepository: Get.find<TransactionRepository>(),
-        accountRepository: Get.find<AccountRepository>(),
-      ),
-    );
-
-    // Controller
-    Get.lazyPut<DepositController>(
-      () => DepositController(
-        depositUseCase: Get.find<DepositUseCase>(),
-      ),
-    );
->>>>>>> Stashed changes
   }
 }

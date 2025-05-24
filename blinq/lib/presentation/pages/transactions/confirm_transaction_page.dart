@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
 // blinq/lib/presentation/pages/transactions/confirm_transaction_page.dart
-=======
-// lib/presentation/pages/transactions/confirm_transaction_page.dart
-
->>>>>>> Stashed changes
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/transfer_controller.dart';
@@ -150,11 +145,7 @@ class ConfirmTransactionPage extends StatelessWidget {
           child: SizedBox(
             height: 50,
             child: ElevatedButton(
-<<<<<<< Updated upstream
               onPressed: () => _confirmTransfer(context),
-=======
-              onPressed: () => _confirmTransfer(controller),
->>>>>>> Stashed changes
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
@@ -202,13 +193,9 @@ class ConfirmTransactionPage extends StatelessWidget {
     );
   }
 
-<<<<<<< Updated upstream
   void _confirmTransfer(BuildContext context) {
     final controller = Get.find<TransferController>();
     
-=======
-  void _confirmTransfer(TransferController controller) {
->>>>>>> Stashed changes
     Get.to(
       () => const PinVerificationPage(),
       arguments: {
