@@ -1,5 +1,5 @@
 name: blinq
-description: Um aplicativo bancário simples e intuitivo.
+description: Blinq - Banco Digital P2P focado em simplicidade e segurança
 version: 1.0.0+1
 
 environment:

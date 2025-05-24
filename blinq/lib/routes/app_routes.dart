@@ -14,4 +14,5 @@ class AppRoutes {
   static const String transfer = '/transfer';
   static const String transactions = '/transactions';
   static const String profile = '/profile';
+  static const String exchangeRates = '/exchange-rates';
 }

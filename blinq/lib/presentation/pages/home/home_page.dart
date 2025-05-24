@@ -91,23 +91,50 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildQuickActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Column(
       children: [
-        _ActionButton(
-          icon: Icons.arrow_downward,
-          label: 'Depositar',
-          onTap: () => Get.toNamed(AppRoutes.deposit),
+        // Primeira linha de ações
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _ActionButton(
+              icon: Icons.arrow_downward,
+              label: 'Depositar',
+              onTap: () => Get.toNamed(AppRoutes.deposit),
+            ),
+            _ActionButton(
+              icon: Icons.compare_arrows,
+              label: 'Transferir',
+              onTap: () => Get.toNamed(AppRoutes.transfer),
+            ),
+            _ActionButton(
+              icon: Icons.list,
+              label: 'Extrato',
+              onTap: () => Get.toNamed(AppRoutes.transactions),
+            ),
+          ],
         ),
-        _ActionButton(
-          icon: Icons.compare_arrows,
-          label: 'Transferir',
-          onTap: () => Get.toNamed(AppRoutes.transfer),
-        ),
-        _ActionButton(
-          icon: Icons.list,
-          label: 'Extrato',
-          onTap: () => Get.toNamed(AppRoutes.transactions),
+        const SizedBox(height: 16),
+        // Segunda linha com cotações
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _ActionButton(
+              icon: Icons.currency_exchange,
+              label: 'Cotações',
+              onTap: () => Get.toNamed(AppRoutes.exchangeRates),
+            ),
+            _ActionButton(
+              icon: Icons.qr_code_scanner,
+              label: 'QR Code',
+              onTap: () => Get.snackbar('Em breve', 'Funcionalidade em desenvolvimento'),
+            ),
+            _ActionButton(
+              icon: Icons.receipt,
+              label: 'Recibos',
+              onTap: () => Get.snackbar('Em breve', 'Funcionalidade em desenvolvimento'),
+            ),
+          ],
         ),
       ],
     );

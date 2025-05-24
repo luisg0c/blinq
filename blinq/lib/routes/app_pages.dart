@@ -13,6 +13,7 @@ import '../presentation/pages/home/home_page.dart';
 import '../presentation/pages/deposit/deposit_page.dart';
 import '../presentation/pages/transfer/transfer_page.dart';
 import '../presentation/pages/transactions/transactions_page.dart';
+import '../presentation/pages/exchange/exchange_rates_page.dart';
 
 // Bindings
 import '../presentation/bindings/auth_binding.dart';
@@ -91,6 +92,12 @@ class AppPages {
       name: AppRoutes.transactions,
       page: () => const TransactionsPage(),
       binding: HomeBinding(), // Reutiliza o mesmo binding
+
+      GetPage(
+        name: AppRoutes.exchangeRates,
+        page: () => const ExchangeRatesPage(),
+      ),
     ),
+  
   ];
 }
