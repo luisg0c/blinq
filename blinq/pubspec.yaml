@@ -44,6 +44,7 @@ dependencies:
   firebase_messaging: ^15.2.6
   image_picker: ^1.1.2
   firebase_storage: ^12.4.6
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/
+    - .env
 
   # Exemplo de configuração de fontes (opcional)
   # fonts:

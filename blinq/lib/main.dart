@@ -1,40 +1,25 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart'; // ❌ Comentado
 import 'package:get/get.dart';
 import 'routes/app_pages.dart';
 import 'theme/app_theme.dart';
 import 'firebase_options.dart';
-// import 'core/services/notification_service.dart'; // ❌ Comentado
 
-// ❌ Comentado o handler de background
-// @pragma('vm:entry-point')
-// Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-//   debugPrint('🔔 Mensagem em background: ${message.notification?.title}');
-// }
-
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  await dotenv.load(); // ✅ CARREGAR VARIÁVEIS .ENV AQUI
+
   try {
-    // ✅ Inicializar apenas Firebase Core
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('✅ Firebase inicializado');
-    
-    // ❌ Comentado configuração de messaging
-    // FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    
-    // ❌ Comentado inicialização de notificações  
-    // await NotificationService.initialize();
-    
   } catch (e) {
     debugPrint('❌ Erro na inicialização: $e');
   }
-  
+
   runApp(const BlinqApp());
 }
 
@@ -51,13 +36,6 @@ class BlinqApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
-      onInit: () {
-        debugPrint('🚀 Blinq App inicializado');
-        // ❌ Comentado verificação de notificações
-        // Future.delayed(const Duration(milliseconds: 1500), () {
-        //   NotificationService.checkForInitialMessage();
-        // });
-      },
       routingCallback: (routing) {
         debugPrint('🧭 Navegação: ${routing?.current}');
       },
