@@ -1,6 +1,8 @@
+// lib/core/services/email_validation_service.dart
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'user_session_manager.dart';
 
 class EmailValidationResult {
   final bool isValid;
@@ -44,35 +46,54 @@ class EmailValidationResult {
       userId: userId,
     );
   }
-
-  @override
-  String toString() {
-    return 'EmailValidationResult(isValid: $isValid, userExists: $userExists, userName: $userName, userId: $userId)';
-  }
 }
 
+/// Serviço de validação com isolamento por usuário
 class EmailValidationService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  // ✅ CACHE ISOLADO POR USUÁRIO
+  static final Map<String, Map<String, EmailValidationResult>> _userCaches = {};
+  static final Map<String, Map<String, DateTime>> _userCacheTimestamps = {};
+  static const Duration _cacheExpiration = Duration(minutes: 5);
 
-  /// ✅ VALIDAÇÃO COMPLETA DE EMAIL PARA TRANSFERÊNCIA
+  /// ✅ VALIDAÇÃO COM VERIFICAÇÃO DE SESSÃO
   static Future<EmailValidationResult> validateRecipientEmail(String email) async {
     try {
-      print('📧 Validando email do destinatário: $email');
+      // Verificar sessão ativa
+      if (!UserSessionManager.hasActiveSession()) {
+        return EmailValidationResult.invalid('Sessão expirada');
+      }
 
-      // 1. Validação de formato
+      final currentUserId = UserSessionManager.getCurrentUserId()!;
+      
+      print('📧 Validando email: $email para usuário: $currentUserId');
+
+      // Validação de formato
       if (!isValidFormat(email)) {
         return EmailValidationResult.invalid('Formato de email inválido');
       }
 
-      // 2. Verificar se não é o próprio usuário
+      // Verificar auto-transferência
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser?.email?.toLowerCase() == email.toLowerCase()) {
         return EmailValidationResult.invalid('Você não pode transferir para si mesmo');
       }
 
-      // 3. Buscar usuário no Firestore
-      final userResult = await _findUserInFirestore(email);
-      return userResult;
+      // Verificar cache isolado
+      final cachedResult = _getCachedResult(currentUserId, email);
+      if (cachedResult != null) {
+        print('💾 Usando resultado do cache para: $email');
+        return cachedResult;
+      }
+
+      // Buscar no Firestore
+      final result = await _findUserInFirestore(email);
+      
+      // Salvar no cache isolado
+      _setCachedResult(currentUserId, email, result);
+      
+      return result;
 
     } catch (e) {
       print('❌ Erro na validação de email: $e');
@@ -80,7 +101,38 @@ class EmailValidationService {
     }
   }
 
-  /// ✅ VALIDAÇÃO DE FORMATO DE EMAIL
+  /// ✅ CACHE ISOLADO POR USUÁRIO
+  static EmailValidationResult? _getCachedResult(String userId, String email) {
+    final userCache = _userCaches[userId];
+    final userTimestamps = _userCacheTimestamps[userId];
+    
+    if (userCache == null || userTimestamps == null) return null;
+    
+    final cacheKey = email.toLowerCase();
+    final result = userCache[cacheKey];
+    final timestamp = userTimestamps[cacheKey];
+    
+    if (result != null && timestamp != null) {
+      if (DateTime.now().difference(timestamp) < _cacheExpiration) {
+        return result;
+      }
+    }
+    
+    return null;
+  }
+
+  /// ✅ SALVAR NO CACHE ISOLADO
+  static void _setCachedResult(String userId, String email, EmailValidationResult result) {
+    if (!result.isValid) return; // Não cachear erros
+    
+    _userCaches[userId] ??= {};
+    _userCacheTimestamps[userId] ??= {};
+    
+    final cacheKey = email.toLowerCase();
+    _userCaches[userId]![cacheKey] = result;
+    _userCacheTimestamps[userId]![cacheKey] = DateTime.now();
+  }
+
   static bool isValidFormat(String email) {
     if (email.trim().isEmpty) return false;
     
@@ -91,7 +143,6 @@ class EmailValidationService {
     return emailRegex.hasMatch(email.trim().toLowerCase());
   }
 
-  /// ✅ BUSCAR USUÁRIO NO FIRESTORE
   static Future<EmailValidationResult> _findUserInFirestore(String email) async {
     try {
       print('🔍 Buscando no Firestore: $email');
@@ -110,7 +161,7 @@ class EmailValidationService {
         final userName = userData['name']?.toString() ?? 'Usuário Blinq';
         final userId = doc.id;
 
-        print('✅ Usuário encontrado no Firestore: $userName');
+        print('✅ Usuário encontrado: $userName');
 
         return EmailValidationResult.found(
           userName: userName,
@@ -118,7 +169,7 @@ class EmailValidationService {
         );
       }
 
-      print('❌ Usuário não encontrado no Firestore');
+      print('❌ Usuário não encontrado');
       return EmailValidationResult.notFound();
     } catch (e) {
       print('❌ Erro ao buscar no Firestore: $e');
@@ -126,97 +177,19 @@ class EmailValidationService {
     }
   }
 
-  /// ✅ VALIDAÇÃO RÁPIDA APENAS DE FORMATO (para uso em tempo real)
-  static bool quickFormatValidation(String email) {
-    return isValidFormat(email);
-  }
-
-  /// ✅ BUSCAR MÚLTIPLOS USUÁRIOS (para autocomplete)
-  static Future<List<EmailValidationResult>> searchUsers(String query) async {
-    try {
-      if (query.length < 3) return [];
-
-      print('🔍 Buscando usuários com query: $query');
-
-      final snapshot = await _firestore
-          .collection('accounts')
-          .where('user.email', isGreaterThanOrEqualTo: query.toLowerCase())
-          .where('user.email', isLessThan: '${query.toLowerCase()}\uf8ff')
-          .limit(5)
-          .get();
-
-      final results = <EmailValidationResult>[];
-      
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final userData = data['user'] as Map<String, dynamic>? ?? {};
-        
-        final userName = userData['name']?.toString() ?? 'Usuário Blinq';
-        final userEmail = userData['email']?.toString() ?? '';
-        
-        // Não incluir o próprio usuário
-        final currentUser = FirebaseAuth.instance.currentUser;
-        if (currentUser?.email?.toLowerCase() != userEmail.toLowerCase()) {
-          results.add(EmailValidationResult.found(
-            userName: userName,
-            userId: doc.id,
-          ));
-        }
-      }
-
-      print('📋 ${results.length} usuários encontrados');
-      return results;
-    } catch (e) {
-      print('❌ Erro na busca de usuários: $e');
-      return [];
+  /// ✅ LIMPAR CACHE ESPECÍFICO DO USUÁRIO
+  static void clearUserCache(String? userId) {
+    if (userId != null) {
+      _userCaches.remove(userId);
+      _userCacheTimestamps.remove(userId);
+      print('🧹 Cache limpo para usuário: $userId');
     }
   }
 
-  /// ✅ CACHE SIMPLES PARA VALIDAÇÕES RECENTES
-  static final Map<String, EmailValidationResult> _cache = {};
-  static const Duration _cacheExpiration = Duration(minutes: 5);
-  static final Map<String, DateTime> _cacheTimestamps = {};
-
-  /// ✅ VALIDAÇÃO COM CACHE
-  static Future<EmailValidationResult> validateWithCache(String email) async {
-    final cacheKey = email.toLowerCase();
-    
-    // Verificar cache
-    if (_cache.containsKey(cacheKey)) {
-      final timestamp = _cacheTimestamps[cacheKey];
-      if (timestamp != null && 
-          DateTime.now().difference(timestamp) < _cacheExpiration) {
-        print('💾 Usando resultado do cache para: $email');
-        return _cache[cacheKey]!;
-      }
-    }
-
-    // Buscar novo resultado
-    final result = await validateRecipientEmail(email);
-    
-    // Salvar no cache apenas resultados válidos
-    if (result.isValid) {
-      _cache[cacheKey] = result;
-      _cacheTimestamps[cacheKey] = DateTime.now();
-    }
-
-    return result;
-  }
-
-  /// ✅ LIMPAR CACHE
+  /// ✅ LIMPAR TODOS OS CACHES
   static void clearCache() {
-    _cache.clear();
-    _cacheTimestamps.clear();
-    print('🧹 Cache de validação de emails limpo');
-  }
-
-  /// ✅ STATUS DO SERVIÇO
-  static Map<String, dynamic> getServiceStatus() {
-    return {
-      'cacheSize': _cache.length,
-      'cacheKeys': _cache.keys.toList(),
-      'isFirestoreConnected': _firestore != null,
-      'currentUser': FirebaseAuth.instance.currentUser?.email,
-    };
+    _userCaches.clear();
+    _userCacheTimestamps.clear();
+    print('🧹 Todos os caches de validação limpos');
   }
 }

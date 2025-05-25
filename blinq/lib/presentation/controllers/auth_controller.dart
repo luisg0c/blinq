@@ -1,14 +1,16 @@
 // lib/presentation/controllers/auth_controller.dart
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import '../../domain/entities/user.dart' as domain;
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/reset_password_usecase.dart';
 import '../../routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/services/user_session_manager.dart';
 
+/// Controller de autenticação com gerenciamento seguro de sessão
 class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
@@ -28,14 +30,58 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _checkAuthState();
+    _setupAuthListener();
   }
 
-  void _checkAuthState() {
-    // Verificar se há usuário logado
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      print('👤 Usuário já logado: ${currentUser.email}');
+  /// ✅ LISTENER DE MUDANÇAS DE AUTENTICAÇÃO
+  void _setupAuthListener() {
+    FirebaseAuth.instance.authStateChanges().listen((firebaseUser) async {
+      if (firebaseUser == null) {
+        print('👤 Usuário deslogado - limpando sessão');
+        await _handleUserLoggedOut();
+      } else {
+        print('👤 Usuário logado: ${firebaseUser.email}');
+        await _handleUserLoggedIn(firebaseUser);
+      }
+    });
+  }
+
+  /// ✅ LIDAR COM USUÁRIO LOGADO
+  Future<void> _handleUserLoggedIn(User firebaseUser) async {
+    try {
+      // Verificar se é um novo usuário
+      final currentUserId = user.value?.id;
+      
+      if (currentUserId != null && currentUserId != firebaseUser.uid) {
+        print('🔄 Novo usuário detectado - limpando sessão anterior');
+        await UserSessionManager.clearPreviousSession();
+      }
+
+      // Atualizar usuário atual
+      user.value = domain.User(
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName ?? 'Usuário Blinq',
+        email: firebaseUser.email!,
+        token: await firebaseUser.getIdToken(),
+      );
+
+      // Inicializar nova sessão
+      await UserSessionManager.initializeUserSession(firebaseUser.uid);
+      
+    } catch (e) {
+      print('❌ Erro ao processar login: $e');
+      errorMessage.value = 'Erro ao inicializar sessão';
+    }
+  }
+
+  /// ✅ LIDAR COM USUÁRIO DESLOGADO
+  Future<void> _handleUserLoggedOut() async {
+    try {
+      await UserSessionManager.clearAllUserData();
+      user.value = null;
+      errorMessage.value = null;
+    } catch (e) {
+      print('❌ Erro ao processar logout: $e');
     }
   }
 
@@ -48,38 +94,28 @@ class AuthController extends GetxController {
       return;
     }
 
-    if (!GetUtils.isEmail(email.trim())) {
-      errorMessage.value = 'Email inválido';
-      return;
-    }
-
     isLoading.value = true;
     errorMessage.value = null;
     
     try {
-      print('🔐 Tentando login para: $email');
+      print('🔐 Executando login para: $email');
       
       final result = await loginUseCase.execute(
         email: email.trim(),
         password: password.trim(),
       );
       
-      user.value = result;
+      print('✅ Login bem-sucedido: ${result.email}');
       
-      print('✅ Login realizado com sucesso: ${result.email}');
-      
-      // Mostrar sucesso
       Get.snackbar(
         'Bem-vindo! 👋',
         'Login realizado com sucesso',
         backgroundColor: AppColors.success,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
       );
       
-      // Navegar para home
-      Get.offAllNamed(AppRoutes.home);
+      // A navegação será tratada pelo listener de auth state
       
     } catch (e) {
       print('❌ Erro no login: $e');
@@ -99,21 +135,11 @@ class AuthController extends GetxController {
       return;
     }
 
-    if (!GetUtils.isEmail(email.trim())) {
-      errorMessage.value = 'Email inválido';
-      return;
-    }
-
-    if (password.length < 6) {
-      errorMessage.value = 'Senha deve ter pelo menos 6 caracteres';
-      return;
-    }
-
     isLoading.value = true;
     errorMessage.value = null;
     
     try {
-      print('📝 Tentando registro para: $email');
+      print('📝 Executando registro para: $email');
       
       final result = await registerUseCase.execute(
         name: name.trim(),
@@ -121,22 +147,17 @@ class AuthController extends GetxController {
         password: password.trim(),
       );
       
-      user.value = result;
+      print('✅ Registro bem-sucedido: ${result.email}');
       
-      print('✅ Registro realizado com sucesso: ${result.email}');
-      
-      // Mostrar sucesso
       Get.snackbar(
         'Conta criada! 🎉',
-        'Bem-vindo ao Blinq! Configure seu PIN',
+        'Bem-vindo ao Blinq!',
         backgroundColor: AppColors.success,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
       );
       
-      // Navegar para configuração de PIN
-      Get.offAllNamed(AppRoutes.setupPin);
+      // A navegação será tratada pelo listener de auth state
       
     } catch (e) {
       print('❌ Erro no registro: $e');
@@ -146,63 +167,32 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> resetPassword({
-    required String email,
-  }) async {
-    if (email.trim().isEmpty) {
-      errorMessage.value = 'Informe o email';
-      return;
-    }
-
-    if (!GetUtils.isEmail(email.trim())) {
-      errorMessage.value = 'Email inválido';
-      return;
-    }
-
-    isLoading.value = true;
-    errorMessage.value = null;
-    
-    try {
-      print('📧 Enviando reset de senha para: $email');
-      
-      await resetPasswordUseCase.execute(email: email.trim());
-      
-      print('✅ Email de reset enviado');
-      
-      // Mostrar sucesso
-      Get.snackbar(
-        'Email enviado! 📧',
-        'Verifique sua caixa de entrada',
-        backgroundColor: AppColors.success,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 4),
-      );
-      
-      // Voltar para login
-      Get.back();
-      
-    } catch (e) {
-      print('❌ Erro no reset de senha: $e');
-      errorMessage.value = _formatErrorMessage(e.toString());
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
+  /// ✅ LOGOUT SEGURO COMPLETO
   Future<void> logout() async {
     try {
-      print('👋 Fazendo logout...');
+      print('👋 Iniciando logout seguro...');
       
+      isLoading.value = true;
+      
+      // 1. Limpar sessão do usuário atual
+      await UserSessionManager.clearAllUserData();
+      
+      // 2. Firebase logout
       await FirebaseAuth.instance.signOut();
+      
+      // 3. Limpar estado local
       user.value = null;
+      errorMessage.value = null;
       
-      print('✅ Logout realizado');
-      
-      Get.offAllNamed(AppRoutes.welcome);
+      print('✅ Logout seguro concluído');
       
     } catch (e) {
       print('❌ Erro no logout: $e');
+      // Forçar limpeza mesmo com erro
+      user.value = null;
+      await UserSessionManager.clearAllUserData();
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -211,14 +201,10 @@ class AuthController extends GetxController {
   }
 
   String _formatErrorMessage(String error) {
-    // Remover prefixos técnicos
     String formatted = error
         .replaceAll('Exception: ', '')
-        .replaceAll('FirebaseAuthException: ', '')
-        .replaceAll('[firebase_auth/', '')
-        .replaceAll(']', '');
+        .replaceAll('FirebaseAuthException: ', '');
 
-    // Traduzir erros comuns do Firebase
     if (formatted.contains('user-not-found')) {
       return 'Email não cadastrado';
     } else if (formatted.contains('wrong-password')) {
@@ -229,10 +215,6 @@ class AuthController extends GetxController {
       return 'Senha muito fraca';
     } else if (formatted.contains('invalid-email')) {
       return 'Email inválido';
-    } else if (formatted.contains('too-many-requests')) {
-      return 'Muitas tentativas. Tente novamente mais tarde';
-    } else if (formatted.contains('network-request-failed')) {
-      return 'Erro de conexão. Verifique sua internet';
     }
 
     return formatted;
