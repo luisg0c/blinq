@@ -32,30 +32,57 @@ class _TransferPageState extends State<TransferPage> {
     super.dispose();
   }
 
+  // lib/presentation/pages/transfer/transfer_page.dart - SEÇÃO INITSTATE ATUALIZADA
+
   @override
   void initState() {
     super.initState();
     // ✅ LISTENER PARA VALIDAÇÃO EM TEMPO REAL
     recipientCtrl.addListener(_onEmailChanged);
+    
+    // ✅ VERIFICAR SE VEIO DE QR CODE
+    _checkQrCodeData();
   }
 
-  /// ✅ VALIDAÇÃO EM TEMPO REAL DO EMAIL
-  void _onEmailChanged() {
-    final email = recipientCtrl.text.trim();
+  /// ✅ VERIFICAR E PREENCHER DADOS DO QR CODE
+  void _checkQrCodeData() {
+    final args = Get.arguments as Map<String, dynamic>?;
     
-    if (email.isEmpty) {
-      setState(() {
-        _emailValidationResult = null;
-      });
-      return;
-    }
-
-    // Debounce para evitar muitas consultas
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (recipientCtrl.text.trim() == email && mounted) {
-        _validateEmail(email);
+    if (args != null && args['fromQrCode'] == true) {
+      print('📱 Preenchendo dados do QR Code');
+      
+      // Preencher email do destinatário
+      if (args['recipient'] != null) {
+        recipientCtrl.text = args['recipient'].toString();
+        // Validar email automaticamente
+        _validateEmail(args['recipient'].toString());
       }
-    });
+      
+      // Preencher valor
+      if (args['amount'] != null) {
+        final amount = args['amount'] as double;
+        // Converter para formato brasileiro
+        final formattedAmount = 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
+        amountCtrl.text = formattedAmount;
+      }
+      
+      // Preencher descrição
+      if (args['description'] != null && args['description'].toString().isNotEmpty) {
+        descriptionCtrl.text = args['description'].toString();
+      }
+      
+      // Mostrar feedback que dados foram preenchidos
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'QR Code Carregado! 📱',
+          'Dados preenchidos automaticamente. Confirme as informações.',
+          backgroundColor: AppColors.success,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+        );
+      });
+    }
   }
 
   /// ✅ VALIDAR EMAIL

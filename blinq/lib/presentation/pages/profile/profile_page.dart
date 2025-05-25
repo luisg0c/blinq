@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import '../../controllers/pin_controller.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,7 +16,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool notificationsEnabled = true;
   bool emailNotifications = false;
   bool biometricEnabled = false;
-  bool darkModeEnabled = false;
   
   // ✅ LIMITES PROTEGIDOS POR PIN
   double dailyLimit = 1000.0;
@@ -300,21 +300,19 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// ✅ SOLICITAR PIN PARA ALTERAR LIMITES
+  /// ✅ SOLICITAR PIN PARA ALTERAR LIMITES (CORRIGIDO)
   Future<void> _requestPinForLimits() async {
     print('🔐 Solicitando PIN para alterar limites...');
     
     try {
-      final result = await Get.toNamed(
-        AppRoutes.verifyPin,
-        arguments: {
-          'flow': 'change_limits',
-          'title': 'Autorização Necessária',
-          'description': 'Digite seu PIN para alterar os limites de transação',
-        },
+      // ✅ USAR MÉTODO CENTRALIZADO DO PINCONTROLLER
+      final success = await PinController.requestPinForAction(
+        action: 'change_limits',
+        title: 'Autorização Necessária',
+        description: 'Digite seu PIN para alterar os limites de transação',
       );
 
-      if (result == true) {
+      if (success) {
         setState(() => _limitsUnlocked = true);
         
         Get.snackbar(
@@ -337,7 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
       
       Get.snackbar(
         'Erro',
-        'Não foi possível verificar o PIN',
+        'Não foi possível verificar o PIN: $e',
         backgroundColor: AppColors.error,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -484,7 +482,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Manter os outros métodos existentes...
+  // Outros métodos helper...
   Widget _buildNeomorphUserHeader(BuildContext context, User? user, bool isDark) {
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
@@ -502,13 +500,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 : Colors.black.withOpacity(0.05),
             offset: const Offset(0, 4),
             blurRadius: 20,
-          ),
-          BoxShadow(
-            color: isDark 
-                ? Colors.white.withOpacity(0.03)
-                : Colors.white,
-            offset: const Offset(-4, -4),
-            blurRadius: 15,
           ),
         ],
       ),
@@ -826,22 +817,6 @@ class _ProfilePageState extends State<ProfilePage> {
             color: AppColors.error.withOpacity(0.3),
             width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark 
-                  ? Colors.black.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.05),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-            BoxShadow(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.02)
-                  : Colors.white,
-              offset: const Offset(-2, -2),
-              blurRadius: 8,
-            ),
-          ],
         ),
         child: const Center(
           child: Row(

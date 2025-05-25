@@ -1,9 +1,8 @@
-// lib/core/components/balance_card.dart - VERSÃO CORRIGIDA
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
+import '../../presentation/controllers/pin_controller.dart';
 
 class BalanceCard extends StatefulWidget {
   final double balance;
@@ -144,8 +143,7 @@ class _BalanceCardState extends State<BalanceCard> {
     );
   }
 
-  /// ✅ BOTÕES DE AÇÃO
-  Widget _buildActionButtons() {
+   Widget _buildActionButtons() {
     return Row(
       children: [
         Expanded(
@@ -167,8 +165,8 @@ class _BalanceCardState extends State<BalanceCard> {
         Expanded(
           child: _buildP2PAction(
             icon: Icons.qr_code_scanner,
-            label: 'PIX',
-            onTap: widget.onPix,
+            label: 'QR Code',
+            onTap: widget.onPix ?? () => Get.toNamed('/qr-code'), 
           ),
         ),
       ],
@@ -240,16 +238,14 @@ class _BalanceCardState extends State<BalanceCard> {
     try {
       print('🔐 Solicitando PIN para revelar saldo...');
       
-      final result = await Get.toNamed(
-        AppRoutes.verifyPin,
-        arguments: {
-          'flow': 'show_balance',
-          'title': 'Revelar Saldo',
-          'description': 'Digite seu PIN para visualizar o saldo',
-        },
+      // ✅ USAR MÉTODO CENTRALIZADO DO PINCONTROLLER
+      final success = await PinController.requestPinForAction(
+        action: 'show_balance',
+        title: 'Revelar Saldo',
+        description: 'Digite seu PIN para visualizar o saldo',
       );
 
-      if (result == true) {
+      if (success) {
         setState(() {
           _isBalanceVisible = true;
         });
@@ -263,23 +259,7 @@ class _BalanceCardState extends State<BalanceCard> {
           duration: const Duration(seconds: 3),
         );
         
-        // ✅ Auto-ocultar após 30 segundos
-        Future.delayed(const Duration(seconds: 30), () {
-          if (mounted && _isBalanceVisible) {
-            setState(() {
-              _isBalanceVisible = false;
-            });
-            
-            Get.snackbar(
-              'Saldo Auto-ocultado 🔒',
-              'Por segurança, o saldo foi ocultado automaticamente',
-              backgroundColor: AppColors.warning.withOpacity(0.1),
-              colorText: AppColors.warning,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
-            );
-          }
-        });
+        _scheduleAutoHide();
       }
     } catch (e) {
       print('❌ Erro ao solicitar PIN para saldo: $e');
@@ -296,6 +276,26 @@ class _BalanceCardState extends State<BalanceCard> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// ✅ AGENDAR AUTO-OCULTAÇÃO
+  void _scheduleAutoHide() {
+    Future.delayed(const Duration(seconds: 30), () {
+      if (mounted && _isBalanceVisible) {
+        setState(() {
+          _isBalanceVisible = false;
+        });
+        
+        Get.snackbar(
+          'Saldo Auto-ocultado 🔒',
+          'Por segurança, o saldo foi ocultado automaticamente',
+          backgroundColor: AppColors.warning.withOpacity(0.1),
+          colorText: AppColors.warning,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    });
   }
 
   /// ✅ MÉTODOS HELPER

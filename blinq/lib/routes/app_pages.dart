@@ -1,4 +1,3 @@
-// lib/routes/app_pages.dart
 import 'package:get/get.dart';
 
 // Pages
@@ -16,6 +15,7 @@ import '../presentation/pages/transfer/transfer_page.dart';
 import '../presentation/pages/transactions/transactions_page.dart';
 import '../presentation/pages/profile/profile_page.dart';
 import '../presentation/pages/exchange/exchange_rates_page.dart';
+import '../presentation/pages/qr/qr_code_page.dart'; // ✅ IMPORTADO
 
 // Bindings
 import '../presentation/bindings/auth_binding.dart';
@@ -26,6 +26,7 @@ import '../presentation/bindings/deposit_binding.dart';
 import '../presentation/bindings/splash_binding.dart';
 import '../presentation/bindings/account_binding.dart';
 import '../presentation/bindings/transaction_binding.dart';
+import '../presentation/bindings/qr_binding.dart'; // ✅ IMPORTADO
 
 // Routes
 import 'app_routes.dart';
@@ -119,11 +120,21 @@ class AppPages {
       binding: TransactionBinding(),
     ),
 
+    // ✅ QR CODE ADICIONADO
+    GetPage(
+      name: AppRoutes.qrCode,
+      page: () => const QrCodePage(),
+      binding: QrBinding(),
+    ),
+
     // Profile & Settings
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
-      binding: AccountBinding(),
+      bindings: [
+        AccountBinding(),
+        PinBinding(), // ✅ ADICIONADO PARA PIN DOS LIMITES
+      ],
     ),
     
     GetPage(

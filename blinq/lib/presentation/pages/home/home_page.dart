@@ -416,7 +416,7 @@ class HomePage extends StatelessWidget {
       {
         'icon': Icons.qr_code_scanner,
         'label': 'QR Code',
-        'onTap': () => _showComingSoon(),
+        'onTap': () => Get.toNamed(AppRoutes.qrCode), 
       },
     ];
 
@@ -615,47 +615,111 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-        child: Center(
-          child: GestureDetector(
-            onTap: () => Get.toNamed(AppRoutes.transfer),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: highlightColor.withOpacity(0.9),
-                    offset: const Offset(-6, -6),
-                    blurRadius: 12,
-                  ),
-                  BoxShadow(
-                    color: shadowColor.withOpacity(0.5),
-                    offset: const Offset(6, 6),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // ✅ BOTÃO QR CODE
+            GestureDetector(
+              onTap: () => Get.toNamed(AppRoutes.qrCode),
               child: Container(
-                decoration: const BoxDecoration(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: surfaceColor,
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, Color(0xFF5BC4A8)],
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: highlightColor.withOpacity(0.9),
+                      offset: const Offset(-4, -4),
+                      blurRadius: 8,
+                    ),
+                    BoxShadow(
+                      color: shadowColor.withOpacity(0.5),
+                      offset: const Offset(4, 4),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                    size: 24,
+                child: const Icon(
+                  Icons.qr_code_scanner,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+            ),
+            
+            // ✅ BOTÃO PRINCIPAL TRANSFERIR (MAIOR)
+            GestureDetector(
+              onTap: () => Get.toNamed(AppRoutes.transfer),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: highlightColor.withOpacity(0.9),
+                      offset: const Offset(-6, -6),
+                      blurRadius: 12,
+                    ),
+                    BoxShadow(
+                      color: shadowColor.withOpacity(0.5),
+                      offset: const Offset(6, 6),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primary, Color(0xFF5BC4A8)],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            
+            // ✅ BOTÃO DEPÓSITO
+            GestureDetector(
+              onTap: () => Get.toNamed(AppRoutes.deposit),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: highlightColor.withOpacity(0.9),
+                      offset: const Offset(-4, -4),
+                      blurRadius: 8,
+                    ),
+                    BoxShadow(
+                      color: shadowColor.withOpacity(0.5),
+                      offset: const Offset(4, 4),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

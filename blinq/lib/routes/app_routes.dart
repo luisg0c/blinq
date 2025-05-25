@@ -25,10 +25,12 @@ class AppRoutes {
   static const String transfer = '/transfer';
   static const String transactions = '/transactions';
   
+  // ✅ QR CODE ADICIONADO
+  static const String qrCode = '/qr-code';
+  
   // Outros
   static const String profile = '/profile';
   static const String exchangeRates = '/exchange-rates';
-  static const String qrCode = '/qr-code';
   
   // Utilitários
   static const List<String> publicRoutes = [
@@ -49,6 +51,7 @@ class AppRoutes {
     exchangeRates,
     setupPin,
     verifyPin,
+    qrCode, // ✅ ADICIONADO
   ];
   
   static bool isPublicRoute(String route) {

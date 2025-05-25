@@ -33,11 +33,12 @@ class PinBinding extends Bindings {
       fenix: true,
     );
 
-    // Controller
+    // ✅ CORREÇÃO: Incluir PinRepository no Controller
     Get.lazyPut<PinController>(
       () => PinController(
         setPinUseCase: Get.find<SetPinUseCase>(),
         validatePinUseCase: Get.find<ValidatePinUseCase>(),
+        pinRepository: Get.find<PinRepository>(), // ✅ Adicionado
       ),
       fenix: true,
     );
