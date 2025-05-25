@@ -1,3 +1,5 @@
+// lib/core/services/user_session_manager.dart - VERSÃO CORRIGIDA E FUNCIONAL
+
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -6,8 +8,9 @@ class UserSessionManager {
   static String? _currentUserId;
   static String? _currentUserEmail;
   static DateTime? _sessionStartTime;
+  static bool _isInitialized = false;
 
-  /// ✅ INICIALIZAR SESSÃO (MÉTODO SIMPLES)
+  /// ✅ INICIALIZAR SESSÃO
   static Future<void> initializeUserSession(String userId) async {
     try {
       print('🔐 Inicializando sessão para: $userId');
@@ -27,6 +30,7 @@ class UserSessionManager {
       _currentUserId = userId;
       _currentUserEmail = currentUser.email;
       _sessionStartTime = DateTime.now();
+      _isInitialized = true;
 
       print('✅ Sessão inicializada: $userId (${currentUser.email})');
 
@@ -69,6 +73,7 @@ class UserSessionManager {
       _currentUserId = null;
       _currentUserEmail = null;
       _sessionStartTime = null;
+      _isInitialized = false;
 
       print('✅ Todos os dados limpos');
 
@@ -130,7 +135,8 @@ class UserSessionManager {
     final currentUser = FirebaseAuth.instance.currentUser;
     return currentUser != null && 
            _currentUserId != null && 
-           _currentUserId == currentUser.uid;
+           _currentUserId == currentUser.uid &&
+           _isInitialized;
   }
 
   /// ✅ OBTER USUÁRIO ATUAL
@@ -178,7 +184,9 @@ class UserSessionManager {
       'sessionDuration': sessionDuration?.inMinutes,
       'hasActiveSession': hasActiveSession(),
       'isRecentSession': isRecentSession(),
-      'registeredControllers': Get.registered.length,
+      'isInitialized': _isInitialized,
+      'registeredControllers': _getRegisteredControllersCount(),
+      'controllersList': _getRegisteredControllersList(),
     };
   }
 
@@ -188,6 +196,7 @@ class UserSessionManager {
     _currentUserId = null;
     _currentUserEmail = null;
     _sessionStartTime = null;
+    _isInitialized = false;
     print('✅ Sessão invalidada');
   }
 
@@ -204,7 +213,7 @@ class UserSessionManager {
     // Emails devem bater
     if (_currentUserEmail != currentUser.email) return false;
     
-    return true;
+    return _isInitialized;
   }
 
   /// ✅ REPARAR SESSÃO INCONSISTENTE
@@ -218,6 +227,78 @@ class UserSessionManager {
       } else {
         await clearAllUserData();
       }
+    }
+  }
+
+  /// ✅ VERIFICAR SE ESTÁ INICIALIZADO
+  static bool get isInitialized => _isInitialized;
+
+  /// ✅ OBTER INFORMAÇÕES DE CONTROLLERS REGISTRADOS
+  static Map<String, dynamic> get registeredInfo {
+    // GetX não tem uma propriedade 'registered' pública
+    // Retornamos informações básicas sobre controllers
+    return {
+      'length': _getRegisteredControllersCount(),
+      'controllers': _getRegisteredControllersList(),
+    };
+  }
+
+  /// ✅ CONTAR CONTROLLERS REGISTRADOS (MÉTODO SEGURO)
+  static int _getRegisteredControllersCount() {
+    try {
+      // Tentar obter informações básicas sobre controllers GetX
+      int count = 0;
+      
+      // Lista de controllers conhecidos para verificar
+      final knownControllers = [
+        'HomeController',
+        'AuthController',
+        'TransferController',
+        'DepositController',
+        'PinController',
+      ];
+      
+      for (final controller in knownControllers) {
+        if (Get.isRegistered(tag: _currentUserId)) {
+          count++;
+        }
+      }
+      
+      return count;
+    } catch (e) {
+      print('⚠️ Erro ao contar controllers: $e');
+      return 0;
+    }
+  }
+
+  /// ✅ LISTAR CONTROLLERS REGISTRADOS (MÉTODO SEGURO)
+  static List<String> _getRegisteredControllersList() {
+    try {
+      final registeredControllers = <String>[];
+      
+      // Lista de controllers conhecidos para verificar
+      final knownControllers = [
+        'HomeController',
+        'AuthController', 
+        'TransferController',
+        'DepositController',
+        'PinController',
+      ];
+      
+      for (final controller in knownControllers) {
+        try {
+          if (Get.isRegistered(tag: _currentUserId)) {
+            registeredControllers.add(controller);
+          }
+        } catch (e) {
+          // Ignorar erros individuais
+        }
+      }
+      
+      return registeredControllers;
+    } catch (e) {
+      print('⚠️ Erro ao listar controllers: $e');
+      return [];
     }
   }
 }

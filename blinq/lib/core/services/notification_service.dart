@@ -1,4 +1,4 @@
-// lib/core/services/notification_service.dart - VERSÃO COM ISOLAMENTO POR USUÁRIO
+// lib/core/services/notification_service.dart - VERSÃO CORRIGIDA E FUNCIONAL
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -42,6 +42,32 @@ class NotificationService {
     }
   }
 
+  /// ✅ VERIFICAR MENSAGEM INICIAL (MÉTODO CORRIGIDO)
+  static Future<void> checkForInitialMessage() async {
+    try {
+      print('🔍 Verificando mensagem inicial...');
+      
+      if (!_isInitialized) {
+        print('⚠️ NotificationService não inicializado, inicializando...');
+        await initialize();
+      }
+      
+      final initialMessage = await _firebaseMessaging.getInitialMessage();
+      
+      if (initialMessage != null) {
+        print('🚀 App iniciado via notificação: ${initialMessage.notification?.title}');
+        
+        // Aguardar um pouco para garantir que a navegação esteja pronta
+        await Future.delayed(const Duration(milliseconds: 2000));
+        _handleMessageOpenedApp(initialMessage);
+      } else {
+        print('ℹ️ Nenhuma mensagem inicial encontrada');
+      }
+    } catch (e) {
+      print('❌ Erro ao verificar mensagem inicial: $e');
+    }
+  }
+
   /// ✅ INICIALIZAÇÃO ESPECÍFICA PARA USUÁRIO
   static Future<void> initializeForUser(String userId) async {
     try {
@@ -59,9 +85,6 @@ class NotificationService {
 
       // Salvar token FCM para o usuário
       await _saveUserFCMToken(userId);
-
-      // Processar mensagem inicial se houver
-      await _handleInitialMessage();
 
       print('✅ Notificações configuradas para: $userId');
 
@@ -206,7 +229,7 @@ class NotificationService {
       }
 
       // Evitar notificações duplicadas
-      final notificationId = 'transfer_$userId}_${DateTime.now().millisecondsSinceEpoch}';
+      final notificationId = 'transfer_${userId}_${DateTime.now().millisecondsSinceEpoch}';
       final userHistory = _userNotificationHistory[userId] ?? [];
       
       if (userHistory.length > 10) {
@@ -367,22 +390,6 @@ class NotificationService {
       _navigateBasedOnType(type);
     } catch (e) {
       print('❌ Erro ao processar abertura via notificação: $e');
-    }
-  }
-
-  /// ✅ PROCESSAR MENSAGEM INICIAL
-  static Future<void> _handleInitialMessage() async {
-    try {
-      final initialMessage = await _firebaseMessaging.getInitialMessage();
-      
-      if (initialMessage != null) {
-        print('🚀 App iniciado via notificação: ${initialMessage.notification?.title}');
-        
-        await Future.delayed(const Duration(milliseconds: 1000));
-        _handleMessageOpenedApp(initialMessage);
-      }
-    } catch (e) {
-      print('❌ Erro ao verificar mensagem inicial: $e');
     }
   }
 
