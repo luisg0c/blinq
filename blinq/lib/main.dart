@@ -1,7 +1,7 @@
-// lib/main.dart - VERSÃO CORRIGIDA E FUNCIONAL
+// lib/main.dart - VERSÃO CORRIGIDA PARA NAVEGAÇÃO
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // ✅ Import movido para o topo
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -52,14 +52,6 @@ Future<void> main() async {
     debugPrint('❌ Erro ao inicializar NotificationService (não crítico): $e');
   }
 
-  // ✅ CONFIGURAR LISTENERS GLOBAIS
-  try {
-    AppInitializer.setupGlobalListeners();
-    debugPrint('✅ Listeners globais configurados');
-  } catch (e) {
-    debugPrint('❌ Erro ao configurar listeners: $e');
-  }
-
   runApp(const BlinqApp());
 }
 
@@ -86,8 +78,54 @@ void _initializeGlobalDependencies() {
   }
 }
 
-class BlinqApp extends StatelessWidget {
+class BlinqApp extends StatefulWidget {
   const BlinqApp({super.key});
+
+  @override
+  State<BlinqApp> createState() => _BlinqAppState();
+}
+
+class _BlinqAppState extends State<BlinqApp> {
+  bool _isAppInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  /// ✅ INICIALIZAÇÃO APÓS GETX ESTAR PRONTO
+  void _initializeApp() {
+    // Aguardar um frame para garantir que o GetMaterialApp foi criado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupAppAfterGetX();
+    });
+  }
+
+  /// ✅ CONFIGURAR APP APÓS GETX ESTAR PRONTO
+  void _setupAppAfterGetX() async {
+    try {
+      // Aguardar um pouco para garantir que GetX está completamente pronto
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      debugPrint('🚀 Configurando listeners após GetX estar pronto...');
+      
+      // Configurar listeners globais
+      AppInitializer.setupGlobalListeners();
+      
+      setState(() {
+        _isAppInitialized = true;
+      });
+      
+      debugPrint('✅ App configurado e pronto');
+      
+    } catch (e) {
+      debugPrint('❌ Erro na configuração pós-GetX: $e');
+      setState(() {
+        _isAppInitialized = true; // Continuar mesmo com erro
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,10 +163,10 @@ class BlinqApp extends StatelessWidget {
       
       // ✅ CALLBACK DE ROTEAMENTO PARA DEBUG
       routingCallback: (routing) {
-        if (routing != null) {
+        if (routing != null && _isAppInitialized) {
           debugPrint('🧭 Navegação: ${routing.current}');
           
-          // Verificar saúde da app a cada navegação
+          // Verificar saúde da app a cada navegação (apenas se inicializado)
           Future.delayed(const Duration(milliseconds: 500), () {
             AppInitializer.repairAppIfNeeded();
           });
@@ -282,12 +320,27 @@ class NotFoundPage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      try {
-                        Get.offAllNamed('/home');
-                      } catch (e) {
-                        // Fallback para welcome se home não funcionar
-                        Get.offAllNamed('/welcome');
-                      }
+                      // Aguardar um pouco para garantir que GetX está pronto
+                      Future.delayed(const Duration(milliseconds: 200), () {
+                        try {
+                          if (Get.isRegistered<GetMaterialController>()) {
+                            Get.offAllNamed('/home');
+                          } else {
+                            // Fallback manual se GetX não estiver pronto
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/welcome', 
+                              (route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('❌ Erro na navegação 404: $e');
+                          // Fallback para welcome se home não funcionar
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            '/welcome', 
+                            (route) => false,
+                          );
+                        }
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6EE1C6),
@@ -325,6 +378,13 @@ class NotFoundPage extends StatelessWidget {
                             TextButton(
                               onPressed: () => Get.back(),
                               child: const Text('Fechar'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Get.back();
+                                AppInitializer.forceReset();
+                              },
+                              child: const Text('Force Reset'),
                             ),
                           ],
                         ),

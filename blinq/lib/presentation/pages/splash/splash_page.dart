@@ -1,11 +1,11 @@
-// lib/presentation/pages/splash/splash_page.dart
+// lib/presentation/pages/splash/splash_page.dart - CORRIGIDO
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/services/app_initializer.dart'; // ✅ Importar o AppInitializer
+import '../../../core/services/app_initializer.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -31,7 +31,7 @@ class _SplashPageState extends State<SplashPage>
     super.initState();
     _initAnimations();
     _startAnimations();
-    _initApp(); // ✅ Método atualizado
+    _initApp();
   }
 
   void _initAnimations() {
@@ -102,28 +102,83 @@ class _SplashPageState extends State<SplashPage>
     });
   }
 
-  // ✅ MÉTODO ATUALIZADO - Aqui é onde você adiciona o código
+  /// ✅ MÉTODO CORRIGIDO - Aguardar GetX estar pronto
   Future<void> _initApp() async {
-    await Future.delayed(const Duration(milliseconds: 3500));
-
     try {
-      print('🚀 Iniciando inicialização do app...');
+      print('🚀 Splash: Iniciando inicialização do app...');
       
-      // ✅ Usar o AppInitializer para navegação segura
+      // 1. Aguardar animações principais
+      await Future.delayed(const Duration(milliseconds: 3000));
+      
+      // 2. Aguardar GetX estar completamente pronto
+      print('⏳ Splash: Aguardando GetX estar pronto...');
+      await AppInitializer.waitForGetXReady();
+      
+      // 3. Verificar se ainda estamos montados
+      if (!mounted) {
+        print('⚠️ Splash: Widget não está mais montado');
+        return;
+      }
+      
+      // 4. Usar AppInitializer para navegação segura
+      print('🧭 Splash: Iniciando navegação segura...');
       await AppInitializer.initializeAndNavigate();
       
     } catch (e) {
-      print('❌ Erro na inicialização do app: $e');
+      print('❌ Splash: Erro na inicialização: $e');
       
-      // ✅ Fallback para navegação manual
-      final user = FirebaseAuth.instance.currentUser;
+      if (!mounted) return;
       
-      if (user != null) {
-        print('👤 Usuário logado, indo para home');
-        Get.offAllNamed(AppRoutes.home);
-      } else {
-        print('👤 Usuário não logado, indo para welcome');
-        Get.offAllNamed(AppRoutes.welcome);
+      // ✅ Fallback manual para navegação de emergência
+      try {
+        print('🆘 Splash: Tentando fallback...');
+        
+        // Aguardar mais um pouco
+        await Future.delayed(const Duration(milliseconds: 1000));
+        
+        // Verificar usuário manualmente
+        final user = FirebaseAuth.instance.currentUser;
+        
+        if (AppInitializer.isGetXReady()) {
+          // GetX está pronto, usar navegação normal
+          if (user != null) {
+            Get.offAllNamed(AppRoutes.home);
+          } else {
+            Get.offAllNamed(AppRoutes.welcome);
+          }
+        } else {
+          // GetX não está pronto, usar Navigator direto
+          print('🆘 Splash: Usando Navigator direto');
+          
+          if (user != null) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.home, 
+              (route) => false,
+            );
+          } else {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.welcome, 
+              (route) => false,
+            );
+          }
+        }
+        
+      } catch (fallbackError) {
+        print('💥 Splash: Fallback também falhou: $fallbackError');
+        
+        // Último recurso: aguardar mais e tentar welcome
+        await Future.delayed(const Duration(milliseconds: 2000));
+        
+        if (mounted) {
+          try {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.welcome, 
+              (route) => false,
+            );
+          } catch (finalError) {
+            print('💀 Splash: Falha total na navegação: $finalError');
+          }
+        }
       }
     }
   }

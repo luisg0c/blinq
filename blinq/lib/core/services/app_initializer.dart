@@ -1,9 +1,14 @@
+// lib/core/services/app_initializer.dart - VERSÃO CORRIGIDA
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import '../../routes/app_routes.dart';
 import 'user_session_manager.dart';
+import 'dart:async';
 
 class AppInitializer {
+  static bool _isNavigationReady = false;
+  static Timer? _navigationDelayTimer;
   
   /// ✅ INICIALIZAR APP E DETERMINAR ROTA INICIAL
   static Future<void> initializeAndNavigate() async {
@@ -13,25 +18,28 @@ class AppInitializer {
       // 1. Aguardar um pouco para garantir que tudo está carregado
       await Future.delayed(const Duration(milliseconds: 2000));
       
-      // 2. Verificar se usuário está logado
+      // 2. Marcar navegação como pronta
+      _isNavigationReady = true;
+      
+      // 3. Verificar se usuário está logado
       final user = FirebaseAuth.instance.currentUser;
       
       if (user != null) {
         print('👤 Usuário logado: ${user.email}');
         
-        // 3. Inicializar sessão do usuário
+        // 4. Inicializar sessão do usuário
         await UserSessionManager.initializeUserSession(user.uid);
         
-        // 4. Navegar para home
-        Get.offAllNamed(AppRoutes.home);
+        // 5. Navegar para home com verificação
+        _safeNavigate(AppRoutes.home, offAll: true);
       } else {
         print('👤 Usuário não logado');
         
-        // 5. Limpar qualquer sessão anterior
+        // 6. Limpar qualquer sessão anterior
         await UserSessionManager.clearAllUserData();
         
-        // 6. Navegar para welcome
-        Get.offAllNamed(AppRoutes.welcome);
+        // 7. Navegar para welcome com verificação
+        _safeNavigate(AppRoutes.welcome, offAll: true);
       }
       
     } catch (e) {
@@ -44,39 +52,107 @@ class AppInitializer {
         print('❌ Erro ao limpar dados: $clearError');
       }
       
-      Get.offAllNamed(AppRoutes.welcome);
+      _safeNavigate(AppRoutes.welcome, offAll: true);
     }
   }
   
-  /// ✅ VERIFICAR SE O APP FOI ABERTO VIA NOTIFICAÇÃO
-  static Future<bool> wasOpenedFromNotification() async {
+  /// ✅ NAVEGAÇÃO SEGURA COM VERIFICAÇÕES
+  static void _safeNavigate(String route, {bool offAll = false}) {
+    // Verificar se a navegação está pronta
+    if (!_isNavigationReady) {
+      print('⚠️ Navegação não está pronta, agendando...');
+      _scheduleNavigation(route, offAll: offAll);
+      return;
+    }
+    
+    // Verificar se o GetX está pronto
+    if (!Get.isRegistered<GetMaterialController>()) {
+      print('⚠️ GetX não está pronto, agendando...');
+      _scheduleNavigation(route, offAll: offAll);
+      return;
+    }
+    
+    // Verificar se já estamos na rota correta
+    if (Get.currentRoute == route) {
+      print('ℹ️ Já estamos na rota: $route');
+      return;
+    }
+    
     try {
-      // Esta verificação seria feita pelo NotificationService
-      // Por enquanto, sempre false
-      return false;
+      print('🧭 Navegando para: $route');
+      
+      if (offAll) {
+        Get.offAllNamed(route);
+      } else {
+        Get.toNamed(route);
+      }
+      
+      print('✅ Navegação concluída: $route');
     } catch (e) {
-      print('❌ Erro ao verificar abertura via notificação: $e');
-      return false;
+      print('❌ Erro na navegação: $e');
+      _scheduleNavigation(route, offAll: offAll);
     }
   }
   
-  /// ✅ CONFIGURAR LISTENERS GLOBAIS
+  /// ✅ AGENDAR NAVEGAÇÃO PARA QUANDO ESTIVER PRONTO
+  static void _scheduleNavigation(String route, {bool offAll = false}) {
+    _navigationDelayTimer?.cancel();
+    
+    print('⏰ Agendando navegação para: $route');
+    
+    _navigationDelayTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      // Verificar se o GetX está pronto
+      if (Get.isRegistered<GetMaterialController>() && _isNavigationReady) {
+        timer.cancel();
+        
+        try {
+          print('🧭 Executando navegação agendada: $route');
+          
+          if (offAll) {
+            Get.offAllNamed(route);
+          } else {
+            Get.toNamed(route);
+          }
+          
+          print('✅ Navegação agendada concluída: $route');
+        } catch (e) {
+          print('❌ Erro na navegação agendada: $e');
+        }
+      }
+      
+      // Timeout após 10 segundos
+      if (timer.tick > 20) {
+        timer.cancel();
+        print('⏰ Timeout na navegação agendada para: $route');
+      }
+    });
+  }
+  
+  /// ✅ CONFIGURAR LISTENERS GLOBAIS (MELHORADO)
   static void setupGlobalListeners() {
     try {
-      // Listener para mudanças de autenticação
-      FirebaseAuth.instance.authStateChanges().listen((User? user) {
-        _handleAuthStateChange(user);
+      // Aguardar que o GetX esteja pronto antes de configurar listeners
+      Timer(const Duration(milliseconds: 1000), () {
+        _isNavigationReady = true;
+        
+        // Listener para mudanças de autenticação
+        FirebaseAuth.instance.authStateChanges().listen((User? user) {
+          _handleAuthStateChange(user);
+        });
+        
+        print('👂 Listeners globais configurados');
       });
-      
-      print('👂 Listeners globais configurados');
     } catch (e) {
       print('❌ Erro ao configurar listeners: $e');
     }
   }
   
-  /// ✅ LIDAR COM MUDANÇAS DE AUTENTICAÇÃO
+  /// ✅ LIDAR COM MUDANÇAS DE AUTENTICAÇÃO (CORRIGIDO)
   static void _handleAuthStateChange(User? user) async {
     try {
+      // Aguardar um pouco para evitar conflitos com navegação
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       if (user == null) {
         print('👤 Usuário deslogado');
         
@@ -85,7 +161,7 @@ class AppInitializer {
         
         // Só navegar se não estivermos em uma rota pública
         if (!_isOnPublicRoute()) {
-          Get.offAllNamed(AppRoutes.welcome);
+          _safeNavigate(AppRoutes.welcome, offAll: true);
         }
       } else {
         print('👤 Usuário logado: ${user.email}');
@@ -93,9 +169,9 @@ class AppInitializer {
         // Inicializar sessão
         await UserSessionManager.initializeUserSession(user.uid);
         
-        // Só navegar se não estivermos na home
+        // Só navegar se não estivermos na home e não for rota pública
         if (Get.currentRoute != AppRoutes.home && !_isOnPublicRoute()) {
-          Get.offAllNamed(AppRoutes.home);
+          _safeNavigate(AppRoutes.home, offAll: true);
         }
       }
     } catch (e) {
@@ -107,7 +183,7 @@ class AppInitializer {
   static bool _isOnPublicRoute() {
     final publicRoutes = [
       AppRoutes.splash,
-      AppRoutes.onboarding,
+      AppRoutes.onboarding, 
       AppRoutes.welcome,
       AppRoutes.login,
       AppRoutes.signup,
@@ -160,6 +236,7 @@ class AppInitializer {
       
       // Verificar se o GetX está funcionando
       final routeIsValid = Get.currentRoute.isNotEmpty;
+      final getxIsReady = Get.isRegistered<GetMaterialController>();
       
       // Verificar se a sessão está consistente (se há usuário)
       bool sessionIsHealthy = true;
@@ -167,11 +244,13 @@ class AppInitializer {
         sessionIsHealthy = UserSessionManager.isSessionConsistent();
       }
       
-      final isHealthy = routeIsValid && sessionIsHealthy;
+      final isHealthy = routeIsValid && sessionIsHealthy && getxIsReady && _isNavigationReady;
       
       print('🏥 Saúde da app: $isHealthy');
       print('   Rota válida: $routeIsValid');
+      print('   GetX pronto: $getxIsReady');
       print('   Sessão saudável: $sessionIsHealthy');
+      print('   Navegação pronta: $_isNavigationReady');
       
       return isHealthy;
     } catch (e) {
@@ -187,6 +266,9 @@ class AppInitializer {
       
       if (!checkAppHealth()) {
         print('⚠️ App não está saudável, tentando reparar...');
+        
+        // Aguardar um pouco para garantir que GetX está estável
+        await Future.delayed(const Duration(milliseconds: 1000));
         
         // Reparar sessão se necessário
         await UserSessionManager.repairSessionIfNeeded();
@@ -217,6 +299,8 @@ class AppInitializer {
       'firebaseUserEmail': user?.email,
       'sessionInfo': UserSessionManager.getSessionDebugInfo(),
       'appIsHealthy': checkAppHealth(),
+      'isNavigationReady': _isNavigationReady,
+      'getxIsReady': Get.isRegistered<GetMaterialController>(),
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
@@ -229,10 +313,13 @@ class AppInitializer {
       // 1. Configurar listeners globais
       setupGlobalListeners();
       
-      // 2. Verificar e reparar se necessário
+      // 2. Aguardar que tudo esteja pronto
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      // 3. Verificar e reparar se necessário
       await repairAppIfNeeded();
       
-      // 3. Inicializar e navegar
+      // 4. Inicializar e navegar
       await initializeAndNavigate();
       
       print('✅ Inicialização completa concluída');
@@ -240,7 +327,63 @@ class AppInitializer {
       print('❌ Erro na inicialização completa: $e');
       
       // Fallback para rota segura
-      Get.offAllNamed(AppRoutes.welcome);
+      _safeNavigate(AppRoutes.welcome, offAll: true);
     }
+  }
+  
+  /// ✅ FORÇAR RESET COMPLETO
+  static Future<void> forceReset() async {
+    try {
+      print('🔄 Forçando reset completo...');
+      
+      // Cancelar timers
+      _navigationDelayTimer?.cancel();
+      
+      // Reset flags
+      _isNavigationReady = false;
+      
+      // Limpar dados
+      await UserSessionManager.clearAllUserData();
+      
+      // Aguardar
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Reinicializar
+      await completeInitialization();
+      
+      print('✅ Reset completo concluído');
+    } catch (e) {
+      print('❌ Erro no reset completo: $e');
+    }
+  }
+  
+  /// ✅ VERIFICAR SE GETX ESTÁ PRONTO
+  static bool isGetXReady() {
+    try {
+      return Get.isRegistered<GetMaterialController>() && _isNavigationReady;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// ✅ AGUARDAR GETX FICAR PRONTO
+  static Future<void> waitForGetXReady({Duration timeout = const Duration(seconds: 10)}) async {
+    final completer = Completer<void>();
+    final timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (isGetXReady()) {
+        timer.cancel();
+        completer.complete();
+      }
+    });
+    
+    // Timeout
+    Timer(timeout, () {
+      timer.cancel();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+    
+    await completer.future;
   }
 }

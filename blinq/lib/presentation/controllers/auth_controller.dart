@@ -1,4 +1,4 @@
-// lib/presentation/controllers/auth_controller.dart - VERSÃO CORRIGIDA
+// lib/presentation/controllers/auth_controller.dart - FIX RÁPIDO
 
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +10,7 @@ import '../../domain/usecases/reset_password_usecase.dart';
 import '../../routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 
-/// ✅ CONTROLLER DE AUTENTICAÇÃO SIMPLES E FUNCIONAL
+/// ✅ CONTROLLER DE AUTENTICAÇÃO - FIX PARA APRESENTAÇÃO
 class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
@@ -31,7 +31,8 @@ class AuthController extends GetxController {
   void onInit() {
     super.onInit();
     _checkCurrentUser();
-    _setupAuthListener();
+    // ❌ REMOVER LISTENER AUTOMÁTICO PARA EVITAR CONFLITOS
+    // _setupAuthListener();
   }
 
   /// ✅ VERIFICAR USUÁRIO ATUAL NA INICIALIZAÇÃO
@@ -42,52 +43,13 @@ class AuthController extends GetxController {
         id: currentUser.uid,
         name: currentUser.displayName ?? 'Usuário',
         email: currentUser.email ?? '',
-        token: '', // Token será obtido quando necessário
+        token: '',
       );
       print('👤 Usuário já logado: ${currentUser.email}');
     }
   }
 
-  /// ✅ LISTENER SIMPLES PARA MUDANÇAS DE AUTH
-  void _setupAuthListener() {
-    FirebaseAuth.instance.authStateChanges().listen((firebaseUser) {
-      if (firebaseUser == null) {
-        print('👤 Usuário deslogado');
-        user.value = null;
-        // Só navegar para welcome se não estivermos já em uma tela pública
-        if (!_isOnPublicRoute()) {
-          Get.offAllNamed(AppRoutes.welcome);
-        }
-      } else {
-        print('👤 Usuário logado: ${firebaseUser.email}');
-        user.value = domain.User(
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName ?? 'Usuário',
-          email: firebaseUser.email ?? '',
-          token: '',
-        );
-        // Só navegar para home se não estivermos já lá
-        if (Get.currentRoute != AppRoutes.home && !_isOnPublicRoute()) {
-          Get.offAllNamed(AppRoutes.home);
-        }
-      }
-    });
-  }
-
-  /// ✅ VERIFICAR SE ESTAMOS EM UMA ROTA PÚBLICA
-  bool _isOnPublicRoute() {
-    final publicRoutes = [
-      AppRoutes.splash,
-      AppRoutes.onboarding,
-      AppRoutes.welcome,
-      AppRoutes.login,
-      AppRoutes.signup,
-      AppRoutes.resetPassword,
-    ];
-    return publicRoutes.contains(Get.currentRoute);
-  }
-
-  /// ✅ LOGIN SIMPLES E ROBUSTO
+  /// ✅ LOGIN SIMPLES E DIRETO
   Future<void> login({
     required String email,
     required String password,
@@ -116,6 +78,38 @@ class AuthController extends GetxController {
       
       print('✅ Login bem-sucedido: ${result.email}');
       
+      // ✅ DEFINIR USUÁRIO LOCALMENTE
+      user.value = result;
+      
+      // ✅ NAVEGAÇÃO DIRETA E FORÇADA
+      print('🧭 Navegando para home...');
+      
+      // Tentar diferentes métodos de navegação
+      try {
+        Get.offAllNamed(AppRoutes.home);
+        print('✅ Navegação Get.offAllNamed executada');
+      } catch (e) {
+        print('❌ Falha Get.offAllNamed: $e');
+        
+        // Fallback 1: Get.toNamed
+        try {
+          Get.toNamed(AppRoutes.home);
+          print('✅ Navegação Get.toNamed executada');
+        } catch (e2) {
+          print('❌ Falha Get.toNamed: $e2');
+          
+          // Fallback 2: Delay + navegação
+          Future.delayed(const Duration(milliseconds: 500), () {
+            try {
+              Get.offAllNamed(AppRoutes.home);
+              print('✅ Navegação com delay executada');
+            } catch (e3) {
+              print('❌ Falha navegação com delay: $e3');
+            }
+          });
+        }
+      }
+      
       // Mostrar feedback positivo
       Get.snackbar(
         'Bem-vindo! 👋',
@@ -125,8 +119,6 @@ class AuthController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
-      
-      // A navegação será feita pelo authStateChanges listener
       
     } catch (e) {
       print('❌ Erro no login: $e');
@@ -147,7 +139,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// ✅ REGISTRO SIMPLES E ROBUSTO
+  /// ✅ REGISTRO SIMPLES E DIRETO
   Future<void> register({
     required String name,
     required String email,
@@ -183,6 +175,9 @@ class AuthController extends GetxController {
       
       print('✅ Registro bem-sucedido: ${result.email}');
       
+      // ✅ DEFINIR USUÁRIO LOCALMENTE
+      user.value = result;
+      
       Get.snackbar(
         'Conta Criada! 🎉',
         'Bem-vindo ao Blinq, ${name.trim()}!',
@@ -192,7 +187,17 @@ class AuthController extends GetxController {
         duration: const Duration(seconds: 3),
       );
       
-      // A navegação será feita pelo authStateChanges listener
+      // ✅ NAVEGAÇÃO DIRETA
+      print('🧭 Navegando para home após registro...');
+      
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        try {
+          Get.offAllNamed(AppRoutes.home);
+          print('✅ Navegação pós-registro executada');
+        } catch (e) {
+          print('❌ Falha navegação pós-registro: $e');
+        }
+      });
       
     } catch (e) {
       print('❌ Erro no registro: $e');
@@ -210,6 +215,29 @@ class AuthController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// ✅ MÉTODO MANUAL PARA FORÇAR NAVEGAÇÃO
+  void forceNavigateToHome() {
+    print('🚀 Forçando navegação para home...');
+    
+    try {
+      Get.offAllNamed(AppRoutes.home);
+    } catch (e) {
+      print('❌ Erro ao forçar navegação: $e');
+      
+      // Tentar múltiplas vezes
+      for (int i = 0; i < 3; i++) {
+        Future.delayed(Duration(milliseconds: 500 * (i + 1)), () {
+          try {
+            Get.offAllNamed(AppRoutes.home);
+            print('✅ Navegação forçada #${i + 1} executada');
+          } catch (e) {
+            print('❌ Tentativa #${i + 1} falhou: $e');
+          }
+        });
+      }
     }
   }
 
@@ -280,6 +308,9 @@ class AuthController extends GetxController {
       
       print('✅ Logout realizado');
       
+      // Navegação direta para welcome
+      Get.offAllNamed(AppRoutes.welcome);
+      
       Get.snackbar(
         'Até logo! 👋',
         'Logout realizado com sucesso',
@@ -289,17 +320,16 @@ class AuthController extends GetxController {
         duration: const Duration(seconds: 2),
       );
       
-      // A navegação será feita pelo authStateChanges listener
-      
     } catch (e) {
       print('❌ Erro no logout: $e');
       
       // Forçar limpeza mesmo com erro
       user.value = null;
+      Get.offAllNamed(AppRoutes.welcome);
       
       Get.snackbar(
-        'Erro no Logout',
-        'Erro ao fazer logout, mas você foi desconectado',
+        'Logout realizado',
+        'Você foi desconectado',
         backgroundColor: AppColors.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -378,6 +408,7 @@ class AuthController extends GetxController {
       'hasError': errorMessage.value != null,
       'errorMessage': errorMessage.value,
       'currentRoute': Get.currentRoute,
+      'firebaseUser': FirebaseAuth.instance.currentUser?.email,
     };
   }
 }
