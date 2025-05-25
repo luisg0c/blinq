@@ -1,14 +1,24 @@
-// lib/presentation/pages/home/home_page.dart
+// lib/presentation/pages/home/home_page.dart - SALDO COM VISIBILIDADE FUNCIONAL
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/home_controller.dart';
+import '../../controllers/pin_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/components/transaction_card.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _isBalanceVisible = false; // ✅ Saldo oculto por padrão
+  bool _isTogglingBalance = false;
 
   @override
   Widget build(BuildContext context) {
@@ -203,8 +213,8 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Card de saldo
-            _buildBalanceCard(context, controller.balance.value, isDark),
+            // ✅ Card de saldo COM VISIBILIDADE FUNCIONAL
+            _buildBalanceCardWithVisibility(context, controller.balance.value, isDark),
             
             const SizedBox(height: 24),
             
@@ -221,56 +231,8 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, HomeController controller, bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Ops! Algo deu errado',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              controller.error.value,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => controller.refreshData(),
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              label: const Text(
-                'Tentar novamente',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(BuildContext context, double balance, bool isDark) {
+  // ✅ CARD DE SALDO COM FUNÇÃO DE VISIBILIDADE REAL
+  Widget _buildBalanceCardWithVisibility(BuildContext context, double balance, bool isDark) {
     final surfaceColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
     final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
     final shadowColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
@@ -299,52 +261,87 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ✅ Header com botão de visibilidade FUNCIONAL
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Saldo Disponível',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: secondaryTextColor,
-                  fontWeight: FontWeight.w500,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saldo Disponível',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: secondaryTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _getBalanceStatusText(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: secondaryTextColor,
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: highlightColor.withOpacity(0.7),
-                      offset: const Offset(-2, -2),
-                      blurRadius: 4,
-                    ),
-                    BoxShadow(
-                      color: shadowColor.withOpacity(0.5),
-                      offset: const Offset(2, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.visibility_outlined,
-                  size: 16,
-                  color: secondaryTextColor,
+              
+              // ✅ BOTÃO FUNCIONAL DE VISIBILIDADE
+              GestureDetector(
+                onTap: _isTogglingBalance ? null : _toggleBalanceVisibility,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: highlightColor.withOpacity(0.7),
+                        offset: const Offset(-2, -2),
+                        blurRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: shadowColor.withOpacity(0.5),
+                        offset: const Offset(2, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: _isTogglingBalance
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: secondaryTextColor,
+                          ),
+                        )
+                      : Icon(
+                          _isBalanceVisible ? Icons.visibility : Icons.visibility_off,
+                          color: secondaryTextColor,
+                          size: 16,
+                        ),
                 ),
               ),
             ],
           ),
           
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           
-          Text(
-            'R\$ ${balance.toStringAsFixed(2).replaceAll('.', ',')}',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: textColor,
+          // ✅ SALDO COM ANIMAÇÃO
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Text(
+              _isBalanceVisible 
+                  ? 'R\$ ${balance.toStringAsFixed(2).replaceAll('.', ',')}'
+                  : 'R\$ ••••••',
+              key: ValueKey(_isBalanceVisible),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
           ),
           
@@ -390,6 +387,152 @@ class HomePage extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ✅ FUNÇÃO PARA ALTERNAR VISIBILIDADE DO SALDO
+  Future<void> _toggleBalanceVisibility() async {
+    if (_isBalanceVisible) {
+      // Se está visível, apenas ocultar
+      setState(() {
+        _isBalanceVisible = false;
+      });
+      
+      Get.snackbar(
+        'Saldo Oculto 👁️',
+        'Seu saldo foi ocultado por segurança',
+        backgroundColor: AppColors.primary.withOpacity(0.1),
+        colorText: AppColors.primary,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    // Se está oculto, solicitar PIN para revelar
+    setState(() => _isTogglingBalance = true);
+
+    try {
+      print('🔐 Solicitando PIN para revelar saldo...');
+      
+      final success = await PinController.requestPinForAction(
+        action: 'show_balance',
+        title: 'Revelar Saldo',
+        description: 'Digite seu PIN para visualizar o saldo',
+      );
+
+      if (success) {
+        setState(() {
+          _isBalanceVisible = true;
+        });
+        
+        Get.snackbar(
+          'Saldo Revelado! 👁️',
+          'Seu saldo está agora visível',
+          backgroundColor: AppColors.success,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+        );
+        
+        // ✅ Auto-ocultar após 30 segundos
+        _scheduleAutoHide();
+      }
+    } catch (e) {
+      print('❌ Erro ao solicitar PIN para saldo: $e');
+      
+      Get.snackbar(
+        'Erro',
+        'Não foi possível verificar o PIN',
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isTogglingBalance = false);
+      }
+    }
+  }
+
+  // ✅ AUTO-OCULTAR SALDO APÓS 30 SEGUNDOS
+  void _scheduleAutoHide() {
+    Future.delayed(const Duration(seconds: 30), () {
+      if (mounted && _isBalanceVisible) {
+        setState(() {
+          _isBalanceVisible = false;
+        });
+        
+        Get.snackbar(
+          'Saldo Auto-ocultado 🔒',
+          'Por segurança, o saldo foi ocultado automaticamente',
+          backgroundColor: AppColors.warning.withOpacity(0.1),
+          colorText: AppColors.warning,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    });
+  }
+
+  // ✅ TEXTO DE STATUS DO SALDO
+  String _getBalanceStatusText() {
+    if (_isTogglingBalance) {
+      return 'Verificando PIN...';
+    } else if (_isBalanceVisible) {
+      return 'Visível • Auto-oculta em 30s';
+    } else {
+      return 'Protegido por PIN';
+    }
+  }
+
+  // Resto dos métodos permanecem iguais...
+  Widget _buildErrorState(BuildContext context, HomeController controller, bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Ops! Algo deu errado',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              controller.error.value,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => controller.refreshData(),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text(
+                'Tentar novamente',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -618,7 +761,7 @@ class HomePage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // ✅ BOTÃO QR CODE
+            // QR Code
             GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.qrCode),
               child: Container(
@@ -648,7 +791,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             
-            // ✅ BOTÃO PRINCIPAL TRANSFERIR (MAIOR)
+            // Transferir (principal)
             GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.transfer),
               child: Container(
@@ -690,7 +833,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             
-            // ✅ BOTÃO DEPÓSITO
+            // Depósito
             GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.deposit),
               child: Container(
@@ -746,6 +889,55 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  void _showTransactionDetails(BuildContext context, dynamic transaction, bool isDark) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          _getTransactionTitle(transaction),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('ID:', _getShortId(transaction.id), isDark),
+            _buildDetailRow('Tipo:', _getTransactionTypeText(transaction.type), isDark),
+            _buildDetailRow('Valor:', _formatCurrency(transaction.amount.abs()), isDark),
+            _buildDetailRow('Data:', _formatFullDate(transaction.date), isDark),
+            _buildDetailRow('Descrição:', transaction.description, isDark),
+            if (transaction.counterparty.isNotEmpty)
+              _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
+            _buildDetailRow('Status:', _getStatusText(transaction.status), isDark),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              _showComingSoon();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Gerar Comprovante',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showComingSoon() {
     Get.snackbar(
       '🚧 Em breve',
@@ -756,150 +948,94 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Substitua este método na sua HomePage
+  // ✅ MÉTODOS HELPER PARA DETALHES DA TRANSAÇÃO
+  String _getTransactionTitle(dynamic transaction) {
+    switch (transaction.type.toLowerCase()) {
+      case 'deposit':
+        return 'Detalhes do Depósito';
+      case 'transfer':
+        return transaction.amount > 0 ? 'Transferência Recebida' : 'Transferência Enviada';
+      case 'receive':
+        return 'Transferência Recebida';
+      default:
+        return 'Detalhes da Transação';
+    }
+  }
 
-void _showTransactionDetails(BuildContext context, dynamic transaction, bool isDark) {
-  Get.dialog(
-    AlertDialog(
-      backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(
-        _getTransactionTitle(transaction),
-        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+  String _getShortId(String id) {
+    return id.length > 8 ? '${id.substring(0, 8)}...' : id;
+  }
+
+  String _getTransactionTypeText(String type) {
+    switch (type.toLowerCase()) {
+      case 'deposit':
+        return 'Depósito';
+      case 'transfer':
+        return 'Transferência';
+      case 'receive':
+        return 'Recebimento';
+      default:
+        return type;
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    return 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  String _formatFullDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    
+    return '$day/$month/$year - $hour:$minute';
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'Concluído';
+      case 'pending':
+        return 'Pendente';
+      case 'failed':
+        return 'Falhou';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return status;
+    }
+  }
+
+  Widget _buildDetailRow(String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('ID:', _getShortId(transaction.id), isDark),
-          _buildDetailRow('Tipo:', _getTransactionTypeText(transaction.type), isDark),
-          _buildDetailRow('Valor:', _formatCurrency(transaction.amount.abs()), isDark),
-          _buildDetailRow('Data:', _formatFullDate(transaction.date), isDark),
-          _buildDetailRow('Descrição:', transaction.description, isDark),
-          if (transaction.counterparty.isNotEmpty)
-            _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
-          _buildDetailRow('Status:', _getStatusText(transaction.status), isDark),
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white70 : Colors.black54,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Get.back(),
-          child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Get.back();
-            _showComingSoon();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text(
-            'Gerar Comprovante',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-// ✅ MÉTODOS HELPER CORRIGIDOS
-
-String _getTransactionTitle(dynamic transaction) {
-  switch (transaction.type.toLowerCase()) {
-    case 'deposit':
-      return 'Detalhes do Depósito';
-    case 'transfer':
-      return transaction.amount > 0 ? 'Transferência Recebida' : 'Transferência Enviada';
-    case 'receive':
-      return 'Transferência Recebida';
-    default:
-      return 'Detalhes da Transação';
-  }
-}
-
-String _getShortId(String id) {
-  return id.length > 8 ? '${id.substring(0, 8)}...' : id;
-}
-
-String _getTransactionTypeText(String type) {
-  switch (type.toLowerCase()) {
-    case 'deposit':
-      return 'Depósito';
-    case 'transfer':
-      return 'Transferência';
-    case 'receive':
-      return 'Recebimento';
-    default:
-      return type;
-  }
-}
-
-String _formatCurrency(double amount) {
-  return 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
-}
-
-String _formatFullDate(DateTime date) {
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final year = date.year;
-  final hour = date.hour.toString().padLeft(2, '0');
-  final minute = date.minute.toString().padLeft(2, '0');
-  
-  return '$day/$month/$year - $hour:$minute';
-}
-
-String _getStatusText(String status) {
-  switch (status.toLowerCase()) {
-    case 'completed':
-      return 'Concluído';
-    case 'pending':
-      return 'Pendente';
-    case 'failed':
-      return 'Falhou';
-    case 'cancelled':
-      return 'Cancelado';
-    default:
-      return status;
-  }
-}
-
-Widget _buildDetailRow(String label, String value, bool isDark) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    );
   }
 }

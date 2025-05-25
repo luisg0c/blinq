@@ -1,9 +1,10 @@
-// blinq/lib/core/components/transaction_card.dart
+// lib/core/components/transaction_card.dart - CORES CORRIGIDAS
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/transaction.dart';
 
-/// Card otimizado para transações P2P com suporte a modo escuro
+/// Card de transação com cores consistentes ao tema neomorfo
 class TransactionCard extends StatelessWidget {
   final Transaction transaction;
   final VoidCallback? onTap;
@@ -19,11 +20,12 @@ class TransactionCard extends StatelessWidget {
     const primaryColor = Color(0xFF6EE1C6);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Cores adaptáveis ao tema
-    final backgroundColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
+    // ✅ CORES CONSISTENTES COM O TEMA NEOMORFO
+    final backgroundColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E5E5);
+    final highlightColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFFFFFFF);
+    final shadowDarkColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFBEBEBE);
     final textPrimaryColor = isDark ? Colors.white : const Color(0xFF0D1517);
     final textSecondaryColor = isDark ? Colors.white70 : Colors.grey[600];
-    final shadowColor = isDark ? Colors.black26 : Colors.black.withOpacity(0.03);
     
     final isReceived = transaction.amount >= 0;
     final amountColor = isReceived 
@@ -35,25 +37,21 @@ class TransactionCard extends StatelessWidget {
         .format(transaction.amount.abs());
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: isDark ? Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ) : null,
-        boxShadow: isDark ? [
+        borderRadius: BorderRadius.circular(16),
+        // ✅ SOMBRAS NEOMORFAS CONSISTENTES
+        boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ] : [
-          BoxShadow(
-            color: shadowColor,
+            color: highlightColor.withOpacity(0.7),
+            offset: const Offset(-3, -3),
             blurRadius: 6,
-            offset: const Offset(0, 1),
+          ),
+          BoxShadow(
+            color: shadowDarkColor.withOpacity(0.5),
+            offset: const Offset(3, 3),
+            blurRadius: 6,
           ),
         ],
       ),
@@ -61,47 +59,61 @@ class TransactionCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Ícone P2P
+                // ✅ ÍCONE COM ESTILO NEOMORFO
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: _getP2PIconBackground(transaction.type, isReceived, isDark),
-                    borderRadius: BorderRadius.circular(10),
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: highlightColor.withOpacity(0.7),
+                        offset: const Offset(-2, -2),
+                        blurRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: shadowDarkColor.withOpacity(0.5),
+                        offset: const Offset(2, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
-                  child: Icon(
-                    _getP2PIcon(transaction.type, isReceived),
-                    color: _getP2PIconColor(transaction.type, isReceived),
-                    size: 20,
+                  child: Center(
+                    child: Icon(
+                      _getTransactionIcon(transaction.type, isReceived),
+                      color: _getIconColor(transaction.type, isReceived),
+                      size: 20,
+                    ),
                   ),
                 ),
 
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
 
-                // Info da transação P2P
+                // Informações da transação
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getP2PTitle(transaction, isReceived),
+                        _getTransactionTitle(transaction, isReceived),
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: textPrimaryColor,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       if (transaction.counterparty.isNotEmpty)
                         Text(
                           transaction.counterparty,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             color: textSecondaryColor,
                           ),
                         ),
@@ -109,7 +121,7 @@ class TransactionCard extends StatelessWidget {
                       Text(
                         formattedDate,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: textSecondaryColor,
                         ),
                       ),
@@ -117,32 +129,45 @@ class TransactionCard extends StatelessWidget {
                   ),
                 ),
 
-                // Valor P2P
+                // Valor da transação
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '${isReceived ? '+' : '-'} $formattedAmount',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: amountColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
+                    // ✅ STATUS COM ESTILO NEOMORFO
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1,
+                        horizontal: 8,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(isDark ? 0.2 : 0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: highlightColor.withOpacity(0.5),
+                            offset: const Offset(-1, -1),
+                            blurRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: shadowDarkColor.withOpacity(0.3),
+                            offset: const Offset(1, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
                       ),
                       child: Text(
                         'Concluído',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: primaryColor,
                         ),
@@ -158,14 +183,16 @@ class TransactionCard extends StatelessWidget {
     );
   }
 
-  // Ícones específicos para P2P
-  IconData _getP2PIcon(String type, bool isReceived) {
+  // ✅ ÍCONES ESPECÍFICOS PARA CADA TIPO
+  IconData _getTransactionIcon(String type, bool isReceived) {
     switch (type.toLowerCase()) {
       case 'deposit':
       case 'bonus':
-        return Icons.add_circle;
+        return Icons.add_circle_outline;
       case 'transfer':
         return isReceived ? Icons.call_received : Icons.call_made;
+      case 'receive':
+        return Icons.call_received;
       case 'pix':
         return Icons.qr_code;
       default:
@@ -173,25 +200,8 @@ class TransactionCard extends StatelessWidget {
     }
   }
 
-  Color _getP2PIconBackground(String type, bool isReceived, bool isDark) {
-    final opacity = isDark ? 0.25 : 0.15;
-    
-    switch (type.toLowerCase()) {
-      case 'deposit':
-      case 'bonus':
-        return const Color(0xFF6EE1C6).withOpacity(opacity);
-      case 'transfer':
-        return isReceived 
-            ? const Color(0xFF10B981).withOpacity(opacity)
-            : const Color(0xFF3B82F6).withOpacity(opacity);
-      case 'pix':
-        return const Color(0xFF8B5CF6).withOpacity(opacity);
-      default:
-        return const Color(0xFF6EE1C6).withOpacity(opacity);
-    }
-  }
-
-  Color _getP2PIconColor(String type, bool isReceived) {
+  // ✅ CORES DOS ÍCONES
+  Color _getIconColor(String type, bool isReceived) {
     switch (type.toLowerCase()) {
       case 'deposit':
       case 'bonus':
@@ -200,6 +210,8 @@ class TransactionCard extends StatelessWidget {
         return isReceived 
             ? const Color(0xFF10B981)
             : const Color(0xFF3B82F6);
+      case 'receive':
+        return const Color(0xFF10B981);
       case 'pix':
         return const Color(0xFF8B5CF6);
       default:
@@ -207,16 +219,19 @@ class TransactionCard extends StatelessWidget {
     }
   }
 
-  String _getP2PTitle(Transaction transaction, bool isReceived) {
+  // ✅ TÍTULOS MAIS CLAROS
+  String _getTransactionTitle(Transaction transaction, bool isReceived) {
     switch (transaction.type.toLowerCase()) {
       case 'deposit':
         return 'Depósito';
       case 'bonus':
-        return 'Bônus';
+        return 'Bônus de Boas-vindas';
       case 'transfer':
-        return isReceived ? 'Recebido' : 'Enviado';
+        return isReceived ? 'Dinheiro Recebido' : 'Transferência Enviada';
+      case 'receive':
+        return 'Dinheiro Recebido';
       case 'pix':
-        return isReceived ? 'PIX recebido' : 'PIX enviado';
+        return isReceived ? 'PIX Recebido' : 'PIX Enviado';
       default:
         return isReceived ? 'Entrada' : 'Saída';
     }
