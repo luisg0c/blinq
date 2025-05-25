@@ -47,31 +47,35 @@ class DepositController extends GetxController {
         throw const AppException('Usuário não autenticado');
       }
 
+      // ✅ CORREÇÃO: Capturar valores ANTES de limpar
+      final depositAmount = amount.value;
+      final depositDescription = description.value;
+
       print('💰 Executando depósito:');
       print('   Usuário: ${user.email}');
-      print('   Valor: R\$ ${amount.value}');
-      print('   Descrição: ${description.value}');
+      print('   Valor: R\$ $depositAmount');
+      print('   Descrição: $depositDescription');
 
       await _depositUseCase.execute(
         userId: user.uid,
-        amount: amount.value,
-        description: description.value,
+        amount: depositAmount,
+        description: depositDescription,
       );
 
       print('✅ Depósito executado com sucesso!');
 
-      // Limpar dados
+      // Limpar dados APÓS capturar os valores
       _clearData();
 
       // Navegar para home
       Get.offAllNamed(AppRoutes.home);
 
-      // Mostrar sucesso após navegar
+      // Mostrar sucesso após navegar usando os valores capturados
       await Future.delayed(const Duration(milliseconds: 800));
       
       Get.snackbar(
         'Depósito Realizado! 💰',
-        'R\$ ${amount.value.toStringAsFixed(2)} foram adicionados à sua conta',
+        'R\$ ${depositAmount.toStringAsFixed(2).replaceAll('.', ',')} foram adicionados à sua conta',
         backgroundColor: AppColors.success,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

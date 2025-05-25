@@ -1,74 +1,62 @@
 // lib/presentation/bindings/transfer_binding.dart
-
 import 'package:get/get.dart';
-
-// Remote data sources
-import '../../../data/transaction/datasources/transaction_remote_data_source.dart';
-import '../../../data/account/datasources/account_remote_data_source.dart';
-import '../../../data/user/datasources/user_remote_data_source.dart';
-
-// Repository implementations
-import '../../../data/transaction/repositories/transaction_repository_impl.dart';
-import '../../../data/account/repositories/account_repository_impl.dart';
-import '../../../data/user/repositories/user_repository_impl.dart';
-
-// Domain abstractions
-import '../../../domain/repositories/transaction_repository.dart';
-import '../../../domain/repositories/account_repository.dart';
-import '../../../domain/repositories/user_repository.dart';
-
-// Use case & Controller
-import '../../../domain/usecases/transfer_usecase.dart';
+import '../../data/transaction/repositories/transaction_repository_impl.dart';
+import '../../data/account/repositories/account_repository_impl.dart';
+import '../../data/user/repositories/user_repository_impl.dart';
+import '../../domain/repositories/transaction_repository.dart';
+import '../../domain/repositories/account_repository.dart';
+import '../../domain/repositories/user_repository.dart';
+import '../../domain/usecases/transfer_usecase.dart';
 import '../controllers/transfer_controller.dart';
 
-/// Binding completo para o fluxo de Transferência.
+/// Binding para o fluxo de Transferência.
 class TransferBinding extends Bindings {
   @override
   void dependencies() {
-    // 1) Transaction
-    Get.lazyPut<TransactionRemoteDataSource>(
-      () => TransactionRemoteDataSourceImpl(),
-    );
-    Get.lazyPut<TransactionRepository>(
-      () => TransactionRepositoryImpl(
-        remoteDataSource: Get.find<TransactionRemoteDataSource>(),
-      ),
-    );
+    print('🔧 Inicializando TransferBinding...');
 
-    // 2) Account
-    Get.lazyPut<AccountRemoteDataSource>(
-      () => AccountRemoteDataSourceImpl(),
-    );
-    Get.lazyPut<AccountRepository>(
-      () => AccountRepositoryImpl(
-        remoteDataSource: Get.find<AccountRemoteDataSource>(),
-      ),
-    );
+    // ✅ TRANSACTION REPOSITORY
+    if (!Get.isRegistered<TransactionRepository>()) {
+      Get.lazyPut<TransactionRepository>(
+        () => TransactionRepositoryImpl(),
+        fenix: true,
+      );
+    }
 
-    // 3) User
-    Get.lazyPut<UserRemoteDataSource>(
-      () => UserRemoteDataSourceImpl(),
-    );
-    Get.lazyPut<UserRepository>(
-      () => UserRepositoryImpl(
-        remoteDataSource: Get.find<UserRemoteDataSource>(),
-      ),
-    );
+    // ✅ ACCOUNT REPOSITORY
+    if (!Get.isRegistered<AccountRepository>()) {
+      Get.lazyPut<AccountRepository>(
+        () => AccountRepositoryImpl(),
+        fenix: true,
+      );
+    }
 
-    // 4) Caso de uso
+    // ✅ USER REPOSITORY
+    if (!Get.isRegistered<UserRepository>()) {
+      Get.lazyPut<UserRepository>(
+        () => UserRepositoryImpl(),
+        fenix: true,
+      );
+    }
+
+    // ✅ TRANSFER USE CASE
     Get.lazyPut<TransferUseCase>(
       () => TransferUseCase(
         transactionRepository: Get.find<TransactionRepository>(),
-        accountRepository:     Get.find<AccountRepository>(),
-        userRepository:        Get.find<UserRepository>(),
+        accountRepository: Get.find<AccountRepository>(),
+        userRepository: Get.find<UserRepository>(),
       ),
+      fenix: true,
     );
 
-    // 5) Controller
+    // ✅ TRANSFER CONTROLLER
     Get.lazyPut<TransferController>(
       () => TransferController(
         transferUseCase: Get.find<TransferUseCase>(),
       ),
+      fenix: true,
     );
+
+    print('✅ TransferBinding inicializado');
   }
 }

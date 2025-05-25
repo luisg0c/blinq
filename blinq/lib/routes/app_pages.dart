@@ -24,6 +24,8 @@ import '../presentation/bindings/pin_binding.dart';
 import '../presentation/bindings/transfer_binding.dart';
 import '../presentation/bindings/deposit_binding.dart';
 import '../presentation/bindings/splash_binding.dart';
+import '../presentation/bindings/account_binding.dart';
+import '../presentation/bindings/transaction_binding.dart';
 
 // Routes
 import 'app_routes.dart';
@@ -114,13 +116,14 @@ class AppPages {
     GetPage(
       name: AppRoutes.transactions,
       page: () => const TransactionsPage(),
-      binding: HomeBinding(),
+      binding: TransactionBinding(),
     ),
 
     // Profile & Settings
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
+      binding: AccountBinding(),
     ),
     
     GetPage(

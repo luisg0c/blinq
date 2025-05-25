@@ -1,10 +1,9 @@
-// blinq/lib/domain/usecases/deposit_usecase.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../entities/transaction.dart';
 import '../repositories/transaction_repository.dart';
 import '../repositories/account_repository.dart';
 
-/// Caso de uso para realizar depósito na conta do usuário.
 class DepositUseCase {
   final TransactionRepository _transactionRepository;
   final AccountRepository _accountRepository;
@@ -21,55 +20,63 @@ class DepositUseCase {
     String? description,
   }) async {
     print('💰 DepositUseCase - Iniciando depósito para $userId: R\$ $amount');
-    print('   Descrição: ${description ?? "Sem descrição"}');
 
-    // Validações
+    // Validações básicas
     if (amount <= 0) {
-      print('❌ Valor inválido: $amount');
       throw Exception('Valor do depósito deve ser maior que zero');
     }
-
     if (amount > 50000) {
-      print('❌ Valor muito alto: $amount');
       throw Exception('Valor máximo por depósito: R\$ 50.000,00');
     }
 
     try {
-      // 1. Obter saldo atual
-      print('💰 Obtendo saldo atual...');
-      final currentBalance = await _accountRepository.getBalance(userId);
-      print('💰 Saldo atual: R\$ $currentBalance');
+      // ✅ USANDO TRANSAÇÃO ATÔMICA DO FIRESTORE
+      final firestore = FirebaseFirestore.instance;
       
-      // 2. Calcular novo saldo
-      final newBalance = currentBalance + amount;
-      print('💰 Novo saldo: R\$ $newBalance');
-      
-      // 3. Criar transação ANTES de atualizar o saldo
-      print('📝 Criando transação de depósito...');
-      final transaction = Transaction.deposit(
-        id: const Uuid().v4(),
-        amount: amount,
-        description: description ?? 'Depósito PIX',
-      );
-      
-      print('📝 Transação criada: ${transaction.id}');
-      print('   Tipo: ${transaction.type}');
-      print('   Valor: R\$ ${transaction.amount}');
-      print('   Data: ${transaction.date}');
-      
-      await _transactionRepository.createTransaction(userId, transaction);
-      print('✅ Transação de depósito salva no Firebase');
-      
-      // 4. Atualizar saldo na conta
-      print('💰 Atualizando saldo no Firebase...');
-      await _accountRepository.updateBalance(userId, newBalance);
-      print('✅ Saldo atualizado no Firebase: R\$ $newBalance');
+      await firestore.runTransaction((transaction) async {
+        
+        // 1. Obter saldo atual
+        final accountRef = firestore.collection('accounts').doc(userId);
+        final accountSnap = await transaction.get(accountRef);
+        
+        if (!accountSnap.exists) {
+          throw Exception('Conta não encontrada');
+        }
+        
+        final currentBalance = (accountSnap.data()!['balance'] as num?)?.toDouble() ?? 0.0;
+        final newBalance = currentBalance + amount;
+        
+        print('💰 Saldo atual: R\$ $currentBalance');
+        print('💰 Novo saldo: R\$ $newBalance');
+        
+        // 2. Atualizar saldo
+        transaction.update(accountRef, {
+          'balance': newBalance,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        // 3. Criar transação global
+        final transactionId = const Uuid().v4();
+        final transactionRef = firestore.collection('transactions').doc(transactionId);
+        
+        transaction.set(transactionRef, {
+          'userId': userId,
+          'type': 'deposit',
+          'amount': amount,
+          'description': description ?? 'Depósito PIX',
+          'counterparty': 'Depósito',
+          'status': 'completed',
+          'date': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        print('📝 Transação criada: $transactionId');
+      });
 
-      print('🎉 Depósito concluído com sucesso!');
+      print('✅ Depósito concluído com sucesso!');
       
     } catch (e) {
       print('❌ Erro no DepositUseCase: $e');
-      print('   Stack trace: ${StackTrace.current}');
       rethrow;
     }
   }

@@ -692,65 +692,148 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  void _showTransactionDetails(BuildContext context, transaction, bool isDark) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Detalhes da Transação',
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Tipo:', transaction.type, isDark),
-            _buildDetailRow('Valor:', 'R\$ ${transaction.amount.abs().toStringAsFixed(2)}', isDark),
-            _buildDetailRow('Data:', _formatDate(transaction.date), isDark),
-            _buildDetailRow('Descrição:', transaction.description, isDark),
-            if (transaction.counterparty.isNotEmpty)
-              _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
+  // Substitua este método na sua HomePage
 
-  Widget _buildDetailRow(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+void _showTransactionDetails(BuildContext context, dynamic transaction, bool isDark) {
+  Get.dialog(
+    AlertDialog(
+      backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        _getTransactionTitle(transaction),
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-          ),
+          _buildDetailRow('ID:', _getShortId(transaction.id), isDark),
+          _buildDetailRow('Tipo:', _getTransactionTypeText(transaction.type), isDark),
+          _buildDetailRow('Valor:', _formatCurrency(transaction.amount.abs()), isDark),
+          _buildDetailRow('Data:', _formatFullDate(transaction.date), isDark),
+          _buildDetailRow('Descrição:', transaction.description, isDark),
+          if (transaction.counterparty.isNotEmpty)
+            _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
+          _buildDetailRow('Status:', _getStatusText(transaction.status), isDark),
         ],
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Get.back();
+            _showComingSoon();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'Gerar Comprovante',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// ✅ MÉTODOS HELPER CORRIGIDOS
+
+String _getTransactionTitle(dynamic transaction) {
+  switch (transaction.type.toLowerCase()) {
+    case 'deposit':
+      return 'Detalhes do Depósito';
+    case 'transfer':
+      return transaction.amount > 0 ? 'Transferência Recebida' : 'Transferência Enviada';
+    case 'receive':
+      return 'Transferência Recebida';
+    default:
+      return 'Detalhes da Transação';
   }
+}
+
+String _getShortId(String id) {
+  return id.length > 8 ? '${id.substring(0, 8)}...' : id;
+}
+
+String _getTransactionTypeText(String type) {
+  switch (type.toLowerCase()) {
+    case 'deposit':
+      return 'Depósito';
+    case 'transfer':
+      return 'Transferência';
+    case 'receive':
+      return 'Recebimento';
+    default:
+      return type;
+  }
+}
+
+String _formatCurrency(double amount) {
+  return 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
+}
+
+String _formatFullDate(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final year = date.year;
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  
+  return '$day/$month/$year - $hour:$minute';
+}
+
+String _getStatusText(String status) {
+  switch (status.toLowerCase()) {
+    case 'completed':
+      return 'Concluído';
+    case 'pending':
+      return 'Pendente';
+    case 'failed':
+      return 'Falhou';
+    case 'cancelled':
+      return 'Cancelado';
+    default:
+      return status;
+  }
+}
+
+Widget _buildDetailRow(String label, String value, bool isDark) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white70 : Colors.black54,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';

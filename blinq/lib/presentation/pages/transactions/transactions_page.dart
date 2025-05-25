@@ -1,3 +1,4 @@
+// lib/presentation/pages/transactions/transactions_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
@@ -58,7 +59,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       });
     }, onError: (e) {
       setState(() {
-        _error = 'Erro ao carregar transações: \$e';
+        _error = 'Erro ao carregar transações: $e';
         _isLoading = false;
       });
     });
@@ -98,7 +99,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         itemCount: _transactions.length,
                         itemBuilder: (ctx, i) => TransactionCard(
                           transaction: _transactions[i],
-                          onTap: () => _showDetails(_transactions[i]),
+                          onTap: () => _showTransactionDetails(_transactions[i]),
                         ),
                       ),
                     ),
@@ -157,29 +158,36 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
-  void _showDetails(domain.Transaction tx) {
+  // ✅ MODAL DE DETALHES CORRIGIDO
+  void _showTransactionDetails(domain.Transaction transaction) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     Get.dialog(
       AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          tx.isDeposit ? 'Detalhes do Depósito' : 'Detalhes da Transferência',
+          _getTransactionTitle(transaction),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _row('ID:', '\${tx.id.substring(0, 8)}...'),
-            _row('Tipo:', tx.type),
-            _row('Valor:', 'R\$ \${tx.amount.abs().toStringAsFixed(2)}'),
-            _row('Data:', _format(tx.date)),
-            _row('Descrição:', tx.description),
-            if (tx.counterparty.isNotEmpty) _row('Contraparte:', tx.counterparty),
-            _row('Status:', tx.status),
+            _buildDetailRow('ID:', _getShortId(transaction.id), isDark),
+            _buildDetailRow('Tipo:', _getTransactionTypeText(transaction.type), isDark),
+            _buildDetailRow('Valor:', _formatCurrency(transaction.amount.abs()), isDark),
+            _buildDetailRow('Data:', _formatFullDate(transaction.date), isDark),
+            _buildDetailRow('Descrição:', transaction.description, isDark),
+            if (transaction.counterparty.isNotEmpty)
+              _buildDetailRow('Contraparte:', transaction.counterparty, isDark),
+            _buildDetailRow('Status:', _getStatusText(transaction.status), isDark),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Fechar'),
+            child: const Text('Fechar', style: TextStyle(color: AppColors.primary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -188,16 +196,88 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 'Comprovante',
                 'Recurso disponível em breve',
                 snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: AppColors.warning.withOpacity(0.1),
+                colorText: AppColors.warning,
               );
             },
-            child: const Text('Gerar Comprovante'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Gerar Comprovante',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String value) {
+  // ✅ MÉTODOS HELPER PARA FORMATAÇÃO CORRETA
+
+  String _getTransactionTitle(domain.Transaction transaction) {
+    switch (transaction.type.toLowerCase()) {
+      case 'deposit':
+        return 'Detalhes do Depósito';
+      case 'transfer':
+        return transaction.amount > 0 ? 'Transferência Recebida' : 'Transferência Enviada';
+      case 'receive':
+        return 'Transferência Recebida';
+      default:
+        return 'Detalhes da Transação';
+    }
+  }
+
+  String _getShortId(String id) {
+    return id.length > 8 ? '${id.substring(0, 8)}...' : id;
+  }
+
+  String _getTransactionTypeText(String type) {
+    switch (type.toLowerCase()) {
+      case 'deposit':
+        return 'Depósito';
+      case 'transfer':
+        return 'Transferência';
+      case 'receive':
+        return 'Recebimento';
+      default:
+        return type.toUpperCase();
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    return 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  String _formatFullDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    
+    return '$day/$month/$year - $hour:$minute';
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'Concluído';
+      case 'pending':
+        return 'Pendente';
+      case 'failed':
+        return 'Falhou';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return status;
+    }
+  }
+
+  Widget _buildDetailRow(String label, String value, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -207,16 +287,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white70 : Colors.black54,
+                fontSize: 14,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
     );
-  }
-
-  String _format(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
