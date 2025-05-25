@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:async';
 import '../../../core/components/custom_money_field.dart';
 import '../../../core/services/email_validation_service.dart';
 import '../../../routes/app_routes.dart';
@@ -19,59 +20,70 @@ class _TransferPageState extends State<TransferPage> {
   final descriptionCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // ✅ CONTROLE DE VALIDAÇÃO
+  // Estado da validação de email
   bool _isValidatingEmail = false;
   EmailValidationResult? _emailValidationResult;
   bool _isProcessing = false;
-
-  @override
-  void dispose() {
-    recipientCtrl.dispose();
-    amountCtrl.dispose();
-    descriptionCtrl.dispose();
-    super.dispose();
-  }
-
-  // lib/presentation/pages/transfer/transfer_page.dart - SEÇÃO INITSTATE ATUALIZADA
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
-    // ✅ LISTENER PARA VALIDAÇÃO EM TEMPO REAL
     recipientCtrl.addListener(_onEmailChanged);
-    
-    // ✅ VERIFICAR SE VEIO DE QR CODE
     _checkQrCodeData();
   }
 
-  /// ✅ VERIFICAR E PREENCHER DADOS DO QR CODE
+  @override
+  void dispose() {
+    recipientCtrl.removeListener(_onEmailChanged);
+    recipientCtrl.dispose();
+    amountCtrl.dispose();
+    descriptionCtrl.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  /// ✅ LISTENER PARA VALIDAÇÃO EM TEMPO REAL
+  void _onEmailChanged() {
+    final email = recipientCtrl.text.trim();
+    _debounceTimer?.cancel();
+    
+    if (_emailValidationResult != null && 
+        !email.toLowerCase().contains(_emailValidationResult!.userName?.toLowerCase().substring(0, 3) ?? '')) {
+      setState(() => _emailValidationResult = null);
+    }
+    
+    _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+      if (email.isNotEmpty && email.length >= 3) {
+        _validateEmail(email);
+      } else {
+        setState(() => _emailValidationResult = null);
+      }
+    });
+  }
+
+  /// ✅ VERIFICAR DADOS DO QR CODE
   void _checkQrCodeData() {
     final args = Get.arguments as Map<String, dynamic>?;
     
     if (args != null && args['fromQrCode'] == true) {
       print('📱 Preenchendo dados do QR Code');
       
-      // Preencher email do destinatário
       if (args['recipient'] != null) {
         recipientCtrl.text = args['recipient'].toString();
-        // Validar email automaticamente
         _validateEmail(args['recipient'].toString());
       }
       
-      // Preencher valor
       if (args['amount'] != null) {
         final amount = args['amount'] as double;
-        // Converter para formato brasileiro
         final formattedAmount = 'R\$ ${amount.toStringAsFixed(2).replaceAll('.', ',')}';
         amountCtrl.text = formattedAmount;
       }
       
-      // Preencher descrição
       if (args['description'] != null && args['description'].toString().isNotEmpty) {
         descriptionCtrl.text = args['description'].toString();
       }
       
-      // Mostrar feedback que dados foram preenchidos
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.snackbar(
           'QR Code Carregado! 📱',
@@ -98,7 +110,6 @@ class _TransferPageState extends State<TransferPage> {
 
     try {
       final result = await EmailValidationService.validateRecipientEmail(email);
-      
       if (mounted) {
         setState(() {
           _emailValidationResult = result;
@@ -121,42 +132,36 @@ class _TransferPageState extends State<TransferPage> {
     
     return Scaffold(
       backgroundColor: neomorphTheme.backgroundColor,
-      appBar: _buildNeomorphAppBar(context),
-      body: _buildBody(context),
+      appBar: _buildAppBar(context, neomorphTheme),
+      body: _buildBody(context, neomorphTheme),
     );
   }
 
-  PreferredSizeWidget _buildNeomorphAppBar(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  PreferredSizeWidget _buildAppBar(BuildContext context, NeomorphTheme theme) {
     return AppBar(
-      backgroundColor: neomorphTheme.backgroundColor,
+      backgroundColor: theme.backgroundColor,
       elevation: 0,
       leading: GestureDetector(
         onTap: () => Get.back(),
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: neomorphTheme.surfaceColor,
+            color: theme.surfaceColor,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: neomorphTheme.highlightColor.withOpacity(0.7),
+                color: theme.highlightColor.withOpacity(0.7),
                 offset: const Offset(-2, -2),
                 blurRadius: 6,
               ),
               BoxShadow(
-                color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                color: theme.shadowDarkColor.withOpacity(0.5),
                 offset: const Offset(2, 2),
                 blurRadius: 6,
               ),
             ],
           ),
-          child: Icon(
-            Icons.arrow_back,
-            color: neomorphTheme.textPrimaryColor,
-            size: 20,
-          ),
+          child: Icon(Icons.arrow_back, color: theme.textPrimaryColor, size: 20),
         ),
       ),
       title: Text(
@@ -164,14 +169,43 @@ class _TransferPageState extends State<TransferPage> {
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: neomorphTheme.textPrimaryColor,
+          color: theme.textPrimaryColor,
         ),
       ),
       centerTitle: true,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Get.toNamed(AppRoutes.qrCode),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.surfaceColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.highlightColor.withOpacity(0.7),
+                    offset: const Offset(-2, -2),
+                    blurRadius: 6,
+                  ),
+                  BoxShadow(
+                    color: theme.shadowDarkColor.withOpacity(0.5),
+                    offset: const Offset(2, 2),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.qr_code_scanner, color: AppColors.primary, size: 18),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, NeomorphTheme theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -179,35 +213,25 @@ class _TransferPageState extends State<TransferPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header com ícone
-            _buildHeader(context),
-            
+            _buildHeader(theme),
             const SizedBox(height: 32),
             
-            // ✅ CAMPO DE EMAIL COM VALIDAÇÃO
-            _buildSectionTitle(context, 'Destinatário'),
+            _buildSectionTitle('Destinatário', theme),
             const SizedBox(height: 12),
-            _buildEmailField(context),
-            
+            _buildEmailField(theme),
             const SizedBox(height: 24),
             
-            // Campo de valor
-            _buildSectionTitle(context, 'Valor'),
+            _buildSectionTitle('Valor', theme),
             const SizedBox(height: 12),
-            _buildMoneyField(context),
-            
+            _buildMoneyField(theme),
             const SizedBox(height: 24),
             
-            // Campo de descrição
-            _buildSectionTitle(context, 'Descrição (opcional)'),
+            _buildSectionTitle('Descrição (opcional)', theme),
             const SizedBox(height: 12),
-            _buildDescriptionField(context),
-            
+            _buildDescriptionField(theme),
             const SizedBox(height: 40),
             
-            // Botão de continuar
-            _buildContinueButton(context),
-            
+            _buildContinueButton(theme),
             const SizedBox(height: 20),
           ],
         ),
@@ -215,23 +239,21 @@ class _TransferPageState extends State<TransferPage> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildHeader(NeomorphTheme theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
+        color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: neomorphTheme.highlightColor.withOpacity(0.7),
+            color: theme.highlightColor.withOpacity(0.7),
             offset: const Offset(-6, -6),
             blurRadius: 12,
           ),
           BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+            color: theme.shadowDarkColor.withOpacity(0.5),
             offset: const Offset(6, 6),
             blurRadius: 12,
           ),
@@ -243,26 +265,22 @@ class _TransferPageState extends State<TransferPage> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: neomorphTheme.surfaceColor,
+              color: theme.surfaceColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: neomorphTheme.highlightColor.withOpacity(0.7),
+                  color: theme.highlightColor.withOpacity(0.7),
                   offset: const Offset(-3, -3),
                   blurRadius: 6,
                 ),
                 BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  color: theme.shadowDarkColor.withOpacity(0.5),
                   offset: const Offset(3, 3),
                   blurRadius: 6,
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.send_rounded,
-              color: AppColors.primary,
-              size: 28,
-            ),
+            child: const Icon(Icons.send_rounded, color: AppColors.primary, size: 28),
           ),
           const SizedBox(height: 16),
           Text(
@@ -270,7 +288,7 @@ class _TransferPageState extends State<TransferPage> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: neomorphTheme.textPrimaryColor,
+              color: theme.textPrimaryColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -279,7 +297,7 @@ class _TransferPageState extends State<TransferPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: neomorphTheme.textSecondaryColor,
+              color: theme.textSecondaryColor,
               height: 1.4,
             ),
           ),
@@ -288,22 +306,18 @@ class _TransferPageState extends State<TransferPage> {
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildSectionTitle(String title, NeomorphTheme theme) {
     return Text(
       title,
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: neomorphTheme.textPrimaryColor,
+        color: theme.textPrimaryColor,
       ),
     );
   }
 
-  /// ✅ CAMPO DE EMAIL COM VALIDAÇÃO VISUAL
-  Widget _buildEmailField(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
+  Widget _buildEmailField(NeomorphTheme theme) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Column(
@@ -311,20 +325,17 @@ class _TransferPageState extends State<TransferPage> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: neomorphTheme.surfaceColor,
+            color: theme.surfaceColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _getBorderColor(isDark),
-              width: 1,
-            ),
+            border: Border.all(color: _getBorderColor(isDark), width: 1),
             boxShadow: [
               BoxShadow(
-                color: neomorphTheme.highlightColor.withOpacity(0.5),
+                color: theme.highlightColor.withOpacity(0.5),
                 offset: const Offset(-2, -2),
                 blurRadius: 6,
               ),
               BoxShadow(
-                color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+                color: theme.shadowDarkColor.withOpacity(0.3),
                 offset: const Offset(2, 2),
                 blurRadius: 6,
               ),
@@ -333,66 +344,50 @@ class _TransferPageState extends State<TransferPage> {
           child: TextFormField(
             controller: recipientCtrl,
             keyboardType: TextInputType.emailAddress,
-            style: TextStyle(
-              color: neomorphTheme.textPrimaryColor,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: theme.textPrimaryColor, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Email do destinatário',
-              hintStyle: TextStyle(
-                color: neomorphTheme.textSecondaryColor,
-                fontSize: 16,
-              ),
+              hintText: 'Digite o email do destinatário',
+              hintStyle: TextStyle(color: theme.textSecondaryColor, fontSize: 16),
               prefixIcon: Container(
                 margin: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: neomorphTheme.surfaceColor,
+                  color: theme.surfaceColor,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: neomorphTheme.highlightColor.withOpacity(0.7),
+                      color: theme.highlightColor.withOpacity(0.7),
                       offset: const Offset(-2, -2),
                       blurRadius: 4,
                     ),
                     BoxShadow(
-                      color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                      color: theme.shadowDarkColor.withOpacity(0.5),
                       offset: const Offset(2, 2),
                       blurRadius: 4,
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.email_outlined,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
+                child: const Icon(Icons.person_search, color: AppColors.primary, size: 20),
               ),
               suffixIcon: _buildEmailSuffixIcon(),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Informe o email do destinatário';
+                return 'Informe o destinatário';
               }
-              
               if (_emailValidationResult?.isValid == false) {
                 return _emailValidationResult?.errorMessage;
               }
-              
               if (_emailValidationResult?.userExists == false) {
-                return 'Este email não está cadastrado no Blinq';
+                return 'Este usuário não está cadastrado no Blinq';
               }
-              
               return null;
             },
           ),
         ),
 
-        // ✅ FEEDBACK VISUAL DA VALIDAÇÃO
+        // Feedback visual da validação
         if (_emailValidationResult != null && _emailValidationResult!.userExists)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -408,9 +403,36 @@ class _TransferPageState extends State<TransferPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Destinatário: ${_emailValidationResult!.userName}',
+                    'Destinatário: ${_emailValidationResult!.userName ?? 'Usuário Blinq'}',
                     style: const TextStyle(
                       color: AppColors.success,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Feedback de erro
+        if (_emailValidationResult != null && !_emailValidationResult!.userExists && _emailValidationResult!.errorMessage != null)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info, color: AppColors.warning, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _emailValidationResult!.errorMessage!,
+                    style: const TextStyle(
+                      color: AppColors.warning,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -422,7 +444,6 @@ class _TransferPageState extends State<TransferPage> {
     );
   }
 
-  /// ✅ ÍCONE DO CAMPO EMAIL BASEADO NO STATUS
   Widget? _buildEmailSuffixIcon() {
     if (_isValidatingEmail) {
       return const Padding(
@@ -454,44 +475,45 @@ class _TransferPageState extends State<TransferPage> {
     } else if (_emailValidationResult?.isValid == false) {
       return AppColors.error.withOpacity(0.5);
     } else {
-      return isDark 
-          ? Colors.white.withOpacity(0.1) 
-          : Colors.black.withOpacity(0.08);
+      return isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08);
     }
   }
 
-  Widget _buildMoneyField(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildMoneyField(NeomorphTheme theme) {
     return Container(
       decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: CustomMoneyField(
-        controller: amountCtrl,
-        onChanged: (val) {
-          // Opcional: converter de "R$ 1.234,56" para double
-        },
-      ),
-    );
-  }
-
-  Widget _buildDescriptionField(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: neomorphTheme.surfaceColor,
+        color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: neomorphTheme.highlightColor.withOpacity(0.5),
+            color: theme.highlightColor.withOpacity(0.5),
             offset: const Offset(-2, -2),
             blurRadius: 6,
           ),
           BoxShadow(
-            color: neomorphTheme.shadowDarkColor.withOpacity(0.3),
+            color: theme.shadowDarkColor.withOpacity(0.3),
+            offset: const Offset(2, 2),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: CustomMoneyField(controller: amountCtrl),
+    );
+  }
+
+  Widget _buildDescriptionField(NeomorphTheme theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.highlightColor.withOpacity(0.5),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: theme.shadowDarkColor.withOpacity(0.3),
             offset: const Offset(2, 2),
             blurRadius: 6,
           ),
@@ -500,53 +522,38 @@ class _TransferPageState extends State<TransferPage> {
       child: TextFormField(
         controller: descriptionCtrl,
         maxLines: 3,
-        style: TextStyle(
-          color: neomorphTheme.textPrimaryColor,
-          fontSize: 16,
-        ),
+        style: TextStyle(color: theme.textPrimaryColor, fontSize: 16),
         decoration: InputDecoration(
           hintText: 'Motivo da transferência',
-          hintStyle: TextStyle(
-            color: neomorphTheme.textSecondaryColor,
-            fontSize: 16,
-          ),
+          hintStyle: TextStyle(color: theme.textSecondaryColor, fontSize: 16),
           prefixIcon: Container(
             margin: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: neomorphTheme.surfaceColor,
+              color: theme.surfaceColor,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: neomorphTheme.highlightColor.withOpacity(0.7),
+                  color: theme.highlightColor.withOpacity(0.7),
                   offset: const Offset(-2, -2),
                   blurRadius: 4,
                 ),
                 BoxShadow(
-                  color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+                  color: theme.shadowDarkColor.withOpacity(0.5),
                   offset: const Offset(2, 2),
                   blurRadius: 4,
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: const Icon(Icons.description_outlined, color: AppColors.primary, size: 20),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
       ),
     );
   }
 
-  Widget _buildContinueButton(BuildContext context) {
-    final neomorphTheme = Theme.of(context).extension<NeomorphTheme>()!;
-    
+  Widget _buildContinueButton(NeomorphTheme theme) {
     return GestureDetector(
       onTap: _isProcessing ? null : _onContinuePressed,
       child: Container(
@@ -557,10 +564,7 @@ class _TransferPageState extends State<TransferPage> {
           gradient: _isProcessing ? null : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary,
-              Color(0xFF5BC4A8),
-            ],
+            colors: [AppColors.primary, Color(0xFF5BC4A8)],
           ),
           color: _isProcessing ? Colors.grey : null,
           boxShadow: _isProcessing ? [] : [
@@ -570,12 +574,12 @@ class _TransferPageState extends State<TransferPage> {
               blurRadius: 12,
             ),
             BoxShadow(
-              color: neomorphTheme.highlightColor.withOpacity(0.7),
+              color: theme.highlightColor.withOpacity(0.7),
               offset: const Offset(-2, -2),
               blurRadius: 6,
             ),
             BoxShadow(
-              color: neomorphTheme.shadowDarkColor.withOpacity(0.5),
+              color: theme.shadowDarkColor.withOpacity(0.5),
               offset: const Offset(2, 2),
               blurRadius: 6,
             ),
@@ -586,10 +590,7 @@ class _TransferPageState extends State<TransferPage> {
               ? const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
               : const Text(
                   'Continuar',
@@ -606,53 +607,61 @@ class _TransferPageState extends State<TransferPage> {
 
   /// ✅ PROCESSAR TRANSFERÊNCIA
   Future<void> _onContinuePressed() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    // Verificar se email foi validado
     if (_emailValidationResult?.userExists != true) {
       Get.snackbar(
-        'Erro',
-        'Aguarde a validação do email ou informe um email válido',
-        backgroundColor: AppColors.error,
+        'Destinatário Inválido',
+        'Aguarde a validação do destinatário ou informe um usuário válido',
+        backgroundColor: AppColors.warning,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    if (amountCtrl.text.isEmpty) {
-      Get.snackbar('Atenção', 'Informe o valor da transferência');
+    if (amountCtrl.text.trim().isEmpty) {
+      Get.snackbar(
+        'Valor Obrigatório',
+        'Informe o valor da transferência',
+        backgroundColor: AppColors.warning,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     setState(() => _isProcessing = true);
 
     try {
-      // Converter valor corretamente
-      final amountText = amountCtrl.text.replaceAll(RegExp(r'[^\d,]'), '');
-      final amount = double.tryParse(amountText.replaceAll(',', '.')) ?? 0.0;
+      final amount = _extractAmountFromText(amountCtrl.text);
       
       if (amount <= 0) {
-        throw Exception('Valor inválido');
+        throw Exception('Valor inválido para transferência');
       }
-      
-      // Navegar para verificação de PIN
-      Get.toNamed(
-        AppRoutes.verifyPin,
-        arguments: {
-          'flow': 'transfer',
-          'recipient': recipientCtrl.text.trim(),
-          'amount': amount,
-          'description': descriptionCtrl.text.trim().isNotEmpty 
-              ? descriptionCtrl.text.trim()
-              : 'Transferência PIX',
-        },
-      );
+      if (amount > 50000) {
+        throw Exception('Valor máximo por transferência: R\$ 50.000,00');
+      }
+      if (amount < 0.01) {
+        throw Exception('Valor mínimo para transferência: R\$ 0,01');
+      }
+
+      final transferData = {
+        'flow': 'transfer',
+        'recipient': recipientCtrl.text.trim(),
+        'amount': amount,
+        'description': descriptionCtrl.text.trim().isNotEmpty 
+            ? descriptionCtrl.text.trim()
+            : 'Transferência PIX',
+        'recipientName': _emailValidationResult?.userName,
+        'recipientId': _emailValidationResult?.userId,
+      };
+
+      Get.toNamed(AppRoutes.verifyPin, arguments: transferData);
+
     } catch (e) {
       Get.snackbar(
-        'Erro',
+        'Erro na Transferência',
         e.toString().replaceAll('Exception: ', ''),
         backgroundColor: AppColors.error,
         colorText: Colors.white,
@@ -661,5 +670,18 @@ class _TransferPageState extends State<TransferPage> {
     } finally {
       setState(() => _isProcessing = false);
     }
+  }
+
+  /// ✅ EXTRAIR VALOR NUMÉRICO DO TEXTO FORMATADO
+  double _extractAmountFromText(String formattedText) {
+    if (formattedText.trim().isEmpty) return 0.0;
+    
+    final cleanText = formattedText
+        .replaceAll('R\$', '')
+        .replaceAll(' ', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '.');
+    
+    return double.tryParse(cleanText) ?? 0.0;
   }
 }
