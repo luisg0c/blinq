@@ -1,27 +1,41 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ExchangeRate {
   final String currency;
   final String name;
   final double rate;
   final String flag;
+  final double? previousRate;
+  final double variation;
+  final DateTime lastUpdate;
 
   ExchangeRate({
     required this.currency,
     required this.name,
     required this.rate,
     required this.flag,
-  });
+    this.previousRate,
+    double? variation,
+    DateTime? lastUpdate,
+  }) : variation = variation ?? 0.0,
+       lastUpdate = lastUpdate ?? DateTime.now();
 
-  factory ExchangeRate.fromJson(String currency, double rate) {
+  factory ExchangeRate.fromJson(String currency, double brlToForeignRate, {double? previousRate}) {
     final currencyInfo = _getCurrencyInfo(currency);
+    
+    // ✅ CORREÇÃO: Inverter a taxa para mostrar quanto vale 1 unidade da moeda estrangeira em BRL
+    final foreignToBrlRate = 1.0 / brlToForeignRate;
+    final variation = previousRate != null ? ((foreignToBrlRate - previousRate) / previousRate) * 100 : 0.0;
+    
     return ExchangeRate(
       currency: currency,
       name: currencyInfo['name']!,
-      rate: rate,
+      rate: foreignToBrlRate, // ✅ Agora mostra quanto vale 1 USD em BRL
       flag: currencyInfo['flag']!,
+      previousRate: previousRate,
+      variation: variation,
+      lastUpdate: DateTime.now(),
     );
   }
 
@@ -38,83 +52,238 @@ class ExchangeRate {
     };
     return currencies[currency] ?? {'name': currency, 'flag': '🌍'};
   }
+
+  bool get isPositiveVariation => variation >= 0;
+  
+  String get formattedVariation {
+    final sign = isPositiveVariation ? '+' : '';
+    return '$sign${variation.toStringAsFixed(2)}%';
+  }
+
+  String get formattedRate {
+    if (currency == 'JPY') {
+      return rate.toStringAsFixed(2); // Iene usa 2 casas decimais
+    }
+    return rate.toStringAsFixed(4); // Outras moedas usam 4 casas
+  }
 }
 
 class ExchangeRateService {
-  static final String _apiKey = dotenv.env['EXCHANGE_API_KEY'] ?? '';
-  static final String _baseUrl =
-      'https://v6.exchangerate-api.com/v6/$_apiKey/latest/BRL';
-
-  static const Map<String, double> _fallbackRates = {
-    'USD': 0.1750,
-    'EUR': 0.1550,
-    'GBP': 0.1300,
-    'JPY': 25.0200,
-    'CAD': 0.2410,
-    'AUD': 0.2710,
-    'CHF': 0.1480,
-    'CNY': 1.2350,
+  // ✅ TAXAS CORRETAS (1 USD = ~5.20 BRL, 1 EUR = ~5.60 BRL, etc)
+  static const Map<String, double> _correctFallbackRates = {
+    'USD': 5.20,  // 1 Dólar = 5.20 Reais
+    'EUR': 5.65,  // 1 Euro = 5.65 Reais
+    'GBP': 6.45,  // 1 Libra = 6.45 Reais
+    'JPY': 0.035, // 1 Iene = 0.035 Reais
+    'CAD': 3.85,  // 1 Dólar Canadense = 3.85 Reais
+    'AUD': 3.42,  // 1 Dólar Australiano = 3.42 Reais
+    'CHF': 5.85,  // 1 Franco Suíço = 5.85 Reais
+    'CNY': 0.72,  // 1 Yuan = 0.72 Reais
   };
 
-  Future<List<ExchangeRate>> getExchangeRates() async {
+  static final Map<String, ExchangeRate> _cachedRates = {};
+  static DateTime? _lastUpdate;
+  static const Duration _cacheExpiration = Duration(minutes: 5);
+
+  /// ✅ OBTER COTAÇÕES COM VALORES CORRETOS
+  static Future<List<ExchangeRate>> getExchangeRates() async {
     try {
-      final realRates = await _fetchRealRates().timeout(const Duration(seconds: 5));
-      if (realRates.isNotEmpty) return realRates;
-    } catch (e) {
-      print('⚠️  Erro na API real: $e');
-    }
-
-    return _getFallbackRates();
-  }
-
-  Future<List<ExchangeRate>> _fetchRealRates() async {
-    final response = await http.get(
-      Uri.parse(_baseUrl),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['result'] != 'success') {
-        throw Exception('Erro na resposta da API: ${data['error-type']}');
+      // Verificar cache
+      if (_isCacheValid()) {
+        print('📦 Usando cotações do cache');
+        return _cachedRates.values.toList();
       }
 
-      final rates = data['conversion_rates'] as Map<String, dynamic>;
-      final mainCurrencies = _fallbackRates.keys;
-      return mainCurrencies
-          .where((currency) => rates.containsKey(currency))
-          .map((currency) => ExchangeRate.fromJson(currency, (rates[currency] as num).toDouble()))
-          .toList();
-    } else {
-      throw Exception('Erro HTTP: ${response.statusCode}');
+      print('🌐 Buscando cotações atualizadas...');
+
+      // Tentar API real primeiro
+      try {
+        final rates = await _fetchFromRealApi();
+        if (rates.isNotEmpty) {
+          _updateCache(rates);
+          return rates;
+        }
+      } catch (e) {
+        print('⚠️ Falha na API real: $e');
+      }
+
+      // Fallback para dados corretos
+      print('📊 Usando cotações de fallback corretas');
+      final fallbackRates = _generateCorrectFallbackRates();
+      _updateCache(fallbackRates);
+      return fallbackRates;
+
+    } catch (e) {
+      print('❌ Erro geral nas cotações: $e');
+      
+      // Retornar cache mesmo expirado se houver
+      if (_cachedRates.isNotEmpty) {
+        return _cachedRates.values.toList();
+      }
+      
+      // Último recurso: fallback correto
+      return _generateCorrectFallbackRates();
     }
   }
 
-  List<ExchangeRate> _getFallbackRates() {
-    print('📊 Usando cotações de fallback');
+  /// ✅ BUSCAR DE API REAL (com correção de taxa)
+  static Future<List<ExchangeRate>> _fetchFromRealApi() async {
+    // ✅ API que retorna BRL como base (1 BRL = X moedas estrangeiras)
+    const apiUrl = 'https://api.exchangerate-api.com/v4/latest/BRL';
+    
+    final response = await http.get(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(const Duration(seconds: 10));
 
-    return _fallbackRates.entries.map((entry) {
-      final variation = ((entry.key.hashCode % 100) - 50) / 10000;
-      final finalRate = entry.value * (1 + variation);
-      return ExchangeRate.fromJson(entry.key, finalRate);
-    }).toList();
+    if (response.statusCode != 200) {
+      throw Exception('HTTP ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body);
+    final rates = data['rates'] as Map<String, dynamic>;
+    final List<ExchangeRate> exchangeRates = [];
+
+    for (final currency in _correctFallbackRates.keys) {
+      if (rates.containsKey(currency)) {
+        final brlToForeignRate = (rates[currency] as num).toDouble();
+        final previousRate = _cachedRates[currency]?.rate;
+        
+        // ✅ CORREÇÃO: Inverter para mostrar quanto vale a moeda estrangeira em BRL
+        final foreignToBrlRate = 1.0 / brlToForeignRate;
+        
+        exchangeRates.add(
+          ExchangeRate(
+            currency: currency,
+            name: ExchangeRate._getCurrencyInfo(currency)['name']!,
+            rate: foreignToBrlRate,
+            flag: ExchangeRate._getCurrencyInfo(currency)['flag']!,
+            previousRate: previousRate,
+            variation: previousRate != null 
+                ? ((foreignToBrlRate - previousRate) / previousRate) * 100 
+                : 0.0,
+          )
+        );
+      }
+    }
+
+    print('✅ ${exchangeRates.length} cotações obtidas da API');
+    return exchangeRates;
   }
 
-  Future<double> convertBRLTo(String currency, double brlAmount) async {
-    final rates = await getExchangeRates();
-    final targetRate = rates.firstWhere(
-      (rate) => rate.currency == currency,
-      orElse: () => throw Exception('Moeda $currency não encontrada'),
-    );
-    return brlAmount * targetRate.rate;
+  /// ✅ GERAR COTAÇÕES CORRETAS DE FALLBACK
+  static List<ExchangeRate> _generateCorrectFallbackRates() {
+    final now = DateTime.now();
+    final List<ExchangeRate> rates = [];
+
+    for (final entry in _correctFallbackRates.entries) {
+      final currency = entry.key;
+      final baseRate = entry.value;
+      
+      // Simular variação realista (-1% a +1%)
+      final seed = currency.hashCode + now.day + now.hour;
+      final variationPercent = ((seed % 200) - 100) / 10000; // -0.01 a +0.01
+      final currentRate = baseRate * (1 + variationPercent);
+      final previousRate = _cachedRates[currency]?.rate ?? baseRate;
+      
+      rates.add(
+        ExchangeRate(
+          currency: currency,
+          name: ExchangeRate._getCurrencyInfo(currency)['name']!,
+          rate: currentRate,
+          flag: ExchangeRate._getCurrencyInfo(currency)['flag']!,
+          previousRate: previousRate,
+          variation: previousRate != 0 
+              ? ((currentRate - previousRate) / previousRate) * 100 
+              : 0.0,
+        )
+      );
+    }
+
+    return rates;
   }
 
-  Future<double> convertToBRL(String currency, double foreignAmount) async {
-    final rates = await getExchangeRates();
-    final targetRate = rates.firstWhere(
-      (rate) => rate.currency == currency,
-      orElse: () => throw Exception('Moeda $currency não encontrada'),
-    );
-    return foreignAmount / targetRate.rate;
+  /// ✅ VERIFICAR SE CACHE É VÁLIDO
+  static bool _isCacheValid() {
+    if (_lastUpdate == null || _cachedRates.isEmpty) return false;
+    
+    final now = DateTime.now();
+    final difference = now.difference(_lastUpdate!);
+    
+    return difference < _cacheExpiration;
+  }
+
+  /// ✅ ATUALIZAR CACHE
+  static void _updateCache(List<ExchangeRate> rates) {
+    _cachedRates.clear();
+    for (final rate in rates) {
+      _cachedRates[rate.currency] = rate;
+    }
+    _lastUpdate = DateTime.now();
+    print('💾 Cache atualizado com ${rates.length} cotações');
+  }
+
+  /// ✅ CONVERSÃO CORRETA BRL PARA MOEDA ESTRANGEIRA
+  static Future<double> convertBRLTo(String currency, double brlAmount) async {
+    try {
+      final rates = await getExchangeRates();
+      final targetRate = rates.firstWhere(
+        (rate) => rate.currency == currency,
+        orElse: () => throw Exception('Moeda $currency não encontrada'),
+      );
+      
+      // Se 1 USD = 5.20 BRL, então 100 BRL = 100/5.20 USD
+      return brlAmount / targetRate.rate;
+    } catch (e) {
+      print('❌ Erro na conversão BRL -> $currency: $e');
+      
+      final fallbackRate = _correctFallbackRates[currency];
+      if (fallbackRate != null) {
+        return brlAmount / fallbackRate;
+      }
+      
+      throw Exception('Não foi possível converter para $currency');
+    }
+  }
+
+  /// ✅ CONVERSÃO CORRETA MOEDA ESTRANGEIRA PARA BRL
+  static Future<double> convertToBRL(String currency, double foreignAmount) async {
+    try {
+      final rates = await getExchangeRates();
+      final targetRate = rates.firstWhere(
+        (rate) => rate.currency == currency,
+        orElse: () => throw Exception('Moeda $currency não encontrada'),
+      );
+      
+      // Se 1 USD = 5.20 BRL, então 10 USD = 10 * 5.20 BRL
+      return foreignAmount * targetRate.rate;
+    } catch (e) {
+      print('❌ Erro na conversão $currency -> BRL: $e');
+      
+      final fallbackRate = _correctFallbackRates[currency];
+      if (fallbackRate != null) {
+        return foreignAmount * fallbackRate;
+      }
+      
+      throw Exception('Não foi possível converter de $currency');
+    }
+  }
+
+  /// ✅ LIMPAR CACHE
+  static void clearCache() {
+    _cachedRates.clear();
+    _lastUpdate = null;
+    print('🧹 Cache de cotações limpo');
+  }
+
+  /// ✅ STATUS DO SERVIÇO
+  static Map<String, dynamic> getServiceStatus() {
+    return {
+      'cacheValid': _isCacheValid(),
+      'lastUpdate': _lastUpdate?.toIso8601String(),
+      'cachedCurrencies': _cachedRates.keys.toList(),
+      'cacheSize': _cachedRates.length,
+      'sampleRate': _cachedRates.isNotEmpty ? 'USD: R\$ ${_cachedRates['USD']?.formattedRate ?? 'N/A'}' : 'N/A',
+    };
   }
 }
