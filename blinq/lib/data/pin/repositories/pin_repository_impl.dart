@@ -1,3 +1,5 @@
+// lib/data/pin/repositories/pin_repository_impl.dart - CORREÇÃO PARA STORAGE
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
@@ -9,68 +11,100 @@ import '../../../domain/repositories/pin_repository.dart';
 class PinRepositoryImpl implements PinRepository {
   final FlutterSecureStorage _storage;
   
-  // ✅ CHAVE ÚNICA POR USUÁRIO PARA EVITAR CONFLITOS
-  static String _getPinKey() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('Usuário não autenticado');
+  // ✅ CHAVE FIXA PARA EVITAR PROBLEMAS DE USUÁRIO
+  static const String _pinKey = 'blinq_user_pin_v3';
+  
+  // ✅ FALLBACK PARA CHAVE POR USUÁRIO SE NECESSÁRIO
+  static String _getUserSpecificPinKey() {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        return 'blinq_pin_${user.uid}_v3';
+      }
+    } catch (e) {
+      print('⚠️ Erro ao obter usuário para chave do PIN: $e');
     }
-    return 'blinq_pin_${user.uid}';
+    return _pinKey; // Fallback para chave fixa
   }
 
   PinRepositoryImpl({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage(
           aOptions: AndroidOptions(
             encryptedSharedPreferences: true,
+            resetOnError: true, // ✅ Reset em caso de erro
           ),
           iOptions: IOSOptions(
             accessibility: KeychainAccessibility.first_unlock_this_device,
+            synchronizable: false, // ✅ Não sincronizar no iCloud
           ),
         );
 
   @override
   Future<void> savePin(String pin) async {
     try {
-      print('💾 Salvando PIN para usuário...');
+      print('💾 Salvando PIN...');
       
       // ✅ VALIDAR PIN ANTES DE SALVAR
       if (!_isValidPin(pin)) {
         throw const AppException('PIN deve ter entre 4 e 6 dígitos numéricos');
       }
 
-      // ✅ GERAR HASH SEGURO COM SALT ÚNICO POR USUÁRIO
-      final hash = _hashPinSecurely(pin);
-      final pinKey = _getPinKey();
+      // ✅ GERAR HASH SIMPLES E CONFIÁVEL
+      final hash = _hashPin(pin);
+      print('🔐 Hash gerado: ${hash.substring(0, 8)}...');
       
-      // ✅ SALVAR COM METADADOS PARA VALIDAÇÃO
+      // ✅ CRIAR DADOS SIMPLES PARA ARMAZENAR
       final pinData = {
         'hash': hash,
         'created_at': DateTime.now().toIso8601String(),
-        'version': '2.0', // Para futuras migrações
+        'version': '3.0',
+        'user_id': FirebaseAuth.instance.currentUser?.uid ?? 'anonymous',
       };
       
-      await _storage.write(
-        key: pinKey,
-        value: json.encode(pinData),
-      );
+      final dataToStore = json.encode(pinData);
+      print('📦 Dados para armazenar: ${dataToStore.length} caracteres');
       
-      print('✅ PIN salvo com segurança');
+      // ✅ TENTAR SALVAR COM MÚLTIPLAS ESTRATÉGIAS
+      bool saved = false;
       
-      // ✅ VERIFICAR SE REALMENTE SALVOU
-      await Future.delayed(const Duration(milliseconds: 100));
-      final saved = await hasPin();
-      if (!saved) {
-        throw const AppException('Falha ao verificar salvamento do PIN');
+      // Estratégia 1: Chave fixa (mais confiável)
+      try {
+        await _storage.write(key: _pinKey, value: dataToStore);
+        print('✅ PIN salvo com chave fixa: $_pinKey');
+        saved = true;
+      } catch (e) {
+        print('⚠️ Falha ao salvar com chave fixa: $e');
       }
       
-      print('✅ Salvamento do PIN verificado');
+      // Estratégia 2: Chave específica do usuário (backup)
+      try {
+        final userKey = _getUserSpecificPinKey();
+        await _storage.write(key: userKey, value: dataToStore);
+        print('✅ PIN salvo com chave de usuário: $userKey');
+        saved = true;
+      } catch (e) {
+        print('⚠️ Falha ao salvar com chave de usuário: $e');
+      }
+      
+      if (!saved) {
+        throw const AppException('Falha ao salvar PIN no storage seguro');
+      }
+      
+      // ✅ VERIFICAR SE REALMENTE SALVOU
+      await Future.delayed(const Duration(milliseconds: 200));
+      final exists = await hasPin();
+      if (!exists) {
+        throw const AppException('PIN não foi salvo corretamente');
+      }
+      
+      print('✅ PIN salvo e verificado com sucesso');
 
     } catch (e) {
       print('❌ Erro ao salvar PIN: $e');
       if (e is AppException) {
         rethrow;
       }
-      throw const AppException('Erro interno ao salvar PIN');
+      throw AppException('Erro interno ao salvar PIN: $e');
     }
   }
 
@@ -85,39 +119,68 @@ class PinRepositoryImpl implements PinRepository {
         return false;
       }
 
-      // ✅ OBTER DADOS SALVOS
-      final pinKey = _getPinKey();
-      final storedData = await _storage.read(key: pinKey);
+      // ✅ OBTER DADOS SALVOS COM MÚLTIPLAS ESTRATÉGIAS
+      String? storedData;
+      String? usedKey;
+      
+      // Estratégia 1: Tentar chave fixa primeiro
+      try {
+        storedData = await _storage.read(key: _pinKey);
+        if (storedData != null && storedData.isNotEmpty) {
+          usedKey = _pinKey;
+          print('📖 PIN encontrado com chave fixa');
+        }
+      } catch (e) {
+        print('⚠️ Erro ao ler com chave fixa: $e');
+      }
+      
+      // Estratégia 2: Tentar chave específica do usuário
+      if (storedData == null) {
+        try {
+          final userKey = _getUserSpecificPinKey();
+          storedData = await _storage.read(key: userKey);
+          if (storedData != null && storedData.isNotEmpty) {
+            usedKey = userKey;
+            print('📖 PIN encontrado com chave de usuário');
+          }
+        } catch (e) {
+          print('⚠️ Erro ao ler com chave de usuário: $e');
+        }
+      }
       
       if (storedData == null || storedData.isEmpty) {
         print('❌ PIN não encontrado no storage');
         return false;
       }
+      
+      print('📖 Dados lidos do storage ($usedKey): ${storedData.length} caracteres');
 
       // ✅ PARSING SEGURO DOS DADOS
       Map<String, dynamic> pinData;
       try {
         pinData = json.decode(storedData);
+        print('✅ Dados decodificados com sucesso');
       } catch (e) {
         print('❌ Dados do PIN corrompidos: $e');
+        // Tentar limpar dados corrompidos
+        await _clearCorruptedData();
         return false;
       }
 
       final storedHash = pinData['hash'] as String?;
       if (storedHash == null || storedHash.isEmpty) {
-        print('❌ Hash do PIN não encontrado');
+        print('❌ Hash do PIN não encontrado nos dados');
         return false;
       }
       
       // ✅ GERAR HASH DO PIN INFORMADO
-      final inputHash = _hashPinSecurely(pin);
+      final inputHash = _hashPin(pin);
       final isValid = inputHash == storedHash;
       
-      // ✅ LOG DETALHADO PARA DEBUG (SEM EXPOR DADOS SENSÍVEIS)
       print('🔍 Validação do PIN:');
-      print('   Hash stored length: ${storedHash.length}');
-      print('   Hash input length: ${inputHash.length}');
-      print('   Match: $isValid');
+      print('   Hash armazenado: ${storedHash.substring(0, 8)}...');
+      print('   Hash do input: ${inputHash.substring(0, 8)}...');
+      print('   Resultado: $isValid');
       
       if (isValid) {
         print('✅ PIN válido!');
@@ -136,8 +199,33 @@ class PinRepositoryImpl implements PinRepository {
   @override
   Future<bool> hasPin() async {
     try {
-      final pinKey = _getPinKey();
-      final storedData = await _storage.read(key: pinKey);
+      print('📍 Verificando se PIN existe...');
+      
+      // ✅ VERIFICAR COM MÚLTIPLAS ESTRATÉGIAS
+      String? storedData;
+      
+      // Estratégia 1: Chave fixa
+      try {
+        storedData = await _storage.read(key: _pinKey);
+        if (storedData != null && storedData.isNotEmpty) {
+          print('📍 PIN encontrado com chave fixa');
+        }
+      } catch (e) {
+        print('⚠️ Erro ao verificar chave fixa: $e');
+      }
+      
+      // Estratégia 2: Chave específica do usuário
+      if (storedData == null) {
+        try {
+          final userKey = _getUserSpecificPinKey();
+          storedData = await _storage.read(key: userKey);
+          if (storedData != null && storedData.isNotEmpty) {
+            print('📍 PIN encontrado com chave de usuário');
+          }
+        } catch (e) {
+          print('⚠️ Erro ao verificar chave de usuário: $e');
+        }
+      }
       
       if (storedData == null || storedData.isEmpty) {
         print('📍 PIN não existe');
@@ -151,11 +239,14 @@ class PinRepositoryImpl implements PinRepository {
         final exists = hash != null && hash.isNotEmpty;
         
         print('📍 PIN existe: $exists');
+        if (exists) {
+          print('   Criado em: ${pinData['created_at']}');
+          print('   Versão: ${pinData['version']}');
+        }
         return exists;
       } catch (e) {
-        print('❌ Dados do PIN corrompidos: $e');
-        // Remover dados corrompidos
-        await _storage.delete(key: pinKey);
+        print('❌ Dados do PIN corrompidos durante verificação: $e');
+        await _clearCorruptedData();
         return false;
       }
 
@@ -165,26 +256,25 @@ class PinRepositoryImpl implements PinRepository {
     }
   }
 
-  /// ✅ HASH SEGURO COM SALT BASEADO NO USUÁRIO
-  String _hashPinSecurely(String pin) {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('Usuário não autenticado para hash do PIN');
+  /// ✅ HASH SIMPLES E CONFIÁVEL
+  String _hashPin(String pin) {
+    try {
+      // ✅ USAR SALT FIXO E PREVISÍVEL PARA EVITAR PROBLEMAS
+      final salt = 'blinq_pin_salt_v3';
+      final saltedPin = '$salt$pin$salt';
+      
+      final bytes = utf8.encode(saltedPin);
+      final hash = sha256.convert(bytes).toString();
+      
+      print('🔐 Hash gerado para PIN de ${pin.length} dígitos');
+      return hash;
+    } catch (e) {
+      print('❌ Erro ao gerar hash: $e');
+      throw Exception('Erro ao processar PIN');
     }
-
-    // ✅ USAR UID + EMAIL + CONSTANTE COMO SALT
-    final salt = 'blinq_secure_${user.uid}_${user.email ?? 'no_email'}_v2';
-    final saltedPin = '$salt$pin$salt'; // PIN no meio do salt
-    
-    final bytes = utf8.encode(saltedPin);
-    final hash = sha256.convert(bytes).toString();
-    
-    // ✅ HASH DUPLO PARA MAIOR SEGURANÇA
-    final finalBytes = utf8.encode('$hash$salt');
-    return sha256.convert(finalBytes).toString();
   }
 
-  /// ✅ VALIDAÇÃO RIGOROSA DO PIN
+  /// ✅ VALIDAÇÃO BÁSICA DO PIN
   bool _isValidPin(String pin) {
     if (pin.trim().isEmpty) return false;
     
@@ -196,99 +286,155 @@ class PinRepositoryImpl implements PinRepository {
     // Deve conter apenas números
     if (!RegExp(r'^\d+$').hasMatch(cleanPin)) return false;
     
-    // Não pode ser sequencial (1234, 5678, etc.)
-    if (_isSequentialPin(cleanPin)) return false;
-    
-    // Não pode ser repetitivo (1111, 2222, etc.)
-    if (_isRepetitivePin(cleanPin)) return false;
-    
     return true;
   }
 
-  /// ✅ VERIFICAR SE PIN É SEQUENCIAL
-  bool _isSequentialPin(String pin) {
-    if (pin.length < 4) return false;
-    
-    // Verificar sequência crescente
-    bool isAscending = true;
-    bool isDescending = true;
-    
-    for (int i = 1; i < pin.length; i++) {
-      final current = int.parse(pin[i]);
-      final previous = int.parse(pin[i - 1]);
+  /// ✅ LIMPAR DADOS CORROMPIDOS
+  Future<void> _clearCorruptedData() async {
+    try {
+      print('🧹 Limpando dados corrompidos...');
       
-      if (current != previous + 1) isAscending = false;
-      if (current != previous - 1) isDescending = false;
+      await _storage.delete(key: _pinKey);
+      
+      try {
+        final userKey = _getUserSpecificPinKey();
+        await _storage.delete(key: userKey);
+      } catch (e) {
+        print('⚠️ Erro ao limpar chave de usuário: $e');
+      }
+      
+      print('✅ Dados corrompidos removidos');
+    } catch (e) {
+      print('❌ Erro ao limpar dados corrompidos: $e');
     }
-    
-    return isAscending || isDescending;
   }
 
-  /// ✅ VERIFICAR SE PIN É REPETITIVO
-  bool _isRepetitivePin(String pin) {
-    if (pin.length < 4) return false;
-    
-    final firstDigit = pin[0];
-    return pin.split('').every((digit) => digit == firstDigit);
-  }
-
-  /// ✅ MÉTODO PARA MIGRAÇÃO/LIMPEZA
+  /// ✅ MÉTODO PARA MIGRAÇÃO/LIMPEZA MANUAL
   Future<void> clearPin() async {
     try {
-      final pinKey = _getPinKey();
-      await _storage.delete(key: pinKey);
-      print('🧹 PIN removido');
+      print('🧹 Removendo PIN manualmente...');
+      
+      await _storage.delete(key: _pinKey);
+      
+      try {
+        final userKey = _getUserSpecificPinKey();
+        await _storage.delete(key: userKey);
+      } catch (e) {
+        print('⚠️ Erro ao remover chave de usuário: $e');
+      }
+      
+      print('✅ PIN removido');
     } catch (e) {
       print('❌ Erro ao remover PIN: $e');
     }
   }
 
-  /// ✅ MÉTODO PARA DEBUG (SEM EXPOR DADOS SENSÍVEIS)
+  /// ✅ MÉTODO PARA DEBUG COMPLETO
   Future<Map<String, dynamic>> getDebugInfo() async {
     try {
-      final pinKey = _getPinKey();
-      final storedData = await _storage.read(key: pinKey);
+      final fixedKeyData = await _storage.read(key: _pinKey);
+      final userKey = _getUserSpecificPinKey();
+      final userKeyData = await _storage.read(key: userKey);
       
-      if (storedData == null) {
-        return {'hasPin': false, 'pinKey': pinKey};
-      }
-
-      final pinData = json.decode(storedData);
+      // Listar todas as chaves no storage
+      final allKeys = await _storage.readAll();
+      final blinqKeys = allKeys.keys.where((k) => k.contains('blinq')).toList();
+      
       return {
-        'hasPin': true,
-        'pinKey': pinKey,
-        'createdAt': pinData['created_at'],
-        'version': pinData['version'],
-        'hashLength': (pinData['hash'] as String?)?.length ?? 0,
+        'fixedKey': _pinKey,
+        'fixedKeyExists': fixedKeyData != null,
+        'fixedKeyLength': fixedKeyData?.length ?? 0,
+        'userKey': userKey,
+        'userKeyExists': userKeyData != null,
+        'userKeyLength': userKeyData?.length ?? 0,
+        'allBlinqKeys': blinqKeys,
+        'totalKeys': allKeys.length,
+        'currentUser': FirebaseAuth.instance.currentUser?.uid,
       };
     } catch (e) {
       return {'error': e.toString()};
     }
   }
 
-  /// ✅ VERIFICAR INTEGRIDADE DOS DADOS
-  Future<bool> verifyIntegrity() async {
+  /// ✅ VERIFICAR INTEGRIDADE E TENTAR REPARAR
+  Future<bool> verifyAndRepair() async {
     try {
-      final pinKey = _getPinKey();
-      final storedData = await _storage.read(key: pinKey);
+      print('🔧 Verificando integridade do PIN...');
       
-      if (storedData == null) return true; // Sem PIN é válido
+      final debugInfo = await getDebugInfo();
+      print('📊 Debug info: $debugInfo');
       
-      final pinData = json.decode(storedData);
-      final hash = pinData['hash'] as String?;
-      final createdAt = pinData['created_at'] as String?;
+      // Se temos dados mas hasPin() retorna false, há problema
+      final hasData = debugInfo['fixedKeyExists'] == true || debugInfo['userKeyExists'] == true;
+      final hasPinResult = await hasPin();
       
-      // Verificar se tem dados essenciais
-      if (hash == null || hash.isEmpty) return false;
-      if (createdAt == null || createdAt.isEmpty) return false;
+      if (hasData && !hasPinResult) {
+        print('🔧 Detectado problema de integridade, tentando reparar...');
+        await _clearCorruptedData();
+        return false;
+      }
       
-      // Verificar se hash tem tamanho esperado (SHA256 = 64 chars)
-      if (hash.length != 64) return false;
+      print('✅ Integridade verificada');
+      return hasPinResult;
       
-      return true;
     } catch (e) {
       print('❌ Erro na verificação de integridade: $e');
       return false;
+    }
+  }
+
+  /// ✅ MÉTODO DE TESTE PARA VALIDAR STORAGE
+  Future<bool> testStorage() async {
+    try {
+      print('🧪 Testando storage...');
+      
+      const testKey = 'blinq_test_key';
+      const testValue = 'test_value_123';
+      
+      // Testar escrita
+      await _storage.write(key: testKey, value: testValue);
+      print('✅ Escrita de teste realizada');
+      
+      // Testar leitura
+      final readValue = await _storage.read(key: testKey);
+      final writeReadOk = readValue == testValue;
+      print('📖 Leitura de teste: $readValue (OK: $writeReadOk)');
+      
+      // Limpar teste
+      await _storage.delete(key: testKey);
+      print('🧹 Teste limpo');
+      
+      return writeReadOk;
+      
+    } catch (e) {
+      print('❌ Erro no teste de storage: $e');
+      return false;
+    }
+  }
+
+  /// ✅ RESET COMPLETO DO PIN STORAGE
+  Future<void> resetPinStorage() async {
+    try {
+      print('🔄 Resetando storage do PIN...');
+      
+      // Limpar todas as chaves relacionadas ao PIN
+      final allKeys = await _storage.readAll();
+      final pinKeys = allKeys.keys.where((k) => 
+        k.contains('pin') || k.contains('blinq')).toList();
+      
+      for (final key in pinKeys) {
+        try {
+          await _storage.delete(key: key);
+          print('🗑️ Removida chave: $key');
+        } catch (e) {
+          print('⚠️ Erro ao remover $key: $e');
+        }
+      }
+      
+      print('✅ Storage do PIN resetado');
+      
+    } catch (e) {
+      print('❌ Erro ao resetar storage: $e');
     }
   }
 }

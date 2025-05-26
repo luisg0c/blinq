@@ -1,3 +1,5 @@
+// lib/presentation/controllers/transfer_controller.dart - CORREÇÃO PARA VALIDAÇÃO DE VALOR
+
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +8,9 @@ import '../../domain/usecases/transfer_usecase.dart';
 import '../../core/theme/app_colors.dart';
 import '../../routes/app_routes.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/utils/money_input_formatter.dart';
 
-/// Controller robusto para o fluxo completo de transferências
+/// ✅ CONTROLLER CORRIGIDO PARA TRANSFERÊNCIAS
 class TransferController extends GetxController {
   final TransferUseCase _transferUseCase;
 
@@ -40,10 +43,10 @@ class TransferController extends GetxController {
   @override
   void onClose() {
     _clearSensitiveData();
-    super.onClose();
+    super.dispose();
   }
 
-  /// ✅ CONFIGURAR DADOS DA TRANSFERÊNCIA COM VALIDAÇÃO
+  /// ✅ CONFIGURAR DADOS DA TRANSFERÊNCIA COM VALIDAÇÃO CORRIGIDA
   void setTransferData({
     required String email,
     required double value,
@@ -53,18 +56,31 @@ class TransferController extends GetxController {
   }) {
     try {
       print('📝 Configurando dados da transferência...');
+      print('   Email: $email');
+      print('   Valor recebido: $value');
+      print('   Tipo do valor: ${value.runtimeType}');
       
-      // Validações básicas
+      // ✅ VALIDAÇÕES BÁSICAS CORRIGIDAS
       if (email.trim().isEmpty) {
         throw const AppException('Email do destinatário é obrigatório');
       }
       
-      if (value <= 0) {
-        throw const AppException('Valor deve ser maior que zero');
+      // ✅ VALIDAÇÃO DE VALOR MAIS ROBUSTA
+      if (value.isNaN || value.isInfinite) {
+        throw const AppException('Valor inválido fornecido');
       }
       
-      if (value > 50000) {
+      if (value <= 0.0) {
+        print('❌ Valor inválido: $value (deve ser > 0)');
+        throw AppException('Valor deve ser maior que zero. Recebido: $value');
+      }
+      
+      if (value > 50000.0) {
         throw const AppException('Valor máximo por transferência: R\$ 50.000,00');
+      }
+      
+      if (value < 0.01) {
+        throw const AppException('Valor mínimo para transferência: R\$ 0,01');
       }
 
       // Verificar se não é auto-transferência
@@ -73,9 +89,9 @@ class TransferController extends GetxController {
         throw const AppException('Você não pode transferir para si mesmo');
       }
 
-      // Configurar dados
+      // ✅ CONFIGURAR DADOS (GARANTIR PRECISÃO)
       recipientEmail.value = email.trim().toLowerCase();
-      amount.value = value;
+      amount.value = double.parse(value.toStringAsFixed(2)); // Garantir 2 casas decimais
       description.value = desc?.trim() ?? 'Transferência PIX';
       recipientName.value = recipientUserName;
       recipientId.value = recipientUserId;
@@ -86,9 +102,10 @@ class TransferController extends GetxController {
       attemptCount.value = 0;
       transferProgress.value = 0.0;
 
-      print('✅ Dados configurados:');
+      print('✅ Dados configurados com sucesso:');
       print('   Destinatário: ${recipientEmail.value}');
-      print('   Valor: R\$ ${amount.value.toStringAsFixed(2)}');
+      print('   Valor final: ${amount.value}');
+      print('   Valor formatado: R\$ ${amount.value.toStringAsFixed(2)}');
       print('   Descrição: ${description.value}');
 
     } catch (e) {
@@ -98,7 +115,7 @@ class TransferController extends GetxController {
     }
   }
 
-  /// ✅ EXECUTAR TRANSFERÊNCIA COM PROGRESSO E RETRY
+  /// ✅ EXECUTAR TRANSFERÊNCIA COM VALIDAÇÃO DUPLA
   Future<void> executeTransfer() async {
     if (isLoading.value) {
       print('⚠️ Transferência já em andamento');
@@ -106,15 +123,18 @@ class TransferController extends GetxController {
     }
 
     print('💸 Iniciando execução da transferência...');
+    print('   Valor atual: ${amount.value}');
+    print('   Email: ${recipientEmail.value}');
     
-    // Validar dados antes de executar
+    // ✅ VALIDAR DADOS ANTES DE EXECUTAR
     if (!_validateTransferData()) {
+      print('❌ Dados da transferência inválidos');
       return;
     }
 
     isLoading.value = true;
     errorMessage.value = null;
-    transferProgress.value = 0.1; // Progresso inicial
+    transferProgress.value = 0.1;
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -125,20 +145,34 @@ class TransferController extends GetxController {
       attemptCount.value++;
       print('🔄 Tentativa ${attemptCount.value}/3');
 
+      // ✅ VALIDAÇÃO ADICIONAL ANTES DE CHAMAR USE CASE
+      final transferAmount = amount.value;
+      final transferEmail = recipientEmail.value;
+      final transferDescription = description.value;
+
+      print('🔍 Validação final antes do UseCase:');
+      print('   Valor: $transferAmount (${transferAmount.runtimeType})');
+      print('   Email: $transferEmail');
+      print('   Descrição: $transferDescription');
+
+      if (transferAmount <= 0) {
+        throw AppException('Erro crítico: valor ${transferAmount} não é válido');
+      }
+
       // Simular progresso da operação
       await _updateProgress();
 
-      // ✅ EXECUTAR TRANSFERÊNCIA VIA USE CASE
+      // ✅ EXECUTAR TRANSFERÊNCIA VIA USE CASE COM VALORES VALIDADOS
       await _transferUseCase.execute(
         senderId: currentUser.uid,
-        receiverEmail: recipientEmail.value,
-        amount: amount.value,
-        description: description.value,
+        receiverEmail: transferEmail,
+        amount: transferAmount,
+        description: transferDescription,
       );
 
-      transferProgress.value = 1.0; // Progresso completo
+      transferProgress.value = 1.0;
 
-      // ✅ SUCESSO - CONFIGURAR FEEDBACK E NAVEGAR
+      // ✅ SUCESSO
       await _handleTransferSuccess();
 
     } on AppException catch (e) {
@@ -163,21 +197,132 @@ class TransferController extends GetxController {
     }
   }
 
+  /// ✅ VALIDAR DADOS DA TRANSFERÊNCIA COM LOG DETALHADO
+  bool _validateTransferData() {
+    print('🔍 Validando dados da transferência...');
+
+    if (recipientEmail.value.trim().isEmpty) {
+      errorMessage.value = 'Email do destinatário é obrigatório';
+      print('❌ Email vazio');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    print('✅ Email válido: ${recipientEmail.value}');
+
+    // ✅ VALIDAÇÃO ROBUSTA DO VALOR
+    final currentAmount = amount.value;
+    print('🔍 Validando valor: $currentAmount (${currentAmount.runtimeType})');
+
+    if (currentAmount.isNaN) {
+      errorMessage.value = 'Valor é NaN (não é um número)';
+      print('❌ Valor é NaN');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    if (currentAmount.isInfinite) {
+      errorMessage.value = 'Valor é infinito';
+      print('❌ Valor é infinito');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    if (currentAmount <= 0.0) {
+      errorMessage.value = 'Valor deve ser maior que zero (atual: $currentAmount)';
+      print('❌ Valor <= 0: $currentAmount');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    if (currentAmount > 50000.0) {
+      errorMessage.value = 'Valor máximo por transferência: R\$ 50.000,00';
+      print('❌ Valor muito alto: $currentAmount');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    if (currentAmount < 0.01) {
+      errorMessage.value = 'Valor mínimo para transferência: R\$ 0,01';
+      print('❌ Valor muito baixo: $currentAmount');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    print('✅ Valor válido: R\$ ${currentAmount.toStringAsFixed(2)}');
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      errorMessage.value = 'Usuário não autenticado';
+      print('❌ Usuário não autenticado');
+      _showErrorFeedback(errorMessage.value!);
+      return false;
+    }
+
+    print('✅ Usuário autenticado: ${currentUser.email}');
+    print('✅ Todos os dados validados com sucesso');
+
+    return true;
+  }
+
+  /// ✅ MÉTODO PARA CONVERTER VALOR DE TEXTO (USADO EM PIN VERIFICATION)
+  void setTransferDataFromArguments(Map<String, dynamic> args) {
+    try {
+      print('📥 Configurando transferência a partir de argumentos: $args');
+
+      final email = args['recipient']?.toString() ?? '';
+      final amountValue = args['amount'];
+      final desc = args['description']?.toString();
+      final recipientUserName = args['recipientName']?.toString();
+      final recipientUserId = args['recipientId']?.toString();
+
+      print('🔍 Processando valor dos argumentos:');
+      print('   Valor bruto: $amountValue (${amountValue.runtimeType})');
+
+      double finalAmount;
+
+      // ✅ CONVERSÃO ROBUSTA DO VALOR
+      if (amountValue is double) {
+        finalAmount = amountValue;
+        print('   ✅ Valor já é double: $finalAmount');
+      } else if (amountValue is int) {
+        finalAmount = amountValue.toDouble();
+        print('   ✅ Valor convertido de int: $finalAmount');
+      } else if (amountValue is String) {
+        finalAmount = MoneyInputFormatter.parseAmount(amountValue);
+        print('   ✅ Valor parseado de string: "$amountValue" -> $finalAmount');
+      } else {
+        print('   ❌ Tipo de valor não suportado: ${amountValue.runtimeType}');
+        throw AppException('Tipo de valor inválido: ${amountValue.runtimeType}');
+      }
+
+      // Usar o método principal para configurar os dados
+      setTransferData(
+        email: email,
+        value: finalAmount,
+        desc: desc,
+        recipientUserName: recipientUserName,
+        recipientUserId: recipientUserId,
+      );
+
+    } catch (e) {
+      print('❌ Erro ao configurar dados dos argumentos: $e');
+      errorMessage.value = 'Erro ao processar dados da transferência: $e';
+      _showErrorFeedback(errorMessage.value!);
+    }
+  }
+
   /// ✅ SIMULAR PROGRESSO DA OPERAÇÃO
   Future<void> _updateProgress() async {
-    // Validação inicial
     transferProgress.value = 0.2;
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Verificação de saldo
     transferProgress.value = 0.4;
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Busca do destinatário
     transferProgress.value = 0.6;
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Execução da transação
     transferProgress.value = 0.8;
     await Future.delayed(const Duration(milliseconds: 300));
   }
@@ -193,7 +338,6 @@ class TransferController extends GetxController {
     // ✅ CAPTURAR VALORES ANTES DE LIMPAR
     final transferAmount = amount.value;
     final recipientDisplayName = recipientName.value ?? recipientEmail.value;
-    final transferDescription = description.value;
 
     // ✅ LIMPAR DADOS SENSÍVEIS
     _clearSensitiveData();
@@ -209,7 +353,7 @@ class TransferController extends GetxController {
       'R\$ ${transferAmount.toStringAsFixed(2).replaceAll('.', ',')} enviados para $recipientDisplayName',
     );
 
-    // ✅ TENTAR ENVIAR NOTIFICAÇÃO (SEM FALHAR SE DER ERRO)
+    // ✅ NOTIFICAÇÃO
     try {
       await NotificationService.sendTransferReceivedNotification(
         receiverUserId: recipientId.value ?? '',
@@ -218,7 +362,6 @@ class TransferController extends GetxController {
       );
     } catch (e) {
       print('⚠️ Falha ao enviar notificação: $e');
-      // Não falhar a transferência por causa da notificação
     }
   }
 
@@ -226,7 +369,6 @@ class TransferController extends GetxController {
   Future<void> _handleTransferError(AppException exception) async {
     print('❌ Lidando com erro: ${exception.message}');
 
-    // ✅ VERIFICAR SE PODE TENTAR NOVAMENTE
     final canRetry = _canRetryTransfer(exception);
     
     if (canRetry && attemptCount.value < 3) {
@@ -249,16 +391,7 @@ class TransferController extends GetxController {
       return true;
     }
     
-    // Erros que NÃO permitem retry
-    if (message.contains('saldo insuficiente') ||
-        message.contains('não encontrado') ||
-        message.contains('não pode transferir para si mesmo') ||
-        message.contains('valor máximo') ||
-        message.contains('permissão negada')) {
-      return false;
-    }
-    
-    return false; // Por padrão, não permitir retry
+    return false;
   }
 
   /// ✅ MOSTRAR OPÇÃO DE RETRY
@@ -300,13 +433,8 @@ class TransferController extends GetxController {
               Get.back();
               retryTransfer();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: const Text(
-              'Tentar Novamente',
-              style: TextStyle(color: Colors.white),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Tentar Novamente', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -316,10 +444,7 @@ class TransferController extends GetxController {
 
   /// ✅ MOSTRAR ERRO FINAL
   void _showFinalError(AppException exception) {
-    _showErrorFeedback(
-      'Transferência Falhou',
-      exception.message,
-    );
+    _showErrorFeedback('Transferência Falhou', exception.message);
   }
 
   /// ✅ RETRY DA TRANSFERÊNCIA
@@ -330,43 +455,10 @@ class TransferController extends GetxController {
     }
 
     isRetrying.value = true;
-    
     print('🔄 Tentando transferência novamente...');
     
-    // Aguardar um pouco antes de tentar novamente
     await Future.delayed(const Duration(seconds: 2));
-    
     await executeTransfer();
-  }
-
-  /// ✅ VALIDAR DADOS DA TRANSFERÊNCIA
-  bool _validateTransferData() {
-    if (recipientEmail.value.trim().isEmpty) {
-      errorMessage.value = 'Email do destinatário é obrigatório';
-      _showErrorFeedback(errorMessage.value!);
-      return false;
-    }
-
-    if (amount.value <= 0) {
-      errorMessage.value = 'Valor deve ser maior que zero';
-      _showErrorFeedback(errorMessage.value!);
-      return false;
-    }
-
-    if (amount.value > 50000) {
-      errorMessage.value = 'Valor máximo por transferência: R\$ 50.000,00';
-      _showErrorFeedback(errorMessage.value!);
-      return false;
-    }
-
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      errorMessage.value = 'Usuário não autenticado';
-      _showErrorFeedback(errorMessage.value!);
-      return false;
-    }
-
-    return true;
   }
 
   /// ✅ FORMATAR ERROS TÉCNICOS
@@ -403,11 +495,7 @@ class TransferController extends GetxController {
       duration: const Duration(seconds: 4),
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
-      icon: const Icon(
-        Icons.check_circle,
-        color: Colors.white,
-        size: 28,
-      ),
+      icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
     );
   }
 
@@ -422,11 +510,7 @@ class TransferController extends GetxController {
       duration: const Duration(seconds: 4),
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
-      icon: const Icon(
-        Icons.error_outline,
-        color: Colors.white,
-        size: 28,
-      ),
+      icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
     );
   }
 
@@ -453,14 +537,10 @@ class TransferController extends GetxController {
   /// ✅ CANCELAR TRANSFERÊNCIA
   void cancelTransfer() {
     if (isLoading.value) {
-      print('⚠️ Tentativa de cancelar transferência em andamento');
-      
       Get.dialog(
         AlertDialog(
           title: const Text('Cancelar Transferência?'),
-          content: const Text(
-            'A transferência está sendo processada. Tem certeza que deseja cancelar?'
-          ),
+          content: const Text('A transferência está sendo processada. Tem certeza que deseja cancelar?'),
           actions: [
             TextButton(
               onPressed: () => Get.back(),
@@ -471,10 +551,7 @@ class TransferController extends GetxController {
                 Get.back();
                 _forceCancelTransfer();
               },
-              child: const Text(
-                'Sim, Cancelar',
-                style: TextStyle(color: AppColors.error),
-              ),
+              child: const Text('Sim, Cancelar', style: TextStyle(color: AppColors.error)),
             ),
           ],
         ),
@@ -527,4 +604,20 @@ class TransferController extends GetxController {
       hasValidData && 
       !isLoading.value && 
       errorMessage.value == null;
+
+  /// ✅ MÉTODO DEBUG PARA VERIFICAR ESTADO
+  Map<String, dynamic> getDebugInfo() {
+    return {
+      'recipientEmail': recipientEmail.value,
+      'amount': amount.value,
+      'amountType': amount.value.runtimeType.toString(),
+      'description': description.value,
+      'recipientName': recipientName.value,
+      'recipientId': recipientId.value,
+      'isLoading': isLoading.value,
+      'errorMessage': errorMessage.value,
+      'hasValidData': hasValidData,
+      'canExecuteTransfer': canExecuteTransfer,
+    };
+  }
 }
