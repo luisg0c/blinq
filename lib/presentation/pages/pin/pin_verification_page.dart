@@ -1,3 +1,5 @@
+// lib/presentation/pages/pin/pin_verification_page.dart - CORREÇÃO PARA TRANSFERÊNCIAS
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
@@ -33,6 +35,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       args = Get.arguments as Map<String, dynamic>? ?? {};
       flow = args['flow'] ?? 'default';
       print('🔐 PIN Verification iniciada para: $flow');
+      print('📋 Argumentos recebidos: $args');
     } catch (e) {
       print('❌ Erro ao inicializar PIN Verification: $e');
       flow = 'default';
@@ -45,14 +48,12 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     print('🗑️ Disposing PinVerificationPage');
     _disposed = true;
     
-    // ✅ CANCELAR TIMERS E LIMPAR RECURSOS
     _debounceTimer?.cancel();
     _pinController.dispose();
     
     super.dispose();
   }
 
-  // ✅ MÉTODO SEGURO PARA setState
   void _safeSetState(VoidCallback fn) {
     if (!_disposed && mounted) {
       setState(fn);
@@ -65,17 +66,15 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       appBar: AppBar(
         title: Text(_getTitle()),
         centerTitle: true,
-        // ✅ OVERRIDE BACK BUTTON PARA CONTROLE TOTAL
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(),
         ),
       ),
-      // ✅ WillPopScope PARA INTERCEPTAR BACK GESTURE
       body: WillPopScope(
         onWillPop: () async {
           _handleBack();
-          return false; // Não deixar o sistema fazer pop automático
+          return false;
         },
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -129,6 +128,12 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                 textAlign: TextAlign.center,
               ),
               
+              // ✅ MOSTRAR DETALHES DA TRANSFERÊNCIA SE DISPONÍVEL
+              if (flow == 'transfer') ...[
+                const SizedBox(height: 24),
+                _buildTransferSummary(),
+              ],
+              
               const SizedBox(height: 32),
               
               // Campo PIN
@@ -138,7 +143,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                 obscureText: true,
                 maxLength: 6,
                 autofocus: true,
-                enabled: !_isLoading, // ✅ DESABILITAR DURANTE LOADING
+                enabled: !_isLoading,
                 decoration: InputDecoration(
                   labelText: 'Digite seu PIN (4-6 dígitos)',
                   border: OutlineInputBorder(
@@ -149,15 +154,11 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                     color: AppColors.primary,
                   ),
                   counterText: '',
-                  // ✅ ESTILO VISUAL BASEADO NO ESTADO
-                  fillColor: _isLoading 
-                      ? Colors.grey[100] 
-                      : null,
+                  fillColor: _isLoading ? Colors.grey[100] : null,
                   filled: _isLoading,
                 ),
                 onSubmitted: (_) => _verifyPin(),
                 onChanged: (value) {
-                  // ✅ LIMPAR ERRO QUANDO USUÁRIO DIGITA
                   if (_errorMessage != null) {
                     _safeSetState(() => _errorMessage = null);
                   }
@@ -174,25 +175,16 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(0.3),
-                    ),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.error_outline, 
-                        color: AppColors.error,
-                        size: 20,
-                      ),
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 14,
-                          ),
+                          style: const TextStyle(color: AppColors.error, fontSize: 14),
                         ),
                       ),
                     ],
@@ -209,9 +201,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _verifyPin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isLoading 
-                        ? Colors.grey 
-                        : AppColors.primary,
+                    backgroundColor: _isLoading ? Colors.grey : AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -250,7 +240,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                 ),
               ),
               
-              // ✅ INFORMAÇÕES ADICIONAIS
               const SizedBox(height: 24),
               
               if (_attemptCount > 0) ...[
@@ -262,11 +251,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.warning_amber,
-                        color: AppColors.warning,
-                        size: 20,
-                      ),
+                      const Icon(Icons.warning_amber, color: AppColors.warning, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Tentativas: $_attemptCount/3',
@@ -281,18 +266,12 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                 const SizedBox(height: 16),
               ],
               
-              // Link para esqueci minha senha
               TextButton(
-                onPressed: _isLoading ? null : () {
-                  // TODO: Implementar reset de PIN
-                  _showComingSoon();
-                },
+                onPressed: _isLoading ? null : () => _showComingSoon(),
                 child: Text(
                   'Esqueci meu PIN',
                   style: TextStyle(
-                    color: _isLoading 
-                        ? Colors.grey 
-                        : AppColors.primary,
+                    color: _isLoading ? Colors.grey : AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -304,7 +283,97 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     );
   }
 
-  // ✅ MÉTODO PRINCIPAL DE VERIFICAÇÃO - COMPLETAMENTE SEGURO
+  /// ✅ RESUMO DA TRANSFERÊNCIA
+  Widget _buildTransferSummary() {
+    final amount = args['amount'];
+    final recipient = args['recipient']?.toString() ?? '';
+    final recipientName = args['recipientName']?.toString();
+    
+    // ✅ CONVERSÃO SEGURA DO VALOR
+    String formattedAmount = 'R\$ 0,00';
+    if (amount != null) {
+      try {
+        double amountValue;
+        if (amount is double) {
+          amountValue = amount;
+        } else if (amount is int) {
+          amountValue = amount.toDouble();
+        } else if (amount is String) {
+          amountValue = double.tryParse(amount.replaceAll(',', '.')) ?? 0.0;
+        } else {
+          amountValue = 0.0;
+        }
+        formattedAmount = 'R\$ ${amountValue.toStringAsFixed(2).replaceAll('.', ',')}';
+      } catch (e) {
+        print('❌ Erro ao formatar valor: $e');
+        formattedAmount = 'R\$ 0,00';
+      }
+    }
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.send, color: AppColors.primary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Resumo da Transferência',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryRow('Para:', recipientName ?? recipient),
+          _buildSummaryRow('Valor:', formattedAmount),
+          if (args['description'] != null && args['description'].toString().isNotEmpty)
+            _buildSummaryRow('Descrição:', args['description'].toString()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ✅ MÉTODO PRINCIPAL DE VERIFICAÇÃO
   Future<void> _verifyPin() async {
     if (_disposed || !mounted) {
       print('⚠️ Tentativa de verificar PIN em widget disposed');
@@ -313,7 +382,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
 
     final pin = _pinController.text.trim();
     
-    // Validações básicas
     if (pin.length < 4) {
       _showError('Digite um PIN válido (4-6 dígitos)');
       return;
@@ -324,7 +392,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       return;
     }
 
-    // ✅ SETAR LOADING DE FORMA SEGURA
     _safeSetState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -333,14 +400,12 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     try {
       print('🔐 Verificando PIN...');
       
-      // ✅ VERIFICAR SE AINDA TEMOS O CONTROLLER
       if (!Get.isRegistered<PinController>()) {
         throw Exception('Sistema de PIN não disponível');
       }
 
       final pinController = Get.find<PinController>();
       
-      // ✅ VERIFICAÇÃO COM TIMEOUT
       final isValid = await Future.any([
         pinController.validatePin(pin),
         Future.delayed(
@@ -349,7 +414,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         ),
       ]);
 
-      // ✅ VERIFICAR SE AINDA ESTAMOS MONTADOS
       if (_disposed || !mounted) {
         print('⚠️ Widget disposed durante verificação');
         return;
@@ -362,7 +426,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         return;
       }
 
-      // ✅ PIN VÁLIDO - EXECUTAR AÇÃO
       print('✅ PIN válido! Executando ação: $flow');
       await _executeAction();
 
@@ -381,12 +444,11 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       _showError(errorMsg);
       
     } finally {
-      // ✅ REMOVER LOADING DE FORMA SEGURA
       _safeSetState(() => _isLoading = false);
     }
   }
 
-  // ✅ EXECUÇÃO DE AÇÃO PROTEGIDA CONTRA DISPOSE
+  /// ✅ EXECUÇÃO DE AÇÃO PROTEGIDA CONTRA DISPOSE
   Future<void> _executeAction() async {
     if (_disposed || !mounted) {
       print('⚠️ Tentativa de executar ação em widget disposed');
@@ -404,7 +466,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         case 'show_balance':
         case 'change_limits':
         default:
-          // ✅ RETORNAR RESULTADO E FECHAR TELA
           _handleSuccess();
           break;
       }
@@ -413,10 +474,8 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       
       if (_disposed || !mounted) return;
       
-      // ✅ VOLTAR E MOSTRAR ERRO
       Get.back();
       
-      // ✅ DELAY PARA GARANTIR QUE NAVEGAÇÃO TERMINOU
       await Future.delayed(const Duration(milliseconds: 100));
       
       Get.snackbar(
@@ -429,7 +488,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     }
   }
 
-  // ✅ EXECUÇÃO DE DEPÓSITO SEGURA
+  /// ✅ EXECUÇÃO DE DEPÓSITO SEGURA
   Future<void> _executeDeposit() async {
     if (!Get.isRegistered<DepositController>()) {
       throw Exception('DepositController não disponível');
@@ -444,51 +503,75 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
       throw Exception('Valor inválido para depósito');
     }
 
-    // ✅ CONFIGURAR DADOS E FECHAR TELA ANTES DE EXECUTAR
     controller.setDepositData(value: amount, desc: description);
     
     if (_disposed || !mounted) return;
     
-    Get.back(); // Fechar PIN
+    Get.back();
     
-    // ✅ EXECUTAR APÓS NAVEGAÇÃO
     await Future.delayed(const Duration(milliseconds: 100));
     await controller.executeDeposit();
   }
 
-  // ✅ EXECUÇÃO DE TRANSFERÊNCIA SEGURA  
+  /// ✅ EXECUÇÃO DE TRANSFERÊNCIA CORRIGIDA
   Future<void> _executeTransfer() async {
+    print('💸 Executando transferência via PIN...');
+    print('📋 Argumentos: $args');
+
     if (!Get.isRegistered<TransferController>()) {
       throw Exception('TransferController não disponível');
     }
 
     final controller = Get.find<TransferController>();
-    final recipient = args['recipient'] as String? ?? '';
-    final amount = args['amount'] as double? ?? 0.0;
-
-    if (amount <= 0 || recipient.isEmpty) {
-      throw Exception('Dados de transferência inválidos');
+    
+    // ✅ VERIFICAR SE OS DADOS ESSENCIAIS ESTÃO PRESENTES
+    final recipient = args['recipient']?.toString();
+    final amount = args['amount'];
+    
+    if (recipient == null || recipient.isEmpty) {
+      throw Exception('Destinatário não informado');
+    }
+    
+    if (amount == null) {
+      throw Exception('Valor não informado');
     }
 
-    // ✅ CONFIGURAR DADOS E FECHAR TELA ANTES DE EXECUTAR
-    controller.setTransferData(email: recipient, value: amount);
-    
-    if (_disposed || !mounted) return;
-    
-    Get.back(); // Fechar PIN
-    
-    // ✅ EXECUTAR APÓS NAVEGAÇÃO
-    await Future.delayed(const Duration(milliseconds: 100));
-    await controller.executeTransfer();
+    print('🔍 Dados da transferência:');
+    print('   Destinatário: $recipient');
+    print('   Valor bruto: $amount (${amount.runtimeType})');
+
+    try {
+      // ✅ USAR O MÉTODO ESPECÍFICO PARA ARGUMENTOS
+      controller.setTransferDataFromArguments(args);
+      
+      if (_disposed || !mounted) return;
+      
+      Get.back(); // Fechar PIN
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // ✅ VERIFICAR SE OS DADOS FORAM CONFIGURADOS CORRETAMENTE
+      final debugInfo = controller.getDebugInfo();
+      print('🔍 Estado do controller após configuração: $debugInfo');
+      
+      if (controller.amount.value <= 0) {
+        throw Exception('Falha ao configurar valor da transferência: ${controller.amount.value}');
+      }
+      
+      await controller.executeTransfer();
+      
+    } catch (e) {
+      print('❌ Erro ao configurar/executar transferência: $e');
+      rethrow;
+    }
   }
 
-  // ✅ SUCESSO GENÉRICO
+  /// ✅ SUCESSO GENÉRICO
   void _handleSuccess() {
     if (_disposed || !mounted) return;
     
     Get.back(result: true);
     
-    // ✅ FEEDBACK APÓS NAVEGAÇÃO
     Future.delayed(const Duration(milliseconds: 100), () {
       Get.snackbar(
         'PIN Verificado! ✅',
@@ -500,20 +583,16 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
     });
   }
 
-  // ✅ MÉTODO SEGURO PARA MOSTRAR ERRO
+  /// ✅ MÉTODO SEGURO PARA MOSTRAR ERRO
   void _showError(String message) {
     if (_disposed || !mounted) return;
     
     _safeSetState(() => _errorMessage = message);
-    
-    // ✅ VIBRAÇÃO OPCIONAL
-    // HapticFeedback.lightImpact();
   }
 
-  // ✅ CONTROLE DE BACK BUTTON
+  /// ✅ CONTROLE DE BACK BUTTON
   void _handleBack() {
     if (_isLoading) {
-      // Se está carregando, mostrar confirmação
       Get.dialog(
         AlertDialog(
           title: const Text('Cancelar Verificação?'),
@@ -537,12 +616,11 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         ),
       );
     } else {
-      // Se não está carregando, voltar normalmente
       Get.back(result: false);
     }
   }
 
-  // ✅ MÉTODOS HELPER
+  /// ✅ MÉTODOS HELPER
   String _getTitle() {
     switch (flow) {
       case 'deposit': 
@@ -584,7 +662,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
   }
 }
 
-// ✅ CLASSE DE EXCEÇÃO PERSONALIZADA
+/// ✅ CLASSE DE EXCEÇÃO PERSONALIZADA
 class TimeoutException implements Exception {
   final String message;
   TimeoutException(this.message);
