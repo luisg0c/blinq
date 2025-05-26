@@ -1,105 +1,158 @@
-# Blinq: Aplicativo Bancário Digital
+# Blinq 💸
 
-Blinq é um aplicativo bancário moderno desenvolvido com Flutter, oferecendo uma experiência financeira simplificada, segura e intuitiva.
+**Banco digital minimalista construído com Flutter + Firebase**
 
-## 📱 Funcionalidades Principais
+Um app de transferências PIX simples, rápido e seguro.
 
-- **Autenticação Segura**: Login/registro via Firebase Authentication
-- **Gestão de Conta**: Visualização de saldo e informações em tempo real
-- **Transferências PIX**: Transferências rápidas entre usuários
-- **Depósitos**: Adicione fundos à sua conta
-- **Histórico de Transações**: Rastreie todas suas operações financeiras
-- **Segurança por Design**: Senha de transação dedicada para operações sensíveis
+## ✨ Features
 
-## 🛠️ Tecnologias Utilizadas
+- **Autenticação** - Login/registro com Firebase Auth
+- **Transferências PIX** - Entre usuários Blinq via email ou QR Code
+- **Depósitos** - Adicione dinheiro na conta (simulado)
+- **Histórico** - Acompanhe todas as transações
+- **PIN de segurança** - Proteção para operações sensíveis
+- **Saldo protegido** - Visualização mediante PIN
+- **Temas** - Modo claro/escuro com design neomorfo
+- **Cotações** - Visualize câmbio de moedas
 
-- **Flutter/Dart**: Framework multiplataforma para desenvolvimento
-- **Firebase Auth**: Autenticação via Email/Senha
-- **Cloud Firestore**: Banco de dados para contas e transações
-- **GetX**: Gerenciamento de estado, navegação e injeção de dependências
-- **Clean Architecture**: Estrutura de projeto modular e escalável
+## 🚀 Setup Rápido
 
-## 📐 Arquitetura
+### Pré-requisitos
+- Flutter 3.19+
+- Firebase project configurado
+- Android Studio / VS Code
 
-O projeto segue uma adaptação da Clean Architecture com separação clara em camadas:
+### Instalação
+
+```bash
+# Clone
+git clone https://github.com/seu-usuario/blinq.git
+cd blinq
+
+# Dependências
+flutter pub get
+
+# Configure o Firebase
+# Adicione seus arquivos google-services.json e GoogleService-Info.plist
+
+# Rodde
+flutter run
+```
+
+### Firebase Setup
+
+1. Crie um projeto no [Firebase Console](https://console.firebase.google.com)
+2. Habilite:
+   - **Authentication** (Email/Password)
+   - **Firestore Database**
+   - **Cloud Messaging** (opcional)
+3. Configure as plataformas Android/iOS
+4. Baixe os arquivos de configuração
+
+## 🏗️ Arquitetura
 
 ```
 lib/
-├── core/                 # Utilitários e configurações
-├── data/                 # Camada de dados (repositórios e serviços)
-├── domain/               # Regras de negócio e entidades
-├── presentation/         # Interface do usuário (controllers, pages, widgets)
-└── main.dart             # Ponto de entrada do aplicativo
+├── core/           # Utilitários, temas, exceções
+├── data/           # Repositories, models, datasources
+├── domain/         # Entities, usecases, contracts
+├── presentation/   # Pages, controllers, components
+└── routes/         # Navegação e bindings
 ```
 
-## 🚀 Instalação e Execução
-
-### Pré-requisitos
-- Flutter SDK 3.0+
-- Dart 2.17+
-- Firebase CLI
-- Conta no Firebase
-
-### Configuração
-
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seu-usuario/blinq.git
-   cd blinq
-   ```
-
-2. Instale as dependências:
-   ```bash
-   flutter pub get
-   ```
-
-3. Configure o Firebase:
-   ```bash
-   flutterfire configure
-   ```
-
-4. Execute o aplicativo:
-   ```bash
-   flutter run
-   ```
-
-## 📊 Estrutura do Firestore
-
-- **accounts/<userId>**
-  - `balance`: double
-  - `email`: string
-  - `transactionPassword`: string (hash)
-  - `createdAt`: timestamp
-  - `updatedAt`: timestamp
-
-- **transactions/**
-  - `senderId`: string
-  - `receiverId`: string
-  - `amount`: double
-  - `timestamp`: timestamp
-  - `participants`: array[string]
-  - `type`: 'deposit' | 'transfer'
-  - `status`: 'pending' | 'completed' | 'failed'
+**Clean Architecture + GetX** para separação de responsabilidades e gerenciamento de estado.
 
 ## 🔐 Segurança
 
-- **Senha de Transação**: Necessária para todas operações financeiras
-- **Validação de Saldo**: Verificação de saldo antes de transferências
-- **Transações Atômicas**: Garantia de consistência em operações financeiras
-- **Autenticação Robusta**: Integração completa com Firebase Auth
+- **PIN local** - Armazenado criptografado com FlutterSecureStorage
+- **Validações** - Entrada de dados e limites de transação
+- **Firebase Rules** - Acesso restrito por usuário
+- **Hash de senhas** - SHA-256 com salt
 
-## 🔮 Próximos Passos
+## 🎨 Design
 
-- [ ] Autenticação biométrica para validar transações
-- [ ] Notificações push para alertas de transações
-- [ ] Funcionalidades de planejamento financeiro
-- [ ] Temas personalizáveis
-- [ ] Suporte para múltiplas moedas
+**Neomorfismo** - Interface moderna com sombras suaves e elementos "pressed"
+- Cores principais: Verde Blinq (`#6EE1C6`) e Preto (`#0D1517`)
+- Componentes customizados para consistência visual
+- Animações fluidas e feedback tátil
 
-## 📜 Licença
+## 📱 Fluxos Principais
 
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
+1. **Onboarding** → **Login/Registro** → **Setup PIN** → **Home**
+2. **Transferir** → **Inserir dados** → **PIN** → **Confirmação**
+3. **Depositar** → **Valor** → **PIN** → **Sucesso**
+4. **QR Code** → **Gerar/Escanear** → **Auto-preenchimento**
 
-<p align="center">
-  Desenvolvido utilizando Flutter e Firebase
-</p>
+## 🛠️ Stack
+
+- **Frontend**: Flutter 3.19 + Dart
+- **Estado**: GetX (routes, controllers, dependency injection)
+- **Backend**: Firebase (Auth, Firestore, Messaging)
+- **Storage**: FlutterSecureStorage (PIN), SharedPreferences (preferências)
+- **UI**: Design system próprio + animações custom
+
+## 📊 Estrutura de Dados (Firestore)
+
+```javascript
+// Collection: accounts
+{
+  userId: "uid",
+  balance: 1000.0,
+  user: {
+    id: "uid",
+    name: "João Silva", 
+    email: "joao@email.com"
+  },
+  createdAt: timestamp
+}
+
+// Collection: transactions  
+{
+  userId: "uid",
+  type: "transfer|deposit|receive",
+  amount: 100.0,
+  date: timestamp,
+  description: "PIX",
+  counterparty: "Maria",
+  status: "completed"
+}
+```
+
+## 🧪 Testing
+
+```bash
+# Testes unitários
+flutter test
+
+# Testes de widget  
+flutter test test/widget_test.dart
+
+# Testes de integração
+flutter test integration_test/
+```
+
+## 📦 Build
+
+```bash
+# Android
+flutter build apk --release
+
+# iOS  
+flutter build ios --release
+```
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit (`git commit -m 'Add nova feature'`) 
+4. Push (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+MIT License - veja [LICENSE](LICENSE) para detalhes.
+
+---
+
+**Blinq** - Simplicidade financeira na palma da sua mão 🏦✨
