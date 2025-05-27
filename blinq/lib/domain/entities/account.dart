@@ -1,4 +1,3 @@
-/// Entidade que representa uma conta bancária no YeezyBank.
 class Account {
   final String userId;
   final double balance;
