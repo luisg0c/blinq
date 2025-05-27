@@ -1,5 +1,3 @@
-// lib/presentation/controllers/transfer_controller.dart - CORREÇÃO PARA VALIDAÇÃO DE VALOR
-
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
