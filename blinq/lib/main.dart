@@ -1,5 +1,3 @@
-// lib/main.dart - VERSÃO CORRIGIDA PARA NAVEGAÇÃO
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
